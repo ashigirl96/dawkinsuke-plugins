@@ -4,11 +4,12 @@
 
 ## upstream
 
-`upstream/mattpocock-skills` は https://github.com/mattpocock/skills の submodule。
+upstream は 2 つの submodule。
 
-- 使っているタグ: `v1.3.2`
+- `upstream/mattpocock-skills`: https://github.com/mattpocock/skills 。使っているタグは `v1.3.2`。`skills/engineering/` と `skills/productivity/` のスキルを使う。
+- `upstream/cursor-plugins`: https://github.com/cursor/plugins 。タグがないので、pstack の `.claude-plugin/plugin.json` の `version` を上げた commit で止める。使っている版: `0.15.36`（commit `c742dd6`）。`harness/pstack/claude-code/skills/` のスキルを使う。
 
-`skills/engineering/` と `skills/productivity/` の各スキルを、`skills/<name>` から symlink で参照する。使わないスキルは `upstream/exclude.txt` に書く。symlink は `scripts/sync-skills.sh` が upstream と除外リストに合わせるので、手では張らない。除外リストを書き換えたら、この script を流す。script を直したら `sh scripts/sync-skills.test.sh` を流す。
+matt のスキルは `skills/<name>` から、pstack のスキルは `pstack/skills/<name>` から symlink で参照する。pstack のスキルは `../../docs/` や `../../README.md` を読むので、`pstack/` に upstream と同じ並びで `docs` と `README.md` の symlink を置き、`plugin.json` の `skills` で `pstack/skills` を足している。使わないスキルは `upstream/exclude.txt` に `<submodule>/<name>` の形で書く。2 つの upstream に同じ名前のスキル（`tdd`、`teach`）があるため、名前だけでは書かない。どちらも除外していなければ matt 側が使われ、script が `conflict` を出す。symlink は `scripts/sync-skills.sh` が upstream と除外リストに合わせるので、手では張らない。除外リストを書き換えたら、この script を流す。script を直したら `sh scripts/sync-skills.test.sh` を流す。同期のあとは `/verify-dawkinsuke` で、入れたスキルが依存するスキルや文書が抜けていないかを確かめる。
 
 タグを上げるときは `/update-matt-skill` を使う。submodule だけを手で checkout し直すと、fork したスキルが古い upstream のまま残る。
 

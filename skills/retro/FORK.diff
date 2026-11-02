@@ -1,0 +1,11 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/retro/SKILL.md skills/retro/SKILL.md
+--- upstream/mattpocock-skills/skills/engineering/retro/SKILL.md
++++ skills/retro/SKILL.md
+@@ -1,7 +1,6 @@
+ ---
+ name: retro
+ description: "コーディングセッションの振り返りを行う。"
+-disable-model-invocation: true
+ ---
+ 
+ ユーザーは**振り返り**を求めている。あなたは今後の実行をよくするため、コーディングエージェントの**環境**への改善を提案する。

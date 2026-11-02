@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude plugin validate *)",
+      "Bash(claude plugin list *)",
+      "Bash(claude plugin details *)",
+      "mcp__notion__notion-fetch",
+      "mcp__claude_ai_Slack__slack_search_public_and_private"
+    ]
+  }
+}

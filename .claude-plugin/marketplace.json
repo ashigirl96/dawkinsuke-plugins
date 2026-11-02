@@ -1,0 +1,13 @@
+{
+  "name": "dawkinsuke-plugins",
+  "owner": {
+    "name": "ashigirl96"
+  },
+  "description": "ashigirl96 の個人用プラグイン",
+  "plugins": [
+    {
+      "name": "dawkinsuke",
+      "source": "./"
+    }
+  ]
+}

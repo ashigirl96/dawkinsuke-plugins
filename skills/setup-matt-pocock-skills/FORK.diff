@@ -1,0 +1,43 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/SKILL.md skills/setup-matt-pocock-skills/SKILL.md
+--- upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/SKILL.md
++++ skills/setup-matt-pocock-skills/SKILL.md
+@@ -11,9 +11,12 @@
+ - **Issue トラッカー**: issue の置き場所（既定は GitHub。ローカルの markdown もそのまま使える）
+ - **トリアージのラベル**: 5 つの標準のトリアージの役割に使う文字列
+ - **ドメインの文書**: `GLOSSARY.md` と ADR の置き場所と、それらを読む側の決まり
++- **tackle スキル**: repo が持つ `implement` の写し。org ごとに違うワークフローの手順に使う（例: `code-review` を流す代わりに、PR への Codex のレビューに答える）
+ 
+ これはプロンプトで動くスキルで、決まった手順をなぞる script ではない。調べて、見つけたものを示し、ユーザーに確かめてから書く。
+ 
++このスキルが repo に書くものは、すべて日本語で書く。`## Agent skills` ブロックの本文、`docs/agents/*.md` の各ファイル、tackle スキルの `description` と本文が対象になる。雛形は下書きも含め、埋めながら訳す。`## Agent skills` の見出し、スキル名、コマンド、コード、path、ラベルの文字列は書かれたまま残す。再実行や他のスキルがその文字列で探すため。
++
+ ## 手順
+ 
+ ### 1. 調べる
+@@ -26,6 +29,7 @@
+ - `docs/adr/` と、あれば `src/*/docs/adr/` のディレクトリ
+ - `docs/agents/`: このスキルの前回の出力がもうあるか
+ - `.scratch/`: ローカルの markdown で issue を管理する慣習がもう使われている印
++- `.claude/skills/tackle/SKILL.md`: repo がもう `tackle` スキルを持っているか
+ - `triage` スキルは入っているか（このスキルと並ぶ `triage` スキルのフォルダか、使えるスキルの中の `triage`）。これで Section B を流すかどうかが決まる。
+ - monorepo の兆し: `pnpm-workspace.yaml`、`package.json` の `workspaces` フィールド、または独自の `src/` を持つ `packages/*` が埋まっていること。これらは本当に大きな複数パッケージの repo にしかない。無ければ単一の文脈で、ほぼすべての repo がこちらにあたる。
+ 
+@@ -115,6 +119,17 @@
+ 
+ 「その他」の issue トラッカーでは、ユーザーの説明をもとに `docs/agents/issue-tracker.md` を一から書く。
+ 
++次に tackle スキルを作る。このスキルと並ぶ `implement` スキルのフォルダから `SKILL.md`（`../implement/SKILL.md`）を `.claude/skills/tackle/SKILL.md` に写し、写しを編集する。
++
++- frontmatter を `name: tackle` に変える。
++- 本文の冒頭に、次の段落をそのまま置く。
++
++  ```markdown
++  作業は `issue-<番号>` の branch で行う。今の branch の名前が違えば、`git fetch origin main` してから `git switch --no-track -c issue-<番号> origin/main` で切る。
++  ```
++
++`.claude/skills/tackle/SKILL.md` がもうあるときは、repo 独自の編集が入っているので、そのまま残す。
++
+ ### 5. 完了
+ 
+-セットアップが済んだことと、どのエンジニアリングのスキルがこれからこれらのファイルを読むかをユーザーに伝える。あとで `docs/agents/*.md` を直接編集できることも伝える。このスキルを流し直すのは、issue トラッカーを切り替えたいときか、一からやり直したいときだけでよい。
++セットアップが済んだことと、どのエンジニアリングのスキルがこれからこれらのファイルを読むかをユーザーに伝える。あとで `docs/agents/*.md` と `.claude/skills/tackle/SKILL.md` を直接編集できることも伝える。このスキルを流し直すのは、issue トラッカーを切り替えたいときか、一からやり直したいときだけでよい。

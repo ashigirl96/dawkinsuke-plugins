@@ -1,0 +1,9 @@
+{
+  "name": "dawkinsuke",
+  "description": "ashigirl96 専用のスキル集。mattpocock/skills を土台に、自分の意図で fork したスキルを足す。",
+  "author": {
+    "name": "ashigirl96"
+  },
+  "repository": "https://github.com/ashigirl96/dawkinsuke-plugins",
+  "license": "MIT"
+}

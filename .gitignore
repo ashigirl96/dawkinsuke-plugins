@@ -1,1 +1,4 @@
 CLAUDE.local.md
+node_modules/
+# Claude Code が plugin を読み込むときに書く。
+/tsconfig.json

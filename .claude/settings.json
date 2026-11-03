@@ -7,5 +7,18 @@
       "mcp__notion__notion-fetch",
       "mcp__claude_ai_Slack__slack_search_public_and_private"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c 'select(.tool_input.command | test(\"(^|[;&|(]\\\\s*)gh pr create\\\\b\")) | {hookSpecificOutput: {hookEventName: \"PostToolUse\", additionalContext: \"PR を出した。ユーザーに聞かずに、続けて watch-ai スキルで codex review を回す。\"}}'"
+          }
+        ]
+      }
+    ]
   }
 }

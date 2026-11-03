@@ -25,6 +25,8 @@ matt のスキルは `matt/skills/<name>` から、pstack のスキルは `pstac
 
 matt のスキルを fork するとき、fork したスキルを変えるときは、`/edit-matt-skill` を使う。fork の中身を `ADR.md` を通さずに直すと、次の `/update-matt-skill` でその変更が消える。fork の仕組みは `docs/fork.md` にある。
 
+新しいスキルを足す前に `/vet-skill` を使う。matt と pstack の思想（`docs/philosophy/`）に合うか、既存のスキル・除外中の upstream スキル・fork で足りないかを評価する。
+
 ## mod
 
 Claude Code の mod（hooks module で engine の挙動や描画を変える部品）は、1 つを 1 つの plugin として `mods/<name>/` に置き、`marketplace.json` に `"source": "./mods/<name>"` で並べる。engine は 1 つの plugin に hooks module を 1 つしか許さず、同じ event に matcher のない hook を 2 度掛けることも許さないので、mod を `dawkinsuke` にまとめない。

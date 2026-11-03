@@ -1,10 +1,17 @@
 # fork の仕組み
 
-`/edit-matt-skill` と `/update-matt-skill` の両方がこのファイルを前提にする。
+`/fork-upstream-skill`（fork を作る・変える）と `/update-upstream-skill`（upstream を上げて fork を作り直す）の両方がこのファイルを前提にする。
+
+fork は matt と pstack のどちらのスキルにも作れる。このファイルの `<置き場>` と `<submodule>` は、fork のある側に合わせて次のように読む。
+
+| 置き場 | submodule |
+|---|---|
+| `matt/skills` | `mattpocock-skills` |
+| `pstack/skills` | `cursor-plugins` |
 
 ## ADR.md が元データ
 
-fork は、`ADR.md` を持つ `matt/skills/<name>` の実ディレクトリ。matt のスキルとの違いは、すべて `ADR.md` の決定として書く。fork の中身は「最新の upstream に `ADR.md` の決定を当てたもの」で、`/update-matt-skill` が毎回作り直す。`ADR.md` に書いていない違いは、作り直したときに消える。
+fork は、`ADR.md` を持つ `<置き場>/<name>` の実ディレクトリ。upstream のスキルとの違いは、すべて `ADR.md` の決定として書く。fork の中身は「最新の upstream に `ADR.md` の決定を当てたもの」で、upstream を上げるたびに作り直す。`ADR.md` に書いていない違いは、作り直したときに消える。
 
 `ADR.md` は [`ADR-FORMAT.md`](ADR-FORMAT.md) の形式で書く。
 
@@ -22,13 +29,13 @@ fork のディレクトリには、upstream にない管理用のファイルが
 fork を変えたあとと作り直したあとには、毎回 upstream と直接比べる。
 
 ```sh
-diff -ru -x ADR.md -x FORK.diff upstream/mattpocock-skills/<upstream> matt/skills/<name>
+diff -ru -x ADR.md -x FORK.diff upstream/<submodule>/<upstream> <置き場>/<name>
 ```
 
 出てきた違いは、どれも `ADR.md` のどれかの決定で説明できなければならない。種類ごとの扱いは次のとおり。
 
 - 中身の違いは、どの決定がそれを生んだかを言えること。
-- `Only in matt/skills/<name>` のファイルは、`own` に挙がっていて、足した理由がどれかの決定に書いてあること。
+- `Only in <置き場>/<name>` のファイルは、`own` に挙がっていて、足した理由がどれかの決定に書いてあること。
 - `Only in upstream/...` のファイルは、消した理由がどれかの決定に書いてあること。
 
 説明のつかない違いが見つかった場合、その違いが要るなら決定を `ADR.md` に書き足す。要らないなら upstream の文面に戻す。
@@ -37,20 +44,20 @@ diff -ru -x ADR.md -x FORK.diff upstream/mattpocock-skills/<upstream> matt/skill
 
 ## 日本語の差分を作る
 
-「確かめ方」を通ったあとに、upstream から fork への差分を日本語に訳し、`matt/skills/<name>/FORK.diff` に書く。変えたファイル、足したファイル、消したファイルがすべて 1 つの差分に並ぶ。GitHub で開くと、ファイルごとに区切られ、消した行が赤、足した行が緑で表示される。
+「確かめ方」を通ったあとに、upstream から fork への差分を日本語に訳し、`<置き場>/<name>/FORK.diff` に書く。変えたファイル、足したファイル、消したファイルがすべて 1 つの差分に並ぶ。GitHub で開くと、ファイルごとに区切られ、消した行が赤、足した行が緑で表示される。
 
-upstream との違いがなければ、`rm -f matt/skills/<name>/FORK.diff` を流して終える。違いがあれば、Agent tool で general-purpose の subagent を新しく立ち上げる。会話を引き継ぐ fork ではなく、まっさらな状態から始めさせる。前回の訳に引きずられないようにするためで、subagent には次の指示だけを渡す。
+upstream との違いがなければ、`rm -f <置き場>/<name>/FORK.diff` を流して終える。違いがあれば、Agent tool で general-purpose の subagent を新しく立ち上げる。会話を引き継ぐ fork ではなく、まっさらな状態から始めさせる。前回の訳に引きずられないようにするためで、subagent には次の指示だけを渡す。
 
 > 1. repo のルートで次を流し、英語の差分を得る。`sed` は、見出し行の時刻を落として、作り直すたびに時刻だけの差分が出ないようにする。
 > 	```sh
-> 	diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/<upstream> matt/skills/<name> | sed -E 's/^((---|\+\+\+) [^[:space:]]+)[[:space:]].*/\1/'
+> 	diff -ruN -x ADR.md -x FORK.diff upstream/<submodule>/<upstream> <置き場>/<name> | sed -E 's/^((---|\+\+\+) [^[:space:]]+)[[:space:]].*/\1/'
 > 	```
 > 2. 差分を 1 行ずつ日本語に訳す。
 > 	- 行頭の ` `、`-`、`+` と、`diff`、`---`、`+++`、`@@` で始まる行はそのまま残す。
 > 	- 英語 1 行を日本語 1 行に訳し、行を足したり、まとめたりしない。
 > 	- コード、コマンド、ファイル名、スキル名、frontmatter のキーは訳さない。
 > 	- 中身のない前後の行も、行頭の空白 1 つを残す。Write tool はこの空白を落とすことがあるので、書いたあとに数を確かめ、落ちていたら戻す。
-> 3. `matt/skills/<name>/FORK.diff` は読まない。`rm -f matt/skills/<name>/FORK.diff` で消してから、訳を新しく書き込む。
+> 3. `<置き場>/<name>/FORK.diff` は読まない。`rm -f <置き場>/<name>/FORK.diff` で消してから、訳を新しく書き込む。
 >
 > 完了条件: 行頭が ` `、`-`、`+` の行の数が、それぞれ英語の差分と同じ。
 

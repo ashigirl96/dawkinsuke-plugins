@@ -40,7 +40,7 @@ disable-model-invocation: true
 
 - **閉包をすべて外す**: 残りの抜けが無いときだけ出す。
 - **入れない**: 何も変えずに終わる。
-- **fork して参照を消す**: 対象が `mattpocock-skills` のときだけ出す。選ばれたら `/edit-matt-skill` に進むようユーザーに伝えて終わる。pstack のスキルには fork の仕組みが無い。
+- **fork して参照を消す**: 選ばれたら `/fork-upstream-skill` に進むようユーザーに伝えて終わる。
 
 参照を欠いたまま入れる選択肢は出さない。`.githooks/pre-commit` が流す `scripts/check.sh` は `scripts/check-refs.sh` を含み、抜けが 1 つでもあると commit が通らないため。
 

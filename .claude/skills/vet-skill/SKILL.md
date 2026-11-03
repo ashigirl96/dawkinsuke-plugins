@@ -37,7 +37,7 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
    ```sh
    grep -m1 '^description:' upstream/mattpocock-skills/skills/engineering/*/SKILL.md upstream/mattpocock-skills/skills/productivity/*/SKILL.md upstream/cursor-plugins/harness/pstack/claude-code/skills/*/SKILL.md
    ```
-3. **fork**: 入っている matt のスキルを変えれば足りるか。pstack のスキルには fork の仕組みが無い。
+3. **fork**: 入っている matt か pstack のスキルを変えれば足りるか。
 4. **スキルにしない**: `scripts/check.sh` のような検査、hook、`CLAUDE.md` の 1 行で足りるか。
 
 1 と 2 の description はすべて読む。役目が重なりそうなものは SKILL.md の本文も読み、案の失敗を消せるかを「足りる」か「足りない: <欠けているもの>」で言う。1 と 2 の全スキルを読み終え、重なる候補のすべてに答えが付いたら完了。
@@ -52,7 +52,7 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
 - 判定。次から 1 つをおすすめに選び、理由を添える。
   - **既存のスキルで足りる**: どのスキルを、どう使うか。
   - **除外中のスキルを入れる**: `/add-upstream-skill <name>` を案内する。
-  - **fork する**: `/edit-matt-skill` を案内し、`ADR.md` に書く決定の案を添える。
+  - **fork する**: `/fork-upstream-skill` を案内し、`ADR.md` に書く決定の案を添える。
   - **スキルにしない**: 検査か `CLAUDE.md` の 1 行の、置き場所と文面の案。
   - **新しく作る**: 置き場所（配るスキルは `skills/<name>`、この repo の保守だけに使うスキルは `.claude/skills/<name>`）、起動の型、接続点、反する所の避け方。
 

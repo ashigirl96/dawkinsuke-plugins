@@ -27,5 +27,5 @@ Preconditions:
 ## Gotchas
 
 - 引数は `<submodule>/<name>` の形で渡す。`tdd` と `teach` は両方の upstream にあるので、名前だけでは決まらない。
-- 抜けの中に、入れたくないスキル（例: `poteto-mode` は pstack のほぼ全部を呼ぶ）が出ることがある。その場合は、入れたいスキルを `/edit-matt-skill` と同じ要領で fork して参照を消すか、入れるのをやめるかをユーザーが決める。pstack のスキルの fork の仕組みはまだ無い。
+- 抜けの中に、入れたくないスキル（例: `poteto-mode` は pstack のほぼ全部を呼ぶ）が出ることがある。その場合は、入れたいスキルを `/fork-upstream-skill` で fork して参照を消すか、入れるのをやめるかをユーザーが決める。
 - 1 回の実行は repo 全体を写すので数秒かかる。

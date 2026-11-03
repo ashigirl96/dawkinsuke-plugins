@@ -1,0 +1,11 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md matt/skills/grill-with-docs/SKILL.md
+--- upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md
++++ matt/skills/grill-with-docs/SKILL.md
+@@ -5,3 +5,7 @@
+ ---
+ 
+ Skill tool を 2 回呼び、"grilling" と "domain-modeling" を読み込む。
++
++共有した理解をユーザーが認め、その結果が作るものなら、聞かずに `../to-spec/SKILL.md` を読んでそれに従う。
++
++spec を公開したら、その作業が新しい context window 1 つに収まるかを判断する。先に根拠を示す: 触るモジュールと、見込んでいる tracer-bullet の切り分け。収まらなければ `../to-tickets/SKILL.md` を読んでそれに従う。収まるなら、そこで止める。

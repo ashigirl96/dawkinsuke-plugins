@@ -1,7 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 
 const PANE = {
-  plugin: 'dawkinsuke',
+  plugin: 'glossary',
   component: 'Pane',
   requestId: 'glossary',
   props: {
@@ -24,14 +24,14 @@ const term = (name: string, codebase: string) => ({
 
 test('a term the model shows lands in the pane, the newest answer replacing the old', async ($, on) => {
   on('command.register', () => ({ value: { command: 'glossary' } }))
-  on('tool.register', () => ({ value: { tool: 'mcp__dawkinsuke__show_terms' } }))
+  on('tool.register', () => ({ value: { tool: 'mcp__glossary__show_terms' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
 
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.tool.call({ tool: 'mcp__dawkinsuke__show_terms', terms: [term('Bench', '古い説明')] })
+  await $.tool.call({ tool: 'mcp__glossary__show_terms', terms: [term('Bench', '古い説明')] })
   await $.tool.call({
-    tool: 'mcp__dawkinsuke__show_terms',
+    tool: 'mcp__glossary__show_terms',
     terms: [term('Bench', 'Task の作業場所')],
   })
 
@@ -43,17 +43,17 @@ test('a term the model shows lands in the pane, the newest answer replacing the 
 
 test('only the newest term is open; pressing a folded one opens it instead', async ($, on) => {
   on('command.register', () => ({ value: { command: 'glossary' } }))
-  on('tool.register', () => ({ value: { tool: 'mcp__dawkinsuke__show_terms' } }))
+  on('tool.register', () => ({ value: { tool: 'mcp__glossary__show_terms' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
 
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   await $.tool.call({
-    tool: 'mcp__dawkinsuke__show_terms',
+    tool: 'mcp__glossary__show_terms',
     terms: [term('Bench', 'Task の作業場所')],
   })
   await $.tool.call({
-    tool: 'mcp__dawkinsuke__show_terms',
+    tool: 'mcp__glossary__show_terms',
     terms: [term('Run', 'Agent Session 1 回分')],
   })
 
@@ -76,7 +76,7 @@ for (const c of cases) {
   test(`/${c.command} asks ${c.asks} on the side and shows its answer in the pane`, async ($, on) => {
     const clock = mock.clock(on)
     on('command.register', (_, e) => ({ value: { command: e.name } }))
-    on('tool.register', () => ({ value: { tool: 'mcp__dawkinsuke__show_terms' } }))
+    on('tool.register', () => ({ value: { tool: 'mcp__glossary__show_terms' } }))
     on('ui.open', () => ({ value: { isPlaced: true } }))
     on('session.start', (_, e) => ({ cwd: e.cwd }))
     on('fs.read', () => ({ value: '**Run**: Agent Session 1 回分' }))
@@ -125,7 +125,7 @@ test('/glossary with no term leaves no transcript line, closes the pane when it 
   }[] = []
   const calls: string[] = []
   on('command.register', (_, e) => ({ value: { command: e.name } }))
-  on('tool.register', () => ({ value: { tool: 'mcp__dawkinsuke__show_terms' } }))
+  on('tool.register', () => ({ value: { tool: 'mcp__glossary__show_terms' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('ui.panes', () => ({ value: panes }))
   on('ui.open', () => {

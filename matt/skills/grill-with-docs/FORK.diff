@@ -1,11 +1,15 @@
 diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md matt/skills/grill-with-docs/SKILL.md
 --- upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md
 +++ matt/skills/grill-with-docs/SKILL.md
-@@ -5,3 +5,7 @@
+@@ -5,3 +5,11 @@
  ---
  
- Skill tool を 2 回呼び、"grilling" と "domain-modeling" を読み込む。
+ "grilling" と "domain-modeling" について、Skill tool を 2 回呼ぶ。
 +
-+共有した理解をユーザーが認め、その結果が作るものなら、聞かずに `../to-spec/SKILL.md` を読んでそれに従う。
++ユーザーが共通の理解を認め、その結論が作るものなら、作業が新しい 1 つのコンテキストウィンドウに収まるかを判断する。先に根拠を示す: 触るモジュールと、見込む曳光弾（tracer bullet）式の縦の切り分け。そのあと、聞かずに次へ進む:
 +
-+spec を公開したら、その作業が新しい context window 1 つに収まるかを判断する。先に根拠を示す: 触るモジュールと、見込んでいる tracer-bullet の切り分け。収まらなければ `../to-tickets/SKILL.md` を読んでそれに従う。収まるなら、そこで止める。
++- **収まる**: この会話を Bench へ fork する。
++  1. テストを当てる継ぎ目（seam）をユーザーと確かめる。聞き取りですでに決まっていれば省く。
++  2. `ready-for-agent` ラベルを付けた issue を出す。本文には、合意した決定を数行と、継ぎ目、この session で足した ADR と用語集の用語だけを書く。
++  3. `monica task run <issue URL> --fork "$CLAUDE_CODE_SESSION_ID" '/tackle Work from the decisions in this conversation instead of fetching the issue; it only records them. Paths earlier in this conversation point at <this checkout>. First move the ADR and glossary changes this session made there into the current directory and revert them in <this checkout>; after that, edit only under the current directory.'` を流して止まる。作業は新しい Tab で続く。
++- **収まらない**: `../to-spec/SKILL.md` を読んで従い、続けて `../to-tickets/SKILL.md` を読んで従う。

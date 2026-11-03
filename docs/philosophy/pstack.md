@@ -2,7 +2,7 @@
 
 `upstream/cursor-plugins` の `harness/pstack/` の作者 Lauren Tan（poteto）が何を問題と見て、skill の集をどう組んで答えているかをまとめる。pstack のスキルを使い始めるか、どう読み替えるかを決めるときの物差しにする。
 
-「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`docs/guide/`・`docs/harness/claude-code.md` と各 skill・agent の本文。pstack は Cursor 向けに書かれ、Claude Code 向けはそこから生成された写し。
+「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`docs/guide/`・`docs/harness/claude-code.md` と各 skill・agent の本文。pstack は Cursor 向けに書かれ、Claude Code 向けはそこから生成された写し。出典の path は `upstream/cursor-plugins/harness/pstack/claude-code` から数える。
 
 ## 一番の問題: agent の出力を人が信じられない
 

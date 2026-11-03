@@ -2,7 +2,7 @@
 
 `upstream/mattpocock-skills` の作者が何を問題と見て、skill の集をどう組んで答えているかをまとめる。fork で何を変えるか、除外中のスキルを使い始めるかを決めるときの物差しにする。
 
-「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`SCOPE.md`・`.agents/`・`.out-of-scope/`・`docs/` と各 skill の本文。
+「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`SCOPE.md`・`.agents/`・`.out-of-scope/`・`docs/` と各 skill の本文。出典の path は `upstream/mattpocock-skills` から数える。
 
 ## 一番の問題: 人と agent の間で意図と知識が失われる
 
@@ -50,6 +50,7 @@
 集の運営方針に思想が出ている（`SCOPE.md`・`.out-of-scope/`）。
 
 - 自分が毎日使うものだけを入れる。既存の skill を組み合わせて作れる振る舞いは、新しい skill にしない。
+- その組み合わせ（grilling・`to-spec`・`to-tickets`・`implement` を決まった順で回す流れなど）は、使う人が自分の prompt か自分の skill に書く（`.out-of-scope/new-skills.md`）。理由は、skill がどれもずっと保守し続ける面になるため。
 - 変更を受け入れるのは、実際の session で起きた失敗で、かつ設定項目・特定の harness（agent を動かす実行環境）向けの分岐・個人の流儀の微調整ではないものだけ。そういうものは各自の `CLAUDE.md` / `AGENTS.md` か fork に書け、とする。
 - harness に依存しない文章にする。grilling で Claude Code の `AskUserQuestion`（選択式の質問 UI）を使うことを拒む。選択肢を先に並べる UI は、自分の言葉で答える開いた質問という grilling の目的に反する。
 - 質問数に上限を付けない。止めたいときは言葉で指示する。

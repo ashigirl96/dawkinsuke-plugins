@@ -1,6 +1,6 @@
 ---
 name: watch-ai
-description: "PR の codex review を依頼し、指摘への対応と再依頼を往復で回す。`pr` スキルで PR を出したあと、続けて使う。PR の codex review を頼まれたときにも使う。"
+description: "`gh pr create` が PR の URL を返したら、turn を終える前に使う。codex review を依頼し、指摘への対応を往復で回す。PR の codex review を頼まれたときにも使う。"
 ---
 
 PR の codex review を往復で回す。1 往復は「依頼 → 返却を待つ → 指摘に対応して push」で、round 1 から始めて round 3 で打ち切る。round 3 を越えても、直前の返却に P1 があれば続ける。

@@ -15,7 +15,7 @@ disable-model-invocation: true
 	2. `rm matt/skills/<name> && cp -R upstream/mattpocock-skills/<upstream のパス> matt/skills/<name>` を流す。
 	3. `matt/skills/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
-- `matt/skills/<name>` が無く `matt/skills/<name>` にあるなら、自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
+- `matt/skills/<name>` が無く `skills/<name>` にあるなら、自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
 
 ## 2. 決定を先に書く
 

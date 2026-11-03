@@ -30,7 +30,7 @@ script が扱わない次の 3 つは、自分で片付ける。
 
 - `conflict` の行: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。
 - `warning` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直してもう一度流す。
-- fork の `upstream` のパスが upstream にない: `ls upstream/mattpocock-skills/<upstream のパス>` が失敗するものがそれにあたる。移動先に付け替えるか、`ADR.md` を消して `matt/skills/<name>` に移し、自作にするか、fork ごと消すか、ユーザーに選んでもらう。
+- fork の `upstream` のパスが upstream にない: `ls upstream/mattpocock-skills/<upstream のパス>` が失敗するものがそれにあたる。移動先に付け替えるか、`ADR.md` を消して `skills/<name>` に移し、自作にするか、fork ごと消すか、ユーザーに選んでもらう。
 
 完了条件: `sh scripts/sync-skills.sh` をもう一度流すと何も出力しない。どの fork でも `upstream` のパスが存在する。
 

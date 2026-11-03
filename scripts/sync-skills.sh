@@ -73,7 +73,7 @@ echo "$sources" | while read -r parent dest; do
 			ln -sfn "$target" "$link"
 			echo "relinked $name"
 		elif [ -e "$link" ]; then
-			[ -f "$link/ADR.md" ] || echo "conflict $name (own skill has the same name as an upstream skill)"
+			[ -f "$link/ADR.md" ] || echo "conflict $name ($link is a directory without ADR.md)"
 		else
 			ln -s "$target" "$link"
 			echo "added $name"

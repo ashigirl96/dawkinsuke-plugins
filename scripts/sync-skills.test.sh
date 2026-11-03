@@ -54,6 +54,10 @@ sh scripts/sync-skills.sh > out
 grep -qx 'conflict wizard (skills/wizard has the same name)' out || fail "own skill name clash not reported"
 rm -r skills
 
+mkdir matt/skills/wizard
+sh scripts/sync-skills.sh > out
+grep -qx 'conflict wizard (matt/skills/wizard is a directory without ADR.md)' out || fail "directory without ADR.md not reported"
+
 echo nope/missing > upstream/exclude.txt
 sh scripts/sync-skills.sh > out
 grep -qx 'warning nope/missing in upstream/exclude.txt is not an upstream skill' out || fail "unknown exclude entry not warned"

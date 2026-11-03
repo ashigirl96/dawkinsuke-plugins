@@ -2,7 +2,7 @@
 
 `upstream/mattpocock-skills` の作者が何を問題と見て、skill の集をどう組んで答えているかをまとめる。fork で何を変えるか、除外中のスキルを使い始めるかを決めるときの物差しにする。
 
-「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`SCOPE.md`・`.agents/`・`.out-of-scope/`・`docs/` と各 skill の本文。
+「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`SCOPE.md`・`.agents/`・`.out-of-scope/`・`docs/` と各 skill の本文。出典の path は `upstream/mattpocock-skills` から数える。
 
 ## 一番の問題: 人と agent の間で意図と知識が失われる
 

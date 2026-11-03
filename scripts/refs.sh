@@ -1,4 +1,4 @@
-# check-refs.sh と deps.sh が repo のルートで `.` で読み込む、スキルの本文から参照を取り出す処理。
+# repo のルートで `.` で読み込む。
 
 upstream_dirs=$(for d in upstream/mattpocock-skills/skills/*/*/ upstream/cursor-plugins/harness/pstack/claude-code/skills/*/; do
 	[ -d "$d" ] && echo "${d%/}"
@@ -28,4 +28,14 @@ upstream_name() {
 	if echo "$upstream_names" | grep -qx -e "$1"; then echo "$1"
 	elif echo "$upstream_names" | grep -qx "principle-$1"; then echo "principle-$1"
 	fi
+}
+
+# ADR.md は fork の経緯の記録で、スキルの実行中には読まれない。
+skill_docs() {
+	find -L "$1" -name '*.md' ! -name ADR.md | sort
+}
+
+# ファイル $1 からの参照 $2 が指す path。Claude は symlink 側の path を base directory として受け取るので、.. は cd で文字列として畳む。
+resolve_ref() {
+	ref_dir=$(cd "$(dirname "$1")" && cd "$(dirname "$2")" 2>/dev/null && pwd) && [ -e "$ref_dir/$(basename "$2")" ] && echo "$ref_dir/$(basename "$2")"
 }

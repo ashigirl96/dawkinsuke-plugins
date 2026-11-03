@@ -10,14 +10,12 @@ cursor-plugins/benchmark-checklist
 cursor-plugins/blast-radius
 cursor-plugins/bro
 cursor-plugins/correct
-cursor-plugins/create-formal-verification-skill
 cursor-plugins/figure-it-out
 cursor-plugins/how
 cursor-plugins/in-your-own-words
 cursor-plugins/interrogate
 cursor-plugins/ketchup-video
 cursor-plugins/ketchup
-cursor-plugins/maintain-formal-verification-skill
 cursor-plugins/make-bot-ui
 cursor-plugins/no-comments
 cursor-plugins/poteto-help
@@ -51,7 +49,6 @@ cursor-plugins/reflect
 cursor-plugins/setup-pstack
 cursor-plugins/sharpen
 cursor-plugins/show-me-your-work
-cursor-plugins/statechart
 cursor-plugins/swarm
 cursor-plugins/tdd
 cursor-plugins/teach

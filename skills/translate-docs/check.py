@@ -2,8 +2,24 @@ import re
 import sys
 from pathlib import Path
 
-LINK = re.compile(r"\]\(([^)\s]*)\)")
-FENCE = re.compile(r"^\s*(```|~~~)")
+LINK = re.compile(r"\]\(([^)\s]*)(?:\s[^)]*)?\)|^\s*\[[^\]]+\]:\s*(\S+)")
+FENCE = re.compile(r"^\s*(`{3,}|~{3,})(.*)")
+
+
+def links(line):
+    return [inline or ref for inline, ref in LINK.findall(line)]
+
+
+def unfenced(lines):
+    fence = None
+    for i, line in enumerate(lines):
+        m = FENCE.match(line)
+        if fence is None and m:
+            fence = m.group(1)
+        elif fence and m and m.group(1)[0] == fence[0] and len(m.group(1)) >= len(fence) and not m.group(2).strip():
+            fence = None
+        elif fence is None:
+            yield i, line
 
 
 def slug(heading):
@@ -14,11 +30,9 @@ def slug(heading):
 
 
 def heading_lines(lines):
-    found, in_fence = {}, False
-    for i, line in enumerate(lines):
-        if FENCE.match(line):
-            in_fence = not in_fence
-        elif not in_fence and line.startswith("#"):
+    found = {}
+    for i, line in unfenced(lines):
+        if line.startswith("#"):
             found.setdefault(slug(line), i)
     return found
 
@@ -34,19 +48,15 @@ def main(root):
             problems += 1
             continue
         a, b = src.read_text().splitlines(), ja.read_text().splitlines()
-        counts = [(len(x), sum(len(LINK.findall(l)) for l in x), sum(bool(FENCE.match(l)) for l in x)) for x in (a, b)]
+        counts = [(len(x), sum(len(links(l)) for l in x), sum(bool(FENCE.match(l)) for l in x)) for x in (a, b)]
         status = "OK" if counts[0] == counts[1] else "MISMATCH"
         problems += status != "OK"
         print(f"{status} {src.relative_to(root)} lines {counts[0][0]}/{counts[1][0]} links {counts[0][1]}/{counts[1][1]} fences {counts[0][2]}/{counts[1][2]}")
 
     for ja in sorted(root.rglob("*.ja.md")):
-        in_fence = False
-        for n, line in enumerate(ja.read_text().splitlines(), 1):
-            if FENCE.match(line):
-                in_fence = not in_fence
-            if in_fence:
-                continue
-            for target in LINK.findall(line):
+        for i, line in unfenced(ja.read_text().splitlines()):
+            n = i + 1
+            for target in links(line):
                 path, _, anchor = target.partition("#")
                 if "://" in path:
                     continue

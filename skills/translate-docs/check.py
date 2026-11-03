@@ -7,7 +7,8 @@ FENCE = re.compile(r"^\s*(`{3,}|~{3,})(.*)")
 
 
 def links(line):
-    return [inline or ref for inline, ref in LINK.findall(line)]
+    prose = re.sub(r"(`+).*?\1", "", line)
+    return [inline or ref for inline, ref in LINK.findall(prose)]
 
 
 def unfenced(lines):

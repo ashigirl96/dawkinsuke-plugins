@@ -10,7 +10,7 @@
 ## How to get to it (user POV)
 
 - `claude --plugin-dir .` で checkout を読ませて session を始める。
-- marketplace から入れた `dawkinsuke@plugins` を有効にして session を始める（Read from が checkout を指す）。
+- marketplace から入れた `dawkinsuke@dawkinsuke` を有効にして session を始める（Read from が checkout を指す）。
 
 ## Driving it with claude --plugin-dir
 

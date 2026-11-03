@@ -1,19 +1,19 @@
 import { atom, read, update } from 'claude-code'
 import type { CommandRunInput, EngineInterface, ModelForkResult, Register } from 'claude-code'
 
-import type { Term } from '../../types'
+import type { Term } from '../types'
 import { cells, fit, wrap } from './wrap'
 
 const PANE = 'glossary'
 const TITLE = '用語辞典'
-const TOOL = 'mcp__dawkinsuke__show_terms'
-const terms = atom({ plugin: 'dawkinsuke', key: 'glossary.terms' } as const, [], {
+const TOOL = 'mcp__glossary__show_terms'
+const terms = atom({ plugin: 'glossary', key: 'terms' } as const, [], {
   shape: 'terms-1',
 })
-const pending = atom({ plugin: 'dawkinsuke', key: 'glossary.pending' } as const, [], {
+const pending = atom({ plugin: 'glossary', key: 'pending' } as const, [], {
   shape: 'pending-1',
 })
-const open = atom({ plugin: 'dawkinsuke', key: 'glossary.open' } as const, null, {
+const open = atom({ plugin: 'glossary', key: 'open' } as const, null, {
   shape: 'open-1',
 })
 const ACCENT = 'suggestion'
@@ -93,7 +93,8 @@ const ask = async ($: EngineInterface, e: CommandRunInput, withSession: boolean)
   return {}
 }
 
-export async function start($: EngineInterface) {
+export const register: Register = (on) => {
+  on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'glossary',
       description:
@@ -128,9 +129,9 @@ export async function start($: EngineInterface) {
       isDeferred: false,
     })
 
-}
+    return next(e)
+  })
 
-export const register: Register = (on) => {
   on('command.run', { command: 'glossary' }, ($, e) => ask($, e, false))
   on('command.run', { command: 'glossary-session' }, ($, e) => ask($, e, true))
 

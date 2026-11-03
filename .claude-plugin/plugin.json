@@ -9,6 +9,5 @@
   "skills": [
     "./matt/skills",
     "./pstack/skills"
-  ],
-  "types": "./types/index.d.ts"
+  ]
 }

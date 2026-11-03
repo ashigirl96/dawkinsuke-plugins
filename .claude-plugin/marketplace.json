@@ -8,6 +8,14 @@
     {
       "name": "dawkinsuke",
       "source": "./"
+    },
+    {
+      "name": "glossary",
+      "source": "./mods/glossary"
+    },
+    {
+      "name": "mermaid-render",
+      "source": "./mods/mermaid-render"
     }
   ]
 }

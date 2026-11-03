@@ -1,11 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Mode, Rendered } from '../../types'
+import type { Mode, Rendered } from '../types'
 
-const mode = atom({ plugin: 'dawkinsuke', key: 'mermaid-render.mode' } as const, 'ascii' as Mode)
+const mode = atom({ plugin: 'mermaid-render', key: 'mode' } as const, 'ascii' as Mode)
 const rendered = atom(
-  { plugin: 'dawkinsuke', key: 'mermaid-render.rendered' } as const,
+  { plugin: 'mermaid-render', key: 'rendered' } as const,
   {} as Record<string, Rendered>,
 )
 
@@ -36,7 +36,7 @@ const failures = new Map<string, string>()
 async function startRender($: EngineInterface, source: string) {
   if (inFlight.has(source)) return
   inFlight.add(source)
-  const ran = await $.process.run(['bun', `${$.plugin.root}/hooks/mermaid-render/render.ts`], {
+  const ran = await $.process.run(['bun', `${$.plugin.root}/render/render.ts`], {
     stdin: JSON.stringify({ source }),
     timeoutMs: 20000,
   })
@@ -53,15 +53,16 @@ async function startRender($: EngineInterface, source: string) {
   inFlight.delete(source)
 }
 
-export async function start($: EngineInterface) {
+export const register: Register = (on) => {
+  on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'mermaid',
       description: 'Draw ```mermaid blocks as box-drawing text (ascii) or leave them (off)',
       argumentHint: 'ascii|off',
     })
-}
+    return next(e)
+  })
 
-export const register: Register = (on) => {
   on('command.run', { command: 'mermaid' }, async ($, e) => {
     const asked = e.args.trim()
     if (asked === 'ascii' || asked === 'off') {

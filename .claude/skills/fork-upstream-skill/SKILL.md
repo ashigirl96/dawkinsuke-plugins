@@ -15,10 +15,14 @@ disable-model-invocation: true
 	2. `rm <置き場>/<name> && cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
 	3. `<置き場>/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
-- どちらにも無いなら、上から順に当てはまるものを選び、ユーザーにそう伝える。
-	- `skills/<name>` にある: 自作のスキルなので、この手順の対象外。普通に編集する。
-	- `grep -x '[^/]*/<name>' upstream/exclude.txt` が当たる: 除外中なので、当たった行を渡して `/add-upstream-skill <当たった行>` で先に入れるよう伝えて終える。2 行当たったら、両方を示す。
-	- どれでもない: upstream に無い名前なので、そう伝えて終える。
+- どちらにも無いなら、上から順に当てはまるものを選ぶ。
+	- `skills/<name>` にある: 自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
+	- `grep -x '[^/]*/<name>' upstream/exclude.txt` が当たる: 除外中のスキルを、入れると同時に fork にする。除外したまま使える依存に参照を書き換えるのが、よくある用途。
+		1. 当たった行の submodule から、`docs/fork.md` の表で `<置き場>` を決める。2 行当たったら、どちらを fork するかユーザーに聞く。
+		2. `scripts/layout.sh` の `sources` で右側が `<置き場>` の行ごとに、左側のディレクトリの下に `<name>` があるかを `ls -d` で探す。見つかったパスから `upstream/<submodule>/` を除いた部分を、upstream のパスとする。
+		3. 当たった行を `upstream/exclude.txt` から消し、`cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
+		4. `<置き場>/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
+	- どれでもない: upstream に無い名前なので、ユーザーにそう伝えて終える。
 
 ## 2. 決定を先に書く
 
@@ -35,9 +39,11 @@ disable-model-invocation: true
 
 ## 4. 確かめる
 
-`docs/fork.md` の「確かめ方」を行う。
+`docs/fork.md` の「確かめ方」を行い、`sh scripts/check-refs.sh` を流す。`missing-*` が出たら、参照を消す決定を手順 2 に足すか、依存先を `/add-upstream-skill <依存先の submodule>/<name>` で入れるかをユーザーに選んでもらう。除外中から fork したスキルは、この検査で初めて依存の抜けが見える。
 
-`ADR.md` に決定が 1 つも残っていなければ、fork をやめる。`rm -rf <置き場>/<name> && ln -s ../../upstream/<submodule>/<upstream のパス> <置き場>/<name>` で symlink に戻し、手順 6 へ進む。
+完了条件: 「確かめ方」の完了条件を満たし、`sh scripts/check-refs.sh` が exit 0 で終わる。
+
+`ADR.md` に決定が 1 つも残っていなければ、fork をやめ、手順 6 へ進む。symlink から fork にしたものは `rm -rf <置き場>/<name> && ln -s ../../upstream/<submodule>/<upstream のパス> <置き場>/<name>` で symlink に戻す。除外中から fork にしたものは `rm -rf <置き場>/<name>` で消し、手順 1 で消した行を `upstream/exclude.txt` に戻す。
 
 ## 5. 日本語の差分を作る
 
@@ -45,4 +51,4 @@ disable-model-invocation: true
 
 ## 6. 報告する
 
-足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A <置き場>/<name>` で、足したファイルも含める。
+足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A <置き場>/<name> upstream/exclude.txt` で、足したファイルも含める。

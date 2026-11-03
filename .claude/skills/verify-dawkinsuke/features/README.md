@@ -25,7 +25,7 @@ dawkinsuke プラグインの「入れたスキルが、必要なものを全部
 
 ## Features
 
-- [読み込まれるスキル](./loaded-skills.md): Claude Code が checkout から読み込むスキルが、`skills/` と `pstack/skills/` の並びと一致する。
+- [読み込まれるスキル](./loaded-skills.md): Claude Code が checkout から読み込むスキルが、`skills/`・`matt/skills/`・`pstack/skills/` の並びと一致する。
 - [スキルが読む文書](./file-refs.md): スキルが相対 path で読む文書や隣のスキルのファイルが、その path にある。
 - [スキルが呼ぶスキル](./skill-refs.md): スキルが名前で呼ぶ upstream のスキルが、読み込まれている。
 - [スキルを入れる前に依存を調べる](./try-include.md): 除外しているスキルを入れたら何が足りなくなるかを、checkout を変えずに調べる。

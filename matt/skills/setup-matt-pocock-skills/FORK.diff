@@ -1,6 +1,6 @@
-diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/SKILL.md skills/setup-matt-pocock-skills/SKILL.md
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/SKILL.md matt/skills/setup-matt-pocock-skills/SKILL.md
 --- upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/SKILL.md
-+++ skills/setup-matt-pocock-skills/SKILL.md
++++ matt/skills/setup-matt-pocock-skills/SKILL.md
 @@ -11,9 +11,12 @@
  - **Issue トラッカー**: issue の置き場所（既定は GitHub。ローカルの markdown もそのまま使える）
  - **トリアージのラベル**: 5 つの標準のトリアージの役割に使う文字列

@@ -20,7 +20,7 @@ Preconditions:
 
 - **全スキルを調べる.** `sh scripts/check-refs.sh > "$run/check-refs.txt"; echo $? > "$run/check-refs.exit"` を流す。`missing-skill` の行が無い。
 - **検出できることを確かめる.** `sh scripts/check-refs.test.sh` が `ok` で終わる。このテストは写しで次を見る。
-  - `implement` を除外すると `missing-skill skills/setup-matt-pocock-skills/SKILL.md: implement` が出る。
+  - `implement` を除外すると `missing-skill matt/skills/setup-matt-pocock-skills/SKILL.md: implement` が出る。
   - `figure-it-out` を入れると `principle-encode-lessons-in-structure` と `show-me-your-work` が出る。
   - `blast-radius` を入れると、バッククォートだけで呼ばれた `arena` が出る。
 - **抜けの中身を写す.** `missing-skill` が出たら、`rg -n -e '<name>' <file> >> "$run/evidence.txt"` で該当行を残す。`principle-<x>` は本文では `<x>` と書かれているので、`principle-` を外して探す。

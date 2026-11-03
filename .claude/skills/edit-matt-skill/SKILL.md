@@ -8,14 +8,14 @@ disable-model-invocation: true
 
 ## 1. 対象を決める
 
-ユーザーが変えたいスキル `skills/<name>` を見る。
+ユーザーが変えたいスキル `matt/skills/<name>` を見る。
 
 - symlink なら fork にする。
-	1. `readlink skills/<name>` の `../upstream/mattpocock-skills/` より後ろを、upstream のパスとする。
-	2. `rm skills/<name> && cp -R upstream/mattpocock-skills/<upstream のパス> skills/<name>` を流す。
-	3. `skills/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
+	1. `readlink matt/skills/<name>` の `../../upstream/mattpocock-skills/` より後ろを、upstream のパスとする。
+	2. `rm matt/skills/<name> && cp -R upstream/mattpocock-skills/<upstream のパス> matt/skills/<name>` を流す。
+	3. `matt/skills/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
-- `ADR.md` を持たない実ディレクトリは自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
+- `matt/skills/<name>` が無く `skills/<name>` にあるなら、自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
 
 ## 2. 決定を先に書く
 
@@ -34,7 +34,7 @@ disable-model-invocation: true
 
 `docs/fork.md` の「確かめ方」を行う。
 
-`ADR.md` に決定が 1 つも残っていなければ、fork をやめる。`rm -rf skills/<name> && ln -s ../upstream/mattpocock-skills/<upstream のパス> skills/<name>` で symlink に戻し、手順 6 へ進む。
+`ADR.md` に決定が 1 つも残っていなければ、fork をやめる。`rm -rf matt/skills/<name> && ln -s ../../upstream/mattpocock-skills/<upstream のパス> matt/skills/<name>` で symlink に戻し、手順 6 へ進む。
 
 ## 5. 日本語の差分を作る
 
@@ -42,4 +42,4 @@ disable-model-invocation: true
 
 ## 6. 報告する
 
-足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A skills/<name>` で、足したファイルも含める。
+足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A matt/skills/<name>` で、足したファイルも含める。

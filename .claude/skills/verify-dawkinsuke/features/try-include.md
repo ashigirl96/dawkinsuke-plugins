@@ -21,7 +21,7 @@ Preconditions:
 
 - **1 つ入れる.** `sh scripts/try-include.sh cursor-plugins/figure-it-out > "$run/try-1.txt" 2> "$run/try-1.sync.txt"; echo $? >> "$run/try-1.txt"` を流す。`try-1.sync.txt` に `added figure-it-out` があり、`try-1.txt` に `missing-skill pstack/skills/figure-it-out/SKILL.md: <name>` が並ぶ。
 - **抜けも入れて繰り返す.** 出た名前ごとに `upstream/exclude.txt` で `<submodule>/<name>` を探し、引数に足して流し直す（`sh scripts/try-include.sh cursor-plugins/figure-it-out cursor-plugins/show-me-your-work ...`）。最後の行の exit code が `0` になるか、入れたくないスキルが出たら止める。出た回ごとに `$run/try-<n>.txt` に残す。
-- **checkout が変わっていない.** `git status --short upstream/exclude.txt skills pstack/skills > "$run/try-status.txt"` を流す。ファイルが空。
+- **checkout が変わっていない.** `git status --short upstream/exclude.txt skills matt/skills pstack/skills > "$run/try-status.txt"` を流す。ファイルが空。
 - **決めたあと.** 入れる組が決まったら、ユーザーの了承を得てから checkout の `upstream/exclude.txt` からその行を消し、`sh scripts/sync-skills.sh` と `sh scripts/check-refs.sh` を流す。`check-refs.sh` が exit 0 で終わる。
 
 ## Gotchas

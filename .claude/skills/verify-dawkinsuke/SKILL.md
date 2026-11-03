@@ -29,7 +29,7 @@ mkdir -p "$run"
 git submodule status
 claude plugin validate .
 claude --plugin-dir . plugin details dawkinsuke | sed -n '1,6p'
-find -L skills pstack -type l
+find -L skills matt pstack -type l 2>/dev/null
 ```
 
 駆動してよい状態は次のとおり。
@@ -37,7 +37,7 @@ find -L skills pstack -type l
 - `git submodule status` の行頭が空白。`-` は未取得、`+` は親 repo が記録したのと違う commit。
 - `claude plugin validate .` の最後が `✔ Validation passed`。`with warnings` でもよい。
 - `Source: dawkinsuke@inline` と出る。別の Source なら、checkout ではなく入れてある版を読んでいる。
-- `find` が何も出さない。`-L` で symlink を追うので、`-type l` に残るのは向き先の無い symlink だけ。`-exec` は sandbox で通らないことがあるので使わない。
+- `find` が何も出さない。`skills/` は自作のスキルが無ければ存在しないので、その旨のエラーは捨てる。`-L` で symlink を追うので、`-type l` に残るのは向き先の無い symlink だけ。`-exec` は sandbox で通らないことがあるので使わない。
 
 ## Drive
 

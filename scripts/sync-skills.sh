@@ -3,10 +3,10 @@ set -eu
 cd "$(dirname "$0")/.."
 
 # 各行: upstream でスキルが並ぶディレクトリと、その symlink を張るディレクトリ。
-sources="upstream/mattpocock-skills/skills/engineering skills
-upstream/mattpocock-skills/skills/productivity skills
+sources="upstream/mattpocock-skills/skills/engineering matt/skills
+upstream/mattpocock-skills/skills/productivity matt/skills
 upstream/cursor-plugins/harness/pstack/claude-code/skills pstack/skills"
-link_dirs="skills pstack/skills"
+link_dirs="skills matt/skills pstack/skills"
 exclude_file=upstream/exclude.txt
 
 # upstream/<submodule>/.../<name> を <submodule>/<name> にする。

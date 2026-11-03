@@ -1,6 +1,6 @@
-diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/productivity/grilling/SKILL.md skills/grilling/SKILL.md
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/productivity/grilling/SKILL.md matt/skills/grilling/SKILL.md
 --- upstream/mattpocock-skills/skills/productivity/grilling/SKILL.md
-+++ skills/grilling/SKILL.md
++++ matt/skills/grilling/SKILL.md
 @@ -5,8 +5,10 @@
  
  共通の理解に達するまで、ユーザーに容赦なく質問し続ける。これを **設計の木** として描く。どの決定も、そこにぶら下がる決定へと枝分かれする。

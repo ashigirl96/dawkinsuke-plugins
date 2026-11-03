@@ -1,6 +1,6 @@
-diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/retro/SKILL.md skills/retro/SKILL.md
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/retro/SKILL.md matt/skills/retro/SKILL.md
 --- upstream/mattpocock-skills/skills/engineering/retro/SKILL.md
-+++ skills/retro/SKILL.md
++++ matt/skills/retro/SKILL.md
 @@ -1,7 +1,6 @@
  ---
  name: retro

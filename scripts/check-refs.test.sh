@@ -7,7 +7,7 @@ cp -R "$repo" "$tmp/r"
 cd "$tmp/r"
 
 fail() { echo "FAIL: $1"; exit 1; }
-setup=skills/setup-matt-pocock-skills/SKILL.md
+setup=matt/skills/setup-matt-pocock-skills/SKILL.md
 verify=pstack/skills/create-verification-skill/SKILL.md
 
 sh scripts/check-refs.sh > out || true

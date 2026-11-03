@@ -41,8 +41,7 @@ resolves() {
 }
 
 out=$(for name in $loaded; do
-	dir=skills/$name
-	[ -e "$dir" ] || dir=pstack/skills/$name
+	for dir in skills/$name matt/skills/$name pstack/skills/$name; do [ -e "$dir" ] && break; done
 	# ADR.md は fork の経緯の記録で、スキルの実行中には読まれない。
 	find -L "$dir" -name '*.md' ! -name ADR.md | sort | while read -r f; do
 		file_refs "$f" | sort -u | while read -r ref; do

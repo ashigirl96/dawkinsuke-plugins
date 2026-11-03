@@ -2,3 +2,4 @@ CLAUDE.local.md
 node_modules/
 # Claude Code が mod を読み込むときに書く。
 mods/*/tsconfig.json
+.claude/worktrees

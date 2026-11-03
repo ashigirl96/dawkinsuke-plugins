@@ -28,7 +28,10 @@ disable-model-invocation: true
 
 script が扱わない次の 3 つは、自分で片付ける。
 
-- `conflict` の行: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。
+- `conflict` の行: 形ごとに対処が違う。
+	- `conflict <name> (skills/<name> has the same name)`: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。upstream を捨てるなら `upstream/exclude.txt` に `<submodule>/<name>` を足し、自作を捨てるなら `skills/<name>` を消す。
+	- `conflict <name> (pstack/skills/<name> has the same name)` と `conflict <name> (matt/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルがあり、括弧の中の、先に張られていた側が残った。どちらを使うかユーザーに選んでもらい、使わない側を `upstream/exclude.txt` に `<submodule>/<name>` で足す。
+	- `conflict <name> (matt/skills/<name> is a directory without ADR.md)`: `matt/skills/` に置き場所を誤った実ディレクトリがある。`git log -1 --format=%H -- matt/skills/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:matt/skills/<name>/ADR.md > matt/skills/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
 - `warning` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直してもう一度流す。
 - fork の `upstream` のパスが upstream にない: `ls upstream/mattpocock-skills/<upstream のパス>` が失敗するものがそれにあたる。移動先に付け替えるか、`ADR.md` を消して `skills/<name>` に移し、自作にするか、fork ごと消すか、ユーザーに選んでもらう。
 

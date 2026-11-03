@@ -40,16 +40,24 @@ def main(root):
         print(f"{status} {src.relative_to(root)} lines {counts[0][0]}/{counts[1][0]} links {counts[0][1]}/{counts[1][1]} fences {counts[0][2]}/{counts[1][2]}")
 
     for ja in sorted(root.rglob("*.ja.md")):
+        in_fence = False
         for n, line in enumerate(ja.read_text().splitlines(), 1):
+            if FENCE.match(line):
+                in_fence = not in_fence
+            if in_fence:
+                continue
             for target in LINK.findall(line):
                 path, _, anchor = target.partition("#")
-                if path.endswith(".md") and not path.endswith(".ja.md") and "://" not in path:
-                    dest = (ja.parent / path).resolve()
-                    if dest.is_relative_to(root):
-                        print(f"LEFTOVER {ja.relative_to(root)}:{n} {target}")
-                        problems += 1
-                if anchor and "://" not in path:
-                    problems += fix_anchor(root, ja if not path else (ja.parent / path).resolve(), anchor)
+                if "://" in path:
+                    continue
+                dest = (ja.parent / path).resolve() if path else ja
+                if not dest.is_relative_to(root):
+                    continue
+                if path.endswith(".md") and not path.endswith(".ja.md"):
+                    print(f"LEFTOVER {ja.relative_to(root)}:{n} {target}")
+                    problems += 1
+                if anchor:
+                    problems += fix_anchor(root, dest, anchor)
     print("DONE" if problems == 0 else f"{problems} problem(s)")
 
 

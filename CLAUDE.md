@@ -25,6 +25,12 @@ matt のスキルは `matt/skills/<name>` から、pstack のスキルは `pstac
 
 matt のスキルを fork するとき、fork したスキルを変えるときは、`/edit-matt-skill` を使う。fork の中身を `ADR.md` を通さずに直すと、次の `/update-matt-skill` でその変更が消える。fork の仕組みは `docs/fork.md` にある。
 
+## mod
+
+Claude Code の mod（hooks module で engine の挙動や描画を変える部品）は `hooks/<name>/` に置き、plugin `dawkinsuke` が読み込む。checkout から直接読まれるので、clone したら `bun install` で `hooks/` の script が使う依存を入れる。
+
+engine は 1 つの plugin に hooks module を 1 つしか許さず、同じ event に matcher のない hook を 2 度掛けることも許さない。そのため入口の `hooks/register.tsx` が 1 つの `session.start` から各 mod の `start` を呼び、続けて各 mod の `register` を呼ぶ。入口から `$` を渡す関数は、名前付き import した `function` 宣言にする（`const` の関数式は validate が追えずに弾く）。各 mod の `$.state` は `dawkinsuke` の下に `<mod>.<key>` で置き、`types/index.d.ts` にまとめて宣言する。
+
 ## Agent skills
 
 ### Issue tracker

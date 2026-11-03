@@ -18,6 +18,12 @@ for d in skills matt/skills pstack/skills; do
 	run claude plugin validate --strict "$tmp/$d"
 done
 
+# plugin test はルートより下の *.test.ts をすべて拾い、upstream のスキルの test まで走らせるので、mod の分だけ写して流す。
+mkdir -p "$tmp/mod"
+cp -R .claude-plugin hooks types "$tmp/mod"
+rm -rf "$tmp/mod/.claude-plugin/types"
+run claude plugin test "$tmp/mod"
+
 run sh scripts/sync-skills.sh
 # pre-commit では変更が stage 済みなので、index から作業ツリーへの差分だけを見る。
 drift=$(git status --porcelain -- skills matt pstack | grep -v '^. ' || true)

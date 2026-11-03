@@ -24,7 +24,8 @@ grep -q '─ SKILL.md$' out && fail "link back to the skill's own SKILL.md liste
 
 sh scripts/deps.sh upstream/mattpocock-skills/skills/engineering/setup-matt-pocock-skills/ | cmp -s - out || fail "upstream directory gave a different tree from its key"
 
-sh scripts/deps.sh pstack/skills/create-verification-skill | grep -qF '─ references/feature-map-example/' || fail "referenced directory not marked with a slash"
+sh scripts/deps.sh pstack/skills/create-verification-skill > out
+grep -qF '─ references/feature-map-example/' out || fail "referenced directory not marked with a slash"
 
 fork=matt/skills/setup-matt-pocock-skills
 sh scripts/deps.sh "$fork" > out
@@ -36,8 +37,10 @@ grep -vx -e mattpocock-skills/implement -e cursor-plugins/figure-it-out -e curso
 echo mattpocock-skills/implement >> exclude.txt
 mv exclude.txt upstream/exclude.txt
 sh scripts/sync-skills.sh > /dev/null
-sh scripts/deps.sh "$fork" | grep -qF '─◇ implement  mattpocock-skills  (excluded)' || fail "skill missing from the checkout not taken from upstream"
-sh scripts/deps.sh pstack/skills/figure-it-out | grep -q '─◆ principle-encode-lessons-in-structure$' || fail "principle skill in the checkout not found by its short name"
+sh scripts/deps.sh "$fork" > out
+grep -qF '─◇ implement  mattpocock-skills  (excluded)' out || fail "skill missing from the checkout not taken from upstream"
+sh scripts/deps.sh pstack/skills/figure-it-out > out
+grep -q '─◆ principle-encode-lessons-in-structure$' out || fail "principle skill in the checkout not found by its short name"
 
 status=0
 sh scripts/deps.sh mattpocock-skills/no-such-skill 2> /dev/null || status=$?

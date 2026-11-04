@@ -1,0 +1,5 @@
+{
+  "name": "skill-chain",
+  "version": "0.1.0",
+  "description": "Lets the Skill tool run a disable-model-invocation skill when a skill expanded in this session names it"
+}

@@ -25,6 +25,8 @@ upstream を上げるときは `/update-upstream-skill matt` か `/update-upstre
 
 スキルを fork するとき、fork したスキルを変えるときは、`/fork-upstream-skill` を使う。fork の中身を `ADR.md` を通さずに直すと、次に upstream を上げたときにその変更が消える。fork の仕組みは `docs/fork.md` にある。
 
+fork の本文で別のスキルを使わせるときは、「Skill tool で `<name>` を呼ぶ」と書く。呼ぶ先が手動専用（`disable-model-invocation: true`）でも、mod の `skill-chain` が通す。pstack の本文が SKILL.md を Read させている箇所も、fork ではこの書き方に置き換える。`skill-chain` は会話で使ったスキルの置き場所（`matt/skills` か `pstack/skills`）からしか呼ぶ先を探さないので、呼び出し元と同じ置き場所のスキルなら確実に見つかる。仕組みは `mods/skill-chain/README.md` にある。
+
 新しいスキルを足す前に `/vet-skill` を使う。matt と pstack の思想（`docs/philosophy/`）に合うか、既存のスキル・除外中の upstream スキル・fork で足りないかを評価する。
 
 matt と pstack について聞かれたら、`docs/philosophy/` で当たりを付け、止めている版の submodule の原文を読み、`path:line` で引いて答える。原文の場所は各要約の冒頭にある。そのスキルが fork なら `ADR.md` の決定を、除外中ならそのことも添える。

@@ -49,6 +49,7 @@ export const register: Register = on => {
 
     // The engine writes this line first, so a later one (in arguments, say) is not the skill's own folder.
     const skillDirs = new Set(messages.flatMap(userTextsOf).flatMap(text => text.match(BASE_DIR)?.[1]?.trim() ?? []))
+    // A declared folder with `..` or an absolute path would reach outside the plugin, so it is skipped.
     // A plugin may declare several skills folders, so a caller's sibling folders are searched too, but only when the plugin declares the caller's own folder.
     const declaredSkillsDirs = async (skillsDir: string): Promise<string[]> => {
       for (let root = parentDir(skillsDir); root; root = parentDir(root)) {
@@ -60,7 +61,7 @@ export const register: Register = on => {
         } catch {
           return [skillsDir]
         }
-        const dirs = [`${root}/skills`, ...[declared ?? []].flat().filter((p): p is string => typeof p === 'string').map(p => `${root}/${p.replace(/^\.\//, '').replace(/\/+$/, '')}`)]
+        const dirs = [`${root}/skills`, ...[declared ?? []].flat().filter((p): p is string => typeof p === 'string' && !p.startsWith('/') && !p.split('/').includes('..')).map(p => `${root}/${p.replace(/^\.\//, '').replace(/\/+$/, '')}`)]
         return dirs.includes(skillsDir) ? dirs : [skillsDir]
       }
       return [skillsDir]

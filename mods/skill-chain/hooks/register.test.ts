@@ -16,10 +16,12 @@ const FILES = new Map([
   [`${SKILLS}/selfish/SKILL.md`, skill('Run selfish again.', true)],
   [`${SKILLS}/hidden/SKILL.md`, skill('Hidden.', true)],
   ['/elsewhere/skills/evil/SKILL.md', skill('Evil.', true)],
-  ['/plugins/p/.claude-plugin/plugin.json', '{ "skills": ["./matt/skills", "./pstack/skills/"] }'],
-  ['/plugins/p/matt/skills/names-sibling/SKILL.md', skill('Then run sibling, then stray.')],
+  ['/plugins/p/.claude-plugin/plugin.json', '{ "skills": ["./matt/skills", "./pstack/skills/", "../outside/skills", "/plugins/abs/skills"] }'],
+  ['/plugins/p/matt/skills/names-sibling/SKILL.md', skill('Then run sibling, then stray, then escaped.')],
   ['/plugins/p/pstack/skills/sibling/SKILL.md', skill('Sibling.', true)],
   ['/plugins/p/undeclared/stray/SKILL.md', skill('Stray.', true)],
+  ['/plugins/outside/skills/escaped/SKILL.md', skill('Escaped.', true)],
+  ['/plugins/p//plugins/abs/skills/escaped/SKILL.md', skill('Escaped.', true)],
 ])
 
 const expanded = (name: string, rest = '') => `Base directory for this skill: ${SKILLS}/${name}\n\n${rest}`
@@ -103,7 +105,7 @@ test('arguments go into the body as written', async ($, on) => {
   expect(out.context?.[0]).toContain("Say $& $$ $'.")
 })
 
-test('a disabled skill in another skills folder its plugin declares runs; an undeclared folder is not searched', async ($, on) => {
+test('a disabled skill in another skills folder its plugin declares runs; an undeclared folder or one leaving the plugin is not searched', async ($, on) => {
   setup(on, 'Base directory for this skill: /plugins/p/matt/skills/names-sibling\n\n')
 
   const out = await $.tool.call({ tool: 'Skill', skill: 'p:sibling' })
@@ -111,6 +113,7 @@ test('a disabled skill in another skills folder its plugin declares runs; an und
   expect(out.deny).toBeUndefined()
   expect(out.context?.[0]).toContain('Base directory for this skill: /plugins/p/pstack/skills/sibling')
   expect((await $.tool.call({ tool: 'Skill', skill: 'stray' })).deny).toBe('engine refused')
+  expect((await $.tool.call({ tool: 'Skill', skill: 'escaped' })).deny).toBe('engine refused')
 })
 
 test('the Skill tool description tells the model a named skill missing from the listing is callable', async ($, on) => {

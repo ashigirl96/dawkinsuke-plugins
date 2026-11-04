@@ -29,7 +29,7 @@ $T start mermaid-$id --setting-sources project --plugin-dir mods/mermaid-render 
 ```
 
 - 名前には `$id` を入れる。同じ名前の session があれば `start` は止まる。並行する別の agent の session に打ち込まないため。
-- `--model sonnet` で費用を抑える。skill-chain の経路だけは haiku にしない（mod が返した本文に従うのをためらう）。
+- `--model sonnet` で費用を抑える。skill-chain の経路だけは `--model opus` にする。opus は一覧に無い名前を Skill tool で呼ぶのを控えるので、mod が model に呼ばせているかを opus でしか見分けられない（haiku は控えずに呼ぶ）。
 - 会話の記録を証拠にするときは `--session-id "$(uuidgen | tr A-Z a-z)"` も渡し、その値を控える。記録は `~/.claude/projects/$(pwd | tr '/.' '--')/<session-id>.jsonl` に書かれる。
 - 起動に 60 秒かかると `timeout: /^❯/` で exit 1。そのときは `$T shot <名前> /dev/stdout` で画面を見る（信頼の確認やログインの画面で止まっていることが多い）。
 
@@ -84,7 +84,7 @@ mod の印の例:
 
 - mermaid-render: `┌` `▼` などの罫線。描けなければ `mermaid-render: <理由>` の 1 行。
 - glossary: 右の pane の `┃ <用語>`。pane の枠の外に出る `✕` は pane を閉じる印。
-- skill-chain: 画面ではなく会話の記録。`cannot be used with Skill tool due to disable-model-invocation` の有無。
+- skill-chain: 画面ではなく会話の記録。期待したスキルの Skill tool の呼び出しと、`cannot be used with Skill tool due to disable-model-invocation` の有無。
 
 ## Evidence
 
@@ -92,7 +92,7 @@ mod の印の例:
 - 打った文と、その結果の画面を両方残す。`send` の前後で 1 枚ずつ `shot` を取る。
 - 本物の経路で確かめる。`claude plugin test` の通過や、mod の関数を直に呼んだ結果で「動く」と言わない。
 - 副作用も見る。glossary は `$.state`（用語の一覧）に残すので、同じ session で 2 つ目の用語を引くと、1 つ目が pane の下に番号付きで並ぶ。skill-chain は、断られなかったことを画面ではなく記録の `tool_result` で見る。
-- model の返答の揺れと mod の失敗を分ける。合否は mod が出す印で決め、model が手順に従ったかでは決めない（各機能の Gotchas を見る）。
+- model の返答の揺れと mod の失敗を分ける。合否は mod が出す印で決め、model が手順に従ったかでは決めない（各機能の Gotchas を見る）。skill-chain は model に Skill tool を呼ばせるところまでが mod の仕事なので、呼んだかどうかも印に入れる。
 
 ## Cleanup
 

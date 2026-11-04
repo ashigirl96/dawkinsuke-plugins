@@ -35,7 +35,7 @@ matt と pstack について聞かれたら、`docs/philosophy/` で当たりを
 
 Claude Code の mod（hooks module で engine の挙動や描画を変える部品）は、1 つを 1 つの plugin として `mods/<name>/` に置き、`marketplace.json` に `"source": "./mods/<name>"` で並べる。engine は 1 つの plugin に hooks module を 1 つしか許さず、同じ event に matcher のない hook を 2 度掛けることも許さないので、mod を `dawkinsuke` にまとめない。
 
-folder の marketplace の相対 path の plugin は checkout から直接読まれるので、mod の script が使う依存はルートの `package.json` に書き、clone したら `bun install` で入れる。mod を足したら、`claude plugin install <name>@dawkinsuke` で入れる。
+folder の marketplace の相対 path の plugin は checkout から直接読まれるので、mod の script が使う依存はルートの `package.json` に書き、clone したら `bun install` で入れる。mod を足したら、`claude plugin install <name>@dawkinsuke` で入れる。mod を本物の Claude Code の画面で確かめるときは `/verify-mods` を使い、mod を足したらその `features/` に手順を足す。
 
 ## Agent skills
 

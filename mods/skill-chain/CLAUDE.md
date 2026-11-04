@@ -19,14 +19,17 @@ fork が手動専用のスキルを呼ぶ書き方（ルートの CLAUDE.md の�
 
 ## 確かめ方
 
-`fixture/` は `caller` → `callee` → `deep` と呼ぶ 3 つのスキルの plugin で、後ろの 2 つが禁止付き。`--model opus --setting-sources project --plugin-dir mods/skill-chain --plugin-dir mods/skill-chain/fixture` で読ませ、次の 3 つの経路を流す。`--setting-sources project` は利用者の設定で入れた plugin を外し、組織の管理 plugin は残すので、他の mod に邪魔されずに本番と同じ条件で見られる。`--bare` はログインを読まず、`--safe-mode` は `--plugin-dir` も外すので、どちらも使えない。
+実機の確認は `fixture/live.sh` で流す。`--setting-sources project` で利用者の入れた plugin を外し（組織の管理 plugin は残る）、checkout の skill-chain を `--plugin-dir` で読ませ、opus で `-p` を流して、会話の記録の Skill の呼び出しで合否を出す。`--bare` はログインを読まず、`--safe-mode` は `--plugin-dir` も外すので、どちらも使えない。
 
-| 経路 | prompt | 期待 |
-| --- | --- | --- |
-| 人が打つ | `/chainfix:caller` | Skill で `callee` と `deep` が呼ばれ、禁止の文言が出ない |
-| model が呼ぶ | `Use the Skill tool to run the chainfix:caller skill.` | 同上 |
-| 名指しなし | `Use the Skill tool to run the chainfix:deep skill. Do not read any file.` | Skill で `deep` が呼ばれ、禁止の文言で断られる |
+```sh
+L=mods/skill-chain/fixture/live.sh
+sh $L -p mods/skill-chain/fixture callee,deep '/chainfix:caller'
+sh $L -p mods/skill-chain/fixture callee,deep 'Use the Skill tool to run the chainfix:caller skill.'
+sh $L -p mods/skill-chain/fixture '!deep' 'Use the Skill tool to run the chainfix:deep skill. Do not read any file.'
+sh $L -p . in-your-own-words '/dawkinsuke:grilling 社内 wiki に全文検索を足したい'
+```
 
-禁止の文言は `cannot be used with Skill tool due to disable-model-invocation`。合否は、Skill が呼ばれたことと、この文言の有無で決める。opus が Skill を呼ばずに自分で済ませると禁止の文言も出ないので、文言が無いだけでは通ったことにならない。`PINEAPPLE-42` が返らないだけなら model の判断の揺れで、mod の失敗ではない。
-
-`fixture/` のスキルは 1 つの置き場所に並ぶので、plugin が宣言した別の置き場所を探す経路は通らない。そこは `--plugin-dir .` も足して `/dawkinsuke:grilling` を打ち、`matt/skills` の `grilling` から `pstack/skills` の `in-your-own-words` が Skill で呼ばれ、禁止の文言が出ないことで確かめる。
+- 合否は、期待したスキルの Skill tool の呼び出しに、エラーでない結果が返ったか（`!name` なら断られたか）で決める。opus が Skill を呼ばずに自分で済ませると断りの文言も出ないので、文言が無いだけでは通ったことにしない。`PINEAPPLE-42` が返らないだけなら model の判断の揺れで、mod の失敗ではない。
+- 最後の行は、`fixture/` の 1 つの置き場所では通らない経路（`matt/skills` の `grilling` から `pstack/skills` の `in-your-own-words`）を見る。
+- 終わりの手順が後ろのターンにあるスキルは、プロンプトを続けて渡すと同じ session で次のターンを流す。`ends=` に `error_max_turns` が出たら、期待の場面まで届いていないので `-t` を上げる。
+- 判定そのものは `sh mods/skill-chain/fixture/live.test.sh` で、model を呼ばずに確かめられる。

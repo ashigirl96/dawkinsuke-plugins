@@ -18,11 +18,11 @@ Preconditions:
 
 - `mods/skill-chain/fixture/` がある（`caller` → `callee` → `deep`、後ろの 2 つが手動専用）。
 
-経路ごとに新しい session を起こし、会話の記録を証拠にする。
+画面を見ずに記録だけで足りるときは、`mods/skill-chain/fixture/live.sh` が同じ経路を `-p` で流して合否を出す（`mods/skill-chain/CLAUDE.md` の「確かめ方」）。画面で確かめるときは、経路ごとに新しい session を起こし、会話の記録を証拠にする。
 
 ```sh
 sid=$(uuidgen | tr A-Z a-z); echo $sid
-$T start chain1-$id --setting-sources project --plugin-dir mods/skill-chain --plugin-dir mods/skill-chain/fixture --model sonnet --session-id <sid>
+$T start chain1-$id --setting-sources project --plugin-dir mods/skill-chain --plugin-dir mods/skill-chain/fixture --model opus --session-id <sid>
 ```
 
 | 経路 | session | 打つ文 |
@@ -39,12 +39,12 @@ grep -c 'cannot be used with Skill tool due to disable-model-invocation' "$run/c
 grep -o '"name":"Skill","input":{[^}]*}' "$run/chain-<経路>.jsonl"
 ```
 
-- typed と model: 禁止の文言が 0 件。Skill の呼び出しに `callee` と `deep` が並ぶ。
-- unnamed: 禁止の文言が 1 件以上。
+- typed と model: Skill の呼び出しに `callee` と `deep` が並び、禁止の文言が 0 件。
+- unnamed: Skill の呼び出しに `deep` があり、禁止の文言が 1 件以上。
 
 ## Gotchas
 
-- 合否は禁止の文言 `cannot be used with Skill tool due to disable-model-invocation` の有無で決める。`PINEAPPLE-42` が返らないだけなら、model が mod の返した本文に従わなかっただけのことがある。そのときは Skill の呼び出しと結果を記録から写して報告する。
+- 合否は、Skill の呼び出しと禁止の文言 `cannot be used with Skill tool due to disable-model-invocation` の有無で決める。opus が Skill を呼ばずに自分で済ませると文言も出ないので、文言が無いだけでは合格にしない。haiku は一覧に無い名前でも呼ぶので、`--model opus` で流す。`PINEAPPLE-42` が返らないだけなら、model が mod の返した本文に従わなかっただけのことがある。そのときは Skill の呼び出しと結果を記録から写して報告する。
 - unnamed の経路で model が SKILL.md を Read して従うと、断られた後でも `PINEAPPLE-42` が出る。合否は禁止の文言で見る。
 - `--setting-sources project` を外すと、利用者が入れた skill-chain と checkout の skill-chain が両方 `tool.call` に掛かる。
 - 組織の管理 plugin（`cc-plugin-sec-default`）は `--setting-sources project` でも残る。それが前提の作りなので、外す手段を探さない（`mods/skill-chain/CLAUDE.md`）。

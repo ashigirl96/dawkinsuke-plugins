@@ -16,6 +16,10 @@
     {
       "name": "mermaid-render",
       "source": "./mods/mermaid-render"
+    },
+    {
+      "name": "skill-chain",
+      "source": "./mods/skill-chain"
     }
   ]
 }

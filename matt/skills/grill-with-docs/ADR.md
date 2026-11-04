@@ -7,7 +7,7 @@ own: []
 
 ## 合意の直後に、収まるかを agent が判断して次の段へ進む
 
-matt は grilling と domain-modeling で止め、spec と to-tickets に進むか、spec を書かずに同じ context で実装するかを、作業が複数の session にまたがるかでユーザーが決めて打つ。合意して結論が作るものなら、作業が新しい 1 つの context window に収まるかを根拠と一緒に agent が判断し、聞かずに次の段へ進むように変えた。収まらなければ `to-spec` と `to-tickets` の SKILL.md を順に読んで従う（どちらもユーザーしか呼べないので、Skill tool ではなく本文を読ませる）。ユーザーにはこの見積もりがつかず、毎回次の段を打つ手間も省くため。誤った判断は、to-tickets がユーザーに粒度を確かめる段で止まる。
+matt は grilling と domain-modeling で止め、spec と to-tickets に進むか、spec を書かずに同じ context で実装するかを、作業が複数の session にまたがるかでユーザーが決めて打つ。合意して結論が作るものなら、作業が新しい 1 つの context window に収まるかを根拠と一緒に agent が判断し、聞かずに次の段へ進むように変えた。収まらなければ Skill tool で `to-spec`、続けて `to-tickets` を呼ぶ（どちらも手動専用だが、mod の `skill-chain` が通す）。ユーザーにはこの見積もりがつかず、毎回次の段を打つ手間も省くため。誤った判断は、to-tickets がユーザーに粒度を確かめる段で止まる。
 
 ## 収まる作業は spec を経ずに Bench へ fork する
 

@@ -8,14 +8,23 @@ cd "$tmp/r"
 
 fail() { echo "FAIL: $1"; exit 1; }
 
+for n in figure-it-out show-me-your-work principle-encode-lessons-in-structure; do
+	echo "cursor-plugins/$n" >> upstream/exclude.txt
+done
+sh scripts/sync-skills.sh > /dev/null
+
 sh scripts/deps.sh cursor-plugins/figure-it-out > out
 head -1 out | grep -qxF 'figure-it-out  cursor-plugins  (excluded)' || fail "root not marked excluded"
 grep -qxF '├─ ../../docs/harness/claude-code.md' out || fail "pstack doc not listed relative to the skill"
-grep -qF '✗ ../<name>/SKILL.md  missing, from SKILL.md' out || fail "unresolved file not marked"
+grep -qF '../<name>/SKILL.md' out && fail "placeholder path listed"
 grep -qF '◇ show-me-your-work  (excluded)' out || fail "skill named in bold not listed"
 grep -qF '◇ principle-encode-lessons-in-structure  (excluded)' out || fail "principle skill named without its prefix not listed"
 grep -qF '◇ tdd  (excluded)' out || fail "same-name skill not taken from the caller's submodule"
 grep -qF 'mattpocock-skills' out && fail "pstack skill resolved into matt's skills"
+
+echo '[gone](../no-such-skill/SKILL.md)' >> upstream/cursor-plugins/harness/pstack/claude-code/skills/figure-it-out/SKILL.md
+sh scripts/deps.sh cursor-plugins/figure-it-out > out
+grep -qF '✗ ../no-such-skill/SKILL.md  missing, from SKILL.md' out || fail "unresolved file not marked"
 
 sh scripts/deps.sh mattpocock-skills/setup-matt-pocock-skills > out
 grep -qxF '│  └─↺ setup-matt-pocock-skills' out || fail "cycle back to the root not cut"

@@ -8,6 +8,9 @@ fork は matt と pstack のどちらのスキルにも作れる。このファ�
 |---|---|
 | `matt/skills` | `mattpocock-skills` |
 | `pstack/skills` | `cursor-plugins` |
+| `pstack/docs` | `cursor-plugins` |
+
+`pstack/docs` は、pstack のスキルが `../../docs/` で読む文書の置き場。`pstack/docs/<name>` は upstream の `harness/pstack/claude-code/docs/<name>` への symlink か、その fork で、スキルと同じ手順で fork する。今の fork は adapter の `harness`（`docs/adr/0001-pstack-adapter-fork.md`）。
 
 ## ADR.md が元データ
 

@@ -24,10 +24,14 @@ sh scripts/check-refs.sh > out || status=$?
 grep -qx "missing-file $setup: ../implement/SKILL.md" out || fail "missing sibling file not reported"
 grep -qx "missing-skill $setup: implement" out || fail "missing skill not reported"
 
-rm pstack/docs
+rm -r pstack/docs/harness
 sh scripts/check-refs.sh > out || true
 grep -qx "missing-file $verify: ../../docs/harness/claude-code.md" out || fail "missing pstack doc not reported"
 
+for n in figure-it-out principle-encode-lessons-in-structure show-me-your-work blast-radius arena poteto-mode why; do
+	echo "cursor-plugins/$n" >> upstream/exclude.txt
+done
+sh scripts/sync-skills.sh > /dev/null
 cp upstream/exclude.txt exclude.before
 sh scripts/try-include.sh cursor-plugins/figure-it-out > out 2> /dev/null || true
 cmp -s upstream/exclude.txt exclude.before || fail "try-include changed the checkout"
@@ -38,5 +42,9 @@ grep -qx "missing-skill $fio: show-me-your-work" out || fail "skill named in bol
 
 sh scripts/try-include.sh cursor-plugins/blast-radius > out 2> /dev/null || true
 grep -qx "missing-skill pstack/skills/blast-radius/SKILL.md: arena" out || fail "skill named in backticks not reported"
+
+sh scripts/try-include.sh cursor-plugins/poteto-mode cursor-plugins/why > out 2> /dev/null || true
+grep -q '<name>' out && fail "placeholder path was reported"
+grep -q ': url$' out && fail "placeholder link target was reported"
 
 echo ok

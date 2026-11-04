@@ -50,7 +50,7 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 
 ## 5. fork を 1 つずつ作り直す
 
-`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
+`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。pstack では `pstack/docs/*/ADR.md` の文書の fork も同じに扱う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
 
 1. **upstream の差分を読む。** 比べるパスは、fork の `upstream`、fork のファイルが名前で呼んでいるスキルの upstream のパス、fork が相対パスで読んでいる upstream の文書（pstack なら `../../docs/` や `../../README.md`）。名前で呼ぶとは、`Call the Skill tool with "grilling"` や「the `code-review` skill」のような書き方のこと。これらを並べて `git -C upstream/<submodule> diff <旧版> <新版> -- <パス...>` を流す。手順 3 でパスが移っていたら、旧と新の両方を渡す。差分が空なら、この fork は飛ばす。
 2. **衝突を探す。** `ADR.md` の `##` ごとに、upstream の差分が同じ振る舞いに触れているかを見る。決定が書き換えた箇所を upstream も書き換えた場合と、決定と逆の意図を持ち込んだ場合が衝突にあたる。呼んでいるスキルと読んでいる文書の変更も含める。
@@ -59,7 +59,7 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 	- upstream を優先する: その `##` を `ADR.md` から消す。
 	- 両方を取る: その `##` を新しい意図で書き直す。
 4. **作り直す。** `rsync -a --delete --exclude ADR.md --exclude FORK.diff --exclude <own のファイル>... upstream/<submodule>/<upstream のパス>/ <置き場>/<name>/` で upstream の中身に戻す。`own` のファイルは 1 つずつ `--exclude` に渡す。そのあと `writing-for-agents` スキルを使い、`ADR.md` の決定を上から順に当てる。前回から変わっていない決定は、前回の fork（`git show HEAD:<置き場>/<name>/<ファイル>`）と同じ文面で当てる。
-5. **決定が残っていなければ symlink に戻す。** `ADR.md` に `##` が 1 つもなければ、`rm -rf <置き場>/<name> && ln -s ../../upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流し、次の fork へ進む。
+5. **決定が残っていなければ symlink に戻す。** `ADR.md` に `##` が 1 つもなければ、`rm -rf <置き場>/<name>` を流し、`<置き場>/<name>` から `upstream/<submodule>/<upstream のパス>` への相対パスで `ln -s` を張り、次の fork へ進む。
 6. **確かめる。** `docs/fork.md` の「確かめ方」を行う。
 7. **日本語の差分を作る。** `docs/fork.md` の「日本語の差分を作る」を行う。
 

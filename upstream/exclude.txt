@@ -12,7 +12,6 @@ cursor-plugins/bro
 cursor-plugins/correct
 cursor-plugins/figure-it-out
 cursor-plugins/how
-cursor-plugins/in-your-own-words
 cursor-plugins/interrogate
 cursor-plugins/ketchup-video
 cursor-plugins/ketchup

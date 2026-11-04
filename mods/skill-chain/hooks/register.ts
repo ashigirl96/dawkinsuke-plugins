@@ -27,7 +27,15 @@ const withArgs = (body: string, args: string | undefined) =>
       ? `${body}\n\nARGUMENTS: ${args}`
       : body
 
+// The model otherwise reads a name absent from the skill listing as a guess and skips the call, so a chain never starts.
+const NAMED_SKILLS_RULE = ' A skill named in loaded skill instructions is callable even if unlisted.'
+
 export const register: Register = on => {
+  on('tool.describe', { tool: 'Skill' }, async (_, e, next) => {
+    const described = await next(e)
+    return { ...described, description: described.description + NAMED_SKILLS_RULE }
+  })
+
   on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
     // An organization's managed plugin may hide skill bodies from skill.prompt and session.append hooks; the transcript still holds them.
     const messages = await $.session.messages({ as: 'api', agentId: e.agentId })
@@ -41,7 +49,24 @@ export const register: Register = on => {
 
     // The engine writes this line first, so a later one (in arguments, say) is not the skill's own folder.
     const skillDirs = new Set(messages.flatMap(userTextsOf).flatMap(text => text.match(BASE_DIR)?.[1]?.trim() ?? []))
-    const skillsDirs = [...new Set([...skillDirs].map(parentDir))]
+    // A declared folder with `..` or an absolute path would reach outside the plugin, so it is skipped.
+    // A plugin may declare several skills folders, so a caller's sibling folders are searched too, but only when the plugin declares the caller's own folder.
+    const declaredSkillsDirs = async (skillsDir: string): Promise<string[]> => {
+      for (let root = parentDir(skillsDir); root; root = parentDir(root)) {
+        const manifest = `${root}/.claude-plugin/plugin.json`
+        if (!(await $.fs.exists(manifest))) continue
+        let declared: unknown
+        try {
+          declared = JSON.parse(await $.fs.read(manifest)).skills
+        } catch {
+          return [skillsDir]
+        }
+        const dirs = [`${root}/skills`, ...[declared ?? []].flat().filter((p): p is string => typeof p === 'string' && !p.startsWith('/') && !p.split('/').includes('..')).map(p => `${root}/${p.replace(/^\.\//, '').replace(/\/+$/, '')}`)]
+        return dirs.includes(skillsDir) ? dirs : [skillsDir]
+      }
+      return [skillsDir]
+    }
+    const skillsDirs = [...new Set((await Promise.all([...new Set([...skillDirs].map(parentDir))].map(declaredSkillsDirs))).flat())]
 
     const findSkill = async (name: string) => {
       for (const skillsDir of skillsDirs) {

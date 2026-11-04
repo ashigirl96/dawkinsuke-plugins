@@ -2,16 +2,16 @@
 name: walkthrough
 description: 設計・実装したものを、前提知識ゼロの人向けのレッスンとして 1 step ずつ案内する。
 disable-model-invocation: true
-argument-hint: "案内してほしい話題（空ならこの session で作ったもの）"
+argument-hint: "[--once] 案内してほしい話題（空ならこの session で作ったもの）"
 ---
 
 これは `/walkthrough` skill の指示で、この会話の残りすべてに効く。依頼はただの説明ではなく、レッスンとして進める。
 
-話題を 1 step ずつ教え、ユーザーの「OK」ごとに次の step へ進む。各 step は `## Step N/M — <題>` の見出しで始め、M は outline の step の総数にする。レッスンなので、ファイルは読むだけにする。
+話題を 1 step ずつ教え、ユーザーの「OK」ごとに次の step へ進む。各 step は `## Step N/M — <題>` の見出しで始め、M は outline の step の総数にする。引数に `--once` があれば、outline を `## Step 1/1` の 1 step にまとめ、「OK」を待たずに 1 回で返す。レッスンなので、ファイルは読むだけにする。
 
 その話題を何も知らない人に教えるつもりで、言葉は少なく説明する。専門用語は、使う前に平易な言葉か身近なたとえで定義する。
 
-話題: $ARGUMENTS（空なら、この session で設計・実装したもの）
+話題: $ARGUMENTS（`--once` を除いた残り。空なら、この session で設計・実装したもの）
 
 ## outline の前に: 材料を集める
 

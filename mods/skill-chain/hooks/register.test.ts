@@ -16,6 +16,10 @@ const FILES = new Map([
   [`${SKILLS}/selfish/SKILL.md`, skill('Run selfish again.', true)],
   [`${SKILLS}/hidden/SKILL.md`, skill('Hidden.', true)],
   ['/elsewhere/skills/evil/SKILL.md', skill('Evil.', true)],
+  ['/plugins/p/.claude-plugin/plugin.json', '{ "skills": ["./matt/skills", "./pstack/skills/"] }'],
+  ['/plugins/p/matt/skills/names-sibling/SKILL.md', skill('Then run sibling, then stray.')],
+  ['/plugins/p/pstack/skills/sibling/SKILL.md', skill('Sibling.', true)],
+  ['/plugins/p/undeclared/stray/SKILL.md', skill('Stray.', true)],
 ])
 
 const expanded = (name: string, rest = '') => `Base directory for this skill: ${SKILLS}/${name}\n\n${rest}`
@@ -97,4 +101,23 @@ test('arguments go into the body as written', async ($, on) => {
   const out = await $.tool.call({ tool: 'Skill', skill: 'callee', args: "$& $$ $'" })
 
   expect(out.context?.[0]).toContain("Say $& $$ $'.")
+})
+
+test('a disabled skill in another skills folder its plugin declares runs; an undeclared folder is not searched', async ($, on) => {
+  setup(on, 'Base directory for this skill: /plugins/p/matt/skills/names-sibling\n\n')
+
+  const out = await $.tool.call({ tool: 'Skill', skill: 'p:sibling' })
+
+  expect(out.deny).toBeUndefined()
+  expect(out.context?.[0]).toContain('Base directory for this skill: /plugins/p/pstack/skills/sibling')
+  expect((await $.tool.call({ tool: 'Skill', skill: 'stray' })).deny).toBe('engine refused')
+})
+
+test('the Skill tool description tells the model a named skill missing from the listing is callable', async ($, on) => {
+  on('tool.describe', (_, e) => ({ description: e.description }))
+
+  const out = await $.tool.describe({ tool: 'Skill', description: 'Run a skill.' })
+
+  expect(out.description).toStartWith('Run a skill.')
+  expect(out.description).toContain('callable even if unlisted')
 })

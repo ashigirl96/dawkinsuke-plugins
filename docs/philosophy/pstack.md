@@ -49,7 +49,7 @@
 
 解釈: `arena`・`interrogate`・`swarm`・Comment Sicko・Shipping の verifier に共通する設計の根っこ。作者の family の区切りは model 名の接頭辞で、`claude-*` は 1 つの family。
 
-この柱は Claude Code でも Cursor と同じように効く。ocx（opencodex。Claude Code の要求を GPT などの provider に振り分ける手元の proxy）が Agent ツールに `ocx-*` の `subagent_type` を足していれば、それが Claude と別の family になり、judge・panel・二つ目の意見に使える。どの model が使えるかは Agent ツールの一覧で見る。upstream の adapter（`docs/harness/claude-code.md`）は Claude 以外の slug を省いて session の model で走らせると書くので、family を分ける skill を入れるときは、その slug を `ocx-*` に読み替える指示を fork か上書きで足す。`ocx-*` が一覧に無い session では、judge が飛ばされ panel が同じ family の重複になる。
+この柱は Claude Code でも Cursor と同じように効く。ocx（opencodex。Claude Code の要求を GPT などの model に振り分ける手元の proxy）が Agent ツールに GPT へ振り分ける `subagent_type` を足していれば、それが Claude と別の model 系統になり、judge・panel・二つ目の意見に使える。upstream の adapter（`docs/harness/claude-code.md`）は Claude 以外の model を省いて session の model で走らせるが、この repo の adapter の fork（`pstack/docs/harness/`）は、grok の既定を `gpt-6.1-sol` に読み替え、description にその model の名前がある subagent で走らせる。そうした subagent が一覧に無い session では、judge が飛ばされ panel が同じ系統の重複になる。
 
 ### 人を待たないが、人の判断の領域は守る
 
@@ -108,7 +108,7 @@
 
 ### model に起動させない
 
-`setup-pstack` 以外のほぼすべての skill に `disable-model-invocation: true` が付いている。ユーザーが `/名前` で打つか、ほかの skill が SKILL.md を読んで従うかのどちらかでしか動かない。作者は「install しても skill を呼ぶまで何も変わらない」と書く。Claude Code では `Skill` tool がほとんどの pstack skill を拒むので、ほかの skill を動かすときは `Read` で SKILL.md を読んで従う。
+`setup-pstack` 以外のほぼすべての skill に `disable-model-invocation: true` が付いている。ユーザーが `/名前` で打つか、ほかの skill が SKILL.md を読んで従うかのどちらかでしか動かない。作者は「install しても skill を呼ぶまで何も変わらない」と書く。upstream の adapter は、Claude Code の `Skill` tool がほとんどの pstack skill を拒むとして `Read` で SKILL.md を読ませる。この repo では mod の `skill-chain` が通すので、adapter の fork で Skill tool で呼ばせている。
 
 解釈: 勝手に重い多 model の流れが走ると token を大きく使うことと、playbook が持つ順番を model やユーザーに並べ替えさせないことの両方への配慮。guide は「prompt で skill を列挙すると playbook の手順が崩れる」と書く。
 
@@ -133,7 +133,7 @@ playbook に合わない大きな作業は `figure-it-out`（その作業専用�
 
 ### setup が役割ごとの model を決める
 
-`setup-pstack` は役割（実装、判断と文章、各 skill の runner や judge）ごとの model を書いた rule file を作り、各 skill はそれを読んで subagent の model を選ぶ。既定では code 系と判断・文章系に別の family を割り当てる。rule がなくても既定の model に落ちる。adapter は Claude Code で Claude 以外の model を省き、session の model で動かす。ocx で読み替える道は「書いた者と判定する者を分け、別の model に見せる」の節にある。
+`setup-pstack` は役割（実装、判断と文章、各 skill の runner や judge）ごとの model を書いた rule file を作り、各 skill はそれを読んで subagent の model を選ぶ。既定では code 系と判断・文章系に別の model 系統を割り当てる。rule がなくても既定の model に落ちる。upstream の adapter は Claude Code で Claude 以外の model を省き、session の model で動かす。この repo での読み替えは「書いた者と判定する者を分け、別の model に見せる」の節にある。
 
 ### project 専用の skill を生成する
 
@@ -145,9 +145,9 @@ playbook に合わない大きな作業は `figure-it-out`（その作業専用�
 
 思想と切り離して、Cursor と作者のチームの流儀が skill に入り込んでいる所。Claude Code では読み替えるか skip する。
 
-- **Cursor の機能。** SKILL.md の冒頭に「Claude Code ではまず adapter（`docs/harness/claude-code.md`）を読め」とあり、`Task` を `Agent` に読み替えるなどの対応表を持つ。Custom Mode・`/loop`・cloud agents・Projects・Cursor 組み込みの `create-skill` には対応行がなく、それに頼る playbook（Autonomous run、Babysit、Shipping、Autopilot、Orchestrate）は Claude Code では成り立ちにくい。
-- **別の plugin。** `cursor-team-kit` の `deslop`（commit 前に必ず呼ぶ掃除）と `control-ui` / `control-cli`（実地検証の手段）を前提にし、pstack には同梱されていない。
-- **複数の model family。** 上の「別の model に見せる」柱の前提。Claude Code では ocx の `ocx-*` subagent に読み替える（同じ節）。
+- **Cursor の機能。** SKILL.md の冒頭に「Claude Code ではまず adapter（`docs/harness/claude-code.md`）を読め」とあり、`Task` を `Agent` に読み替えるなどの対応表を持つ。Custom Mode・cloud agents・Projects には対応行がなく、それに頼る playbook（Autonomous run、Babysit、Shipping、Autopilot、Orchestrate）は Claude Code では成り立ちにくい。`/loop` と `create-skill` は、adapter の fork で Claude Code の `/loop` と `writing-for-agents` に読み替える。
+- **別の plugin。** `cursor-team-kit` の `deslop`（commit 前に必ず呼ぶ掃除）と `control-ui` / `control-cli`（実地検証の手段）を前提にし、pstack には同梱されていない。adapter の fork で、`deslop` を `simplify`、`control-ui` を `agent-browser`、`control-cli` を `run` に読み替える。
+- **複数の model 系統。** 上の「別の model に見せる」柱の前提。Claude Code では adapter の fork で GPT に振り分ける subagent に読み替える（同じ節）。
 - **夜に任せて朝に監査する流れ。** "going to bed"、"/loop until done"、決定記録の朝の確認。
 - **stack した小さな PR を下から順に land する流れ。** GitHub か Origin（作者の側の forge の CLI）を使う。
 - **チームで skill を共有する前提。** 「skill の変更は org の未来の agent 全員に効く」。team の devex tracker に backlog を起票する。

@@ -1,0 +1,47 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/claude-code.md pstack/docs/harness/claude-code.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/claude-code.md
++++ pstack/docs/harness/claude-code.md
+@@ -9,15 +9,20 @@
+ | `Task` | `Agent` |
+ | `AskQuestion` | `AskUserQuestion`。`-p` モードでは無いので、普通の文章で尋ねる。 |
+ | todolist を開く | session が `TodoWrite` を備えていれば使う。無ければ返答の中にリストを持ち、各段階で更新する。 |
+-| 別の pstack スキルを動かす（`/name` や「**name** スキル」） | `<pstack>/skills/<name>/SKILL.md` を `Read` して従う。`Skill` tool はほとんどの pstack スキルを拒む。ユーザーに打つよう伝えるときは `/pstack:<name>` と書く。 |
++| 別の pstack スキルを動かす（`/name` や「**name** スキル」） | `Skill` tool を `dawkinsuke:<name>` で呼ぶ。ユーザーに打つよう伝えるときは `/dawkinsuke:<name>` と書く。 |
+ | `Grep`, `Glob` | session に `Grep` も `Glob` も無いときは、`Bash` で `rg` を使う。 |
++| `cursor-team-kit` の `deslop` | `simplify` スキル。 |
++| `cursor-team-kit` の `control-ui` | `agent-browser` スキル。 |
++| `cursor-team-kit` の `control-cli` | `run` スキル。 |
++| Cursor 組み込みの `create-skill` | `writing-for-agents` スキル。 |
++| Cursor の `/loop` | Claude Code の `/loop`。 |
+ 
+ ## subagent のフィールド
+ 
+ | Cursor | Claude Code |
+ | --- | --- |
+ | `subagent_type: generalPurpose` | `subagent_type: "general-purpose"` |
+-| `poteto-agent`, `comment-sicko` | `pstack:poteto-agent`, `pstack:comment-sicko` |
++| `poteto-agent`, `comment-sicko` | `dawkinsuke:poteto-agent`, `dawkinsuke:comment-sicko` |
+ | `readonly: true` | `subagent_type: "Explore"`。`Bash` は残るので、指示にも「ファイルを編集しない」と書き、あとで `git status` を確かめる。 |
+ | `readonly: false` | `general-purpose`。session の MCP server を引き継ぐ。 |
+ | `environment: "cloud"` | `isolation: "worktree"`。worker が checkout する branch か commit を名指しする。 |
+@@ -32,7 +37,8 @@
+ | Cursor | Claude Code |
+ | --- | --- |
+ | `claude-<family>-<version>-<effort>[-fast]`（例 `claude-opus-5-5-xhigh`） | `model: "opus"` と `effort: "xhigh"`。`model` が取るのは `opus`、`sonnet`、`haiku`、`fable` だけ。`-fast` は落とす。 |
+-| `grok-*`、`gpt-*`、その他 Claude 以外の slug | `model` を省いて agent を session のモデルで動かし、そのことを伝える。 |
++| `grok-*`、`cursor-grok-*`、`composer-*` の slug | `gpt-6.1-sol` にし、次の行で対応させる。系統の判定より先に対応させるので、系統は `gpt-*` になる。 |
++| `gpt-*` やその他 Claude 以外のモデル（例 `gpt-6.1-sol`） | `general-purpose` や `Explore` の代わりに、説明にそのモデルへ委ねると書いた `Agent` の subagent type を `subagent_type` に渡す。その subagent は `model` を無視するので省く。`readonly: true` なら、指示に「ファイルを編集しない」と書く。そのモデルを名指しする subagent type が無ければ、`model` を省いて agent を session のモデルで動かし、そのことを伝える。モデルの系統は名前の頭の部分なので、`gpt-*` は `claude-*` とは別の系統になる。 |
+ | `auto` か `inherit-parent` | `model` を省く。 |
+ | `pstack-models.mdc` のルール、`~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`。Claude Code は新しい session のたびにこれを読み込むので、役割の行はすでに文脈にある。無ければファイルを読む。ファイルかその役割の行が無ければ、スキルの既定の slug を使う。 |
+ | 役割の値 `<model> <effort>`（例 `opus high`） | `model: "opus"` と `effort: "high"`。 |
+@@ -41,8 +47,8 @@
+ 
+ Claude Code は `~/.claude/rules/` のすべての `.md` ファイルを新しい session のたびに読み込むので、`setup-pstack` はそこにルールを書く。その手順に次の変更を加えて従う。
+ 
+-- 検出。検出するモデルは、`Agent` tool の schema が並べる `model` の値で、それぞれに `effort` の値から effort を付ける。実在のモデルは `<model> <effort>` と書く（例 `opus xhigh`）。effort は最後の語なので、予算の手順は書かれたとおりに動く。
+-- 既定。既定の slug をそれぞれ上の行で対応させる。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `inherit-parent` になる。
++- 検出。検出するモデルは、`Agent` tool の schema が並べる `model` の値で、それぞれに `effort` の値から effort を付ける。実在のモデルは `<model> <effort>` と書く（例 `opus xhigh`）。effort は最後の語なので、予算の手順は書かれたとおりに動く。`Agent` の subagent type の説明がそのモデルへ委ねると書いているモデルもそれぞれ検出し、effort を付けずに名前だけで書く（例 `gpt-6.1-sol`）。予算の手順はそれをそのまま残す。
++- 既定。既定の slug をそれぞれ上の行で対応させる。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `gpt-6.1-sol` になる。
+ - 書き込み。`~/.claude/rules/pstack-models.md` を frontmatter なしで書き、続けてコメント行、`# budget` 行、手順 5 の役割ごとに 1 行を書く。ファイル全体を上書きする。役割の行は決して `CLAUDE.md` や `AGENTS.md` に入れない。
+ 
+ ## パス

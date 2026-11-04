@@ -8,10 +8,10 @@ disable-model-invocation: true
 
 ## 1. 対象を決める
 
-ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` と `pstack/skills/<name>` のうちあるほうを見る。見つかった側で、`docs/fork.md` の表から `<置き場>` と `<submodule>` を決める。
+ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` と `pstack/skills/<name>` のうちあるほうを見る。pstack の文書（`pstack/docs/<name>`）を変えたいときは、そこを見る。見つかった側で、`docs/fork.md` の表から `<置き場>` と `<submodule>` を決める。
 
 - symlink なら fork にする。
-	1. `readlink <置き場>/<name>` の `../../upstream/<submodule>/` より後ろを、upstream のパスとする。
+	1. `readlink <置き場>/<name>` の `upstream/<submodule>/` より後ろを、upstream のパスとする。
 	2. `rm <置き場>/<name> && cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
 	3. `<置き場>/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
@@ -43,7 +43,7 @@ disable-model-invocation: true
 
 完了条件: 「確かめ方」の完了条件を満たし、`sh scripts/check-refs.sh` が exit 0 で終わる。
 
-`ADR.md` に決定が 1 つも残っていなければ、fork をやめ、手順 6 へ進む。symlink から fork にしたものは `rm -rf <置き場>/<name> && ln -s ../../upstream/<submodule>/<upstream のパス> <置き場>/<name>` で symlink に戻す。除外中から fork にしたものは `rm -rf <置き場>/<name>` で消し、手順 1 で消した行を `upstream/exclude.txt` に戻す。
+`ADR.md` に決定が 1 つも残っていなければ、fork をやめ、手順 6 へ進む。symlink から fork にしたものは、`rm -rf <置き場>/<name>` のあと、手順 1 で読んだ `readlink` の値のまま `ln -s` で symlink に戻す。除外中から fork にしたものは `rm -rf <置き場>/<name>` で消し、手順 1 で消した行を `upstream/exclude.txt` に戻す。
 
 ## 5. 日本語の差分を作る
 

@@ -23,7 +23,7 @@ matt は seam の一覧だけを確認させる。どの seam が何を捉える
 
 ## frontmatter
 
-- `upstream`: submodule の中の、元のスキルのパス。pstack なら `harness/pstack/claude-code/skills/<name>` の形になる。
+- `upstream`: submodule の中の、元のスキルのパス。pstack なら `harness/pstack/claude-code/skills/<name>` の形になり、文書の fork なら `harness/pstack/claude-code/docs/<name>` の形になる。
 - `own`: fork で足したファイルの一覧。足したファイルがなければ `own: []` と書く。
 
 ## 決定 1 つの書き方

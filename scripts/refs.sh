@@ -12,9 +12,10 @@ prose() {
 }
 
 file_refs() {
-	prose "$1" | grep -oE '\]\([^)]+\)' | sed 's/^](//; s/)$//; s/ .*//; s/#.*//' | grep -vE '^$|^[a-z]+:|^/|^<' || true
+	# `<name>` を含む path と `url` は、本文の書式見本なので数えない。
+	prose "$1" | grep -oE '\]\([^)]+\)' | sed 's/^](//; s/)$//; s/ .*//; s/#.*//' | grep -vE '^$|^[a-z]+:|^/|<|^url$' || true
 	# `./` で始まる path は作業ディレクトリを指すので、隣のスキルへの `../` だけを見る。
-	prose "$1" | grep -oE '`\.\./[^` ]+`' | tr -d '`' || true
+	prose "$1" | grep -oE '`\.\./[^` ]+`' | tr -d '`' | grep -v '<' || true
 }
 
 skill_refs() {

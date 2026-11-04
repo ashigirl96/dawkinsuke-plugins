@@ -9,10 +9,11 @@ fork が手動専用のスキルを呼ぶ書き方（ルートの CLAUDE.md の�
 `claude plugin test` の engine には組織の管理 plugin がいないので、次のことは単体テストが通っても崩れる。直すときは、ここに沿っているかを実機で確かめる。
 
 - スキルの本文は、`tool.call` の中で `$.session.messages` を読んで得る。組織の管理 plugin `cc-plugin-sec-default` が、利用者側の `skill.prompt` と `session.append` の hook を飛ばすので、そこではスキルの本文を受け取れない。
-- mod が返した本文（`tool.call` の答えの `context`）は model に届くが、`$.session.messages` には入らない。連鎖の 2 段目以降は、会話に残った成功した Skill の `tool_use` からスキル名を拾い、その SKILL.md をディスクから読み直す。
+- mod が返した本文（`tool.call` の答えの `context`）は model に届くが、`$.session.messages` には入らない。連鎖の 2 段目以降は、会話に残った Skill の `tool_use` のうち成功の `tool_result` がそろったものからスキル名を拾い、その SKILL.md をディスクから読み直す。
 - `$.skill.prompt` はテストの `$` にはあるが、mod の `$` には無い。
-- 名指しの根拠は、role が user の text block の中の「Base directory for this skill:」の行で始まる本文に限る。`tool_result` はファイルやコマンドの出力で、スキル本文を装える。
-- 呼ばれるスキル自身の本文と、失敗した Skill の呼び出しは根拠から外す。入れると、一度断られたスキルが自分の本文を根拠に通る。
+- 置き場所は、role が user の text block で最初に出てくる「Base directory for this skill:」の行からだけ取る。`tool_result` はファイルやコマンドの出力で、後ろの行は呼び出しの引数で、どちらもスキル本文を装える。
+- 名指しは、会話の文ではなくディスクの SKILL.md の本文で判定する。展開された文には引数が付く。
+- 呼ばれるスキル自身の本文と、成功の結果がない Skill の呼び出し（失敗したもの、同じ返答で並べてまだ結果がないもの）は根拠から外す。入れると、断られる途中のスキルが根拠になる。
 
 ## 確かめ方
 

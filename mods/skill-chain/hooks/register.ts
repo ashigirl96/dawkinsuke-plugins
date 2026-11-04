@@ -1,9 +1,9 @@
 import type { ApiMessage, Register } from 'claude-code'
 
 type Block = { type?: string; text?: unknown; id?: string; tool_use_id?: string; name?: string; input?: { skill?: unknown }; is_error?: boolean }
-type Skill = { name: string; dir: string; text: string }
+type Skill = { name: string; text: string }
 
-const BASE_DIR = /^Base directory for this skill: (.+)$/gm
+const BASE_DIR = /^Base directory for this skill: (.+)$/m
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/
 const DISABLED = /^disable-model-invocation:\s*true\s*$/m
 
@@ -22,7 +22,7 @@ const userTextsOf = (m: ApiMessage): string[] =>
 
 const withArgs = (body: string, args: string | undefined) =>
   body.includes('$ARGUMENTS')
-    ? body.replaceAll('$ARGUMENTS', args ?? '')
+    ? body.replaceAll('$ARGUMENTS', () => args ?? '')
     : args
       ? `${body}\n\nARGUMENTS: ${args}`
       : body
@@ -39,10 +39,9 @@ export const register: Register = on => {
       return { body: frontmatter ? file.slice(frontmatter[0].length) : file, isDisabled: !!frontmatter?.[1] && DISABLED.test(frontmatter[1]) }
     }
 
-    const expanded: Skill[] = messages
-      .flatMap(userTextsOf)
-      .flatMap(text => [...text.matchAll(BASE_DIR)].map(([, dir]) => ({ name: baseName(dir!.trim()), dir: dir!.trim(), text })))
-    const skillsDirs = [...new Set(expanded.map(s => parentDir(s.dir)))]
+    // The engine writes this line first, so a later one (in arguments, say) is not the skill's own folder.
+    const skillDirs = new Set(messages.flatMap(userTextsOf).flatMap(text => text.match(BASE_DIR)?.[1]?.trim() ?? []))
+    const skillsDirs = [...new Set([...skillDirs].map(parentDir))]
 
     const findSkill = async (name: string) => {
       for (const skillsDir of skillsDirs) {
@@ -51,24 +50,31 @@ export const register: Register = on => {
       }
     }
 
-    // A body this hook answered with reaches the model as context, which the transcript does not hold: read it again from the skill's file.
+    // A body this hook answered with reaches the model as context, which the transcript does not hold: find its skill from the Skill call.
     const blocks = messages.flatMap((m: ApiMessage) => blocksOf(m.content))
-    const failed = new Set(blocks.filter(b => b.type === 'tool_result' && b.is_error).map(b => b.tool_use_id))
+    const succeeded = new Set(blocks.filter(b => b.type === 'tool_result' && !b.is_error).map(b => b.tool_use_id))
     const launched = blocks.flatMap(b =>
-      b.type === 'tool_use' && b.name === 'Skill' && typeof b.input?.skill === 'string' && b.id !== e.tool_use_id && !failed.has(b.id)
+      b.type === 'tool_use' && b.name === 'Skill' && typeof b.input?.skill === 'string' && succeeded.has(b.id)
         ? [bareName(b.input.skill)]
         : [],
     )
     for (const name of new Set(launched.filter(isPlainName))) {
       const path = await findSkill(name)
-      if (path) expanded.push({ name, dir: parentDir(path), text: (await readSkill(path)).body })
+      if (path) skillDirs.add(parentDir(path))
+    }
+
+    // Callers are judged by their SKILL.md, not the transcript, whose expanded text carries the call's arguments.
+    const callers: Skill[] = []
+    for (const dir of skillDirs) {
+      const path = `${dir}/SKILL.md`
+      if (await $.fs.exists(path)) callers.push({ name: baseName(dir), text: (await readSkill(path)).body })
     }
 
     // shortcut: a `plugin:` prefix is dropped, so the first skills folder holding the name wins; check the plugin if two plugins share a skill name.
     const name = bareName(e.skill)
     if (!isPlainName(name)) return next(e)
     const word = new RegExp(`(^|[^\\w-])${name}([^\\w-]|$)`)
-    if (!expanded.some(s => s.name !== name && word.test(s.text))) return next(e)
+    if (!callers.some(s => s.name !== name && word.test(s.text))) return next(e)
 
     const path = await findSkill(name)
     if (!path) return next(e)

@@ -32,15 +32,16 @@ skill-chain は手動専用のスキルを一覧に戻さないので、context 
 
 hook は `tool.call` の `Skill` に 1 つだけ。mod は状態を持たず、呼び出しのたびに `$.session.messages` でその会話（subagent ならその subagent の会話）を読み直す。読み直しても subagent に入っても、同じ答えになる。
 
-1. **呼び出し元のスキルの候補**として、会話で展開済みのスキルを集める。
-   - role が user の text block のうち、「Base directory for this skill: <dir>」の行を持つもの。engine がスキルを展開した本文は、この形で会話に入る。
-   - 会話に残った成功した Skill の `tool_use`。この mod が返した手動専用のスキルの本文は会話の履歴に入らないので、スキル名から SKILL.md を読み直して本文とする。これで手動専用のスキルが次の呼び出し元のスキルになれる。
+1. **呼び出し元のスキルの候補**として、会話で展開済みのスキルの置き場所を集める。
+   - role が user の text block で、最初に出てくる「Base directory for this skill: <dir>」の行。engine はスキルを展開した本文の頭にこの行を書く。後ろの行は引数かもしれないので数えない。
+   - 会話に残った Skill の `tool_use` のうち、成功の `tool_result` がそろったもの。この mod が返した手動専用のスキルの本文は会話の履歴に入らないので、スキル名から置き場所を引く。これで手動専用のスキルが次の呼び出し元のスキルになれる。
+   - 候補の本文は、会話の文ではなくディスクの SKILL.md から読む。展開された文には呼び出しの引数が付くので、引数で名指しを偽れないようにする。
 2. **置き場所の候補**は、1 の `<dir>` の親ディレクトリ。呼ばれたスキルの SKILL.md は、ここからしか探さない。
 3. 次のすべてを満たしたときだけ答える。
    - 呼ばれた名前が英数字・`_`・`-` だけでできている（置き場所の外へ出ない）。
-   - 呼ばれたスキル自身を除く候補のどれかが、その名前を単語として含む。それが呼び出し元のスキルになる。
+   - 呼ばれたスキル自身を除く候補のどれかの SKILL.md の本文が、その名前を単語として含む。それが呼び出し元のスキルになる。
    - 候補の置き場所に SKILL.md があり、前書きが `disable-model-invocation: true`。つまり手動専用のスキルである。
-4. 答えは `{ result: { success: true, commandName }, context: [手動専用のスキルの本文] }`。本文の先頭には engine と同じ「Base directory for this skill:」の行を付け、`$ARGUMENTS` を置き換える。
+4. 答えは `{ result: { success: true, commandName }, context: [手動専用のスキルの本文] }`。本文の先頭には engine と同じ「Base directory for this skill:」の行を付け、`$ARGUMENTS` を引数の文字どおりに置き換える。
 
 どこかで条件を外れたら `next(e)` に渡し、engine が決める。hook が throw したときも engine に戻るので、迷ったときはいつも今までどおり断られる側に倒れる。
 

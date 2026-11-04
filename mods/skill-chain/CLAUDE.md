@@ -29,7 +29,7 @@ sh $L -p mods/skill-chain/fixture '!deep' 'Use the Skill tool to run the chainfi
 sh $L -p . in-your-own-words '/dawkinsuke:grilling 社内 wiki に全文検索を足したい'
 ```
 
-- 合否は、期待したスキルが Skill tool で呼ばれたことと、断られたかどうかで決める。opus が Skill を呼ばずに自分で済ませると断りの文言も出ないので、文言が無いだけでは通ったことにしない。`PINEAPPLE-42` が返らないだけなら model の判断の揺れで、mod の失敗ではない。
+- 合否は、期待したスキルの Skill tool の呼び出しに、エラーでない結果が返ったか（`!name` なら断られたか）で決める。opus が Skill を呼ばずに自分で済ませると断りの文言も出ないので、文言が無いだけでは通ったことにしない。`PINEAPPLE-42` が返らないだけなら model の判断の揺れで、mod の失敗ではない。
 - 最後の行は、`fixture/` の 1 つの置き場所では通らない経路（`matt/skills` の `grilling` から `pstack/skills` の `in-your-own-words`）を見る。
 - 終わりの手順が後ろのターンにあるスキルは、プロンプトを続けて渡すと同じ session で次のターンを流す。`ends=` に `error_max_turns` が出たら、期待の場面まで届いていないので `-t` を上げる。
 - 判定そのものは `sh mods/skill-chain/fixture/live.test.sh` で、model を呼ばずに確かめられる。

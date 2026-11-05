@@ -4,8 +4,8 @@ import { type Item, NAME, PREFIX, registerSteps, storeStep } from './steps'
 
 type Model = { id: string; hidden: boolean; description: string; supportedReasoningEfforts: { reasoningEffort: string }[] }
 type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
-// turnId is set only while a turn runs.
-type Run = { agentId: string; name?: string; type: string; description: string; outputFile: string; output: string; worktree?: string; threadId?: string; turnId?: string }
+// turnId is set only while a turn runs; ready settles once the first turn has started or failed.
+type Run = { agentId: string; name?: string; type: string; description: string; outputFile: string; output: string; worktree?: string; threadId?: string; turnId?: string; ready?: Promise<void> }
 type Turn = { status: 'completed' | 'interrupted' | 'failed'; items: { type: string; text?: string }[]; error: { message: string } | null }
 type CodexMessage = { id?: number | string; method?: string; params?: { threadId?: string; turn?: Turn; item?: Item } }
 
@@ -145,10 +145,19 @@ async function pump($: EngineInterface) {
   }
 }
 
+const STARTING = 'starting'
+
 // The effort given to a turn holds for the thread's later turns too.
+// Marked before the request because the shared poller can hand out the turn's events, even turn/completed, before codex answers it.
 async function startTurn($: EngineInterface, run: Run, text: string, effort?: string) {
-  const { turn } = await rpc($, 'turn/start', { threadId: run.threadId, input: textInput(text), effort })
-  run.turnId = turn.id
+  run.turnId = STARTING
+  try {
+    const { turn } = await rpc($, 'turn/start', { threadId: run.threadId, input: textInput(text), effort })
+    if (run.turnId === STARTING) run.turnId = turn.id
+  } catch (error) {
+    run.turnId = undefined
+    throw error
+  }
 }
 
 async function addWorktree($: EngineInterface, run: Run) {
@@ -172,13 +181,10 @@ async function launch($: EngineInterface, { run, model, prompt, effort, isWorktr
       ephemeral: false,
     })
     run.threadId = thread.id
-    for (const key of [run.agentId, run.name]) if (key) runOfKey.set(key, run)
     await startTurn($, run, prompt, effort)
   } catch (error) {
     await deliver($, run, { error: messageOf(error) })
-    return
   }
-  await pump($)
 }
 
 // Claude Code knows no agent by a codex subagent's id or name, so passing a failed call on would only say there is none.
@@ -218,7 +224,10 @@ export const register: Register = on => {
     const agentId = `codex-${crypto.randomUUID()}`
     const outputFile = `${socket.slice(0, socket.lastIndexOf('/'))}/${agentId}.txt`
     const run: Run = { agentId, name: e.name, type, description: e.description, outputFile, output: '' }
-    void launch($, { run, model, prompt: e.prompt, effort: codexEffort(model, e.effort), isWorktree: e.isolation === 'worktree' })
+    // Listed before returning, so a SendMessage or TaskStop right after this call waits for the launch instead of going to Claude Code.
+    for (const key of [agentId, e.name]) if (key) runOfKey.set(key, run)
+    run.ready = launch($, { run, model, prompt: e.prompt, effort: codexEffort(model, e.effort), isWorktree: e.isolation === 'worktree' })
+    void run.ready.then(() => pump($))
     return {
       result: { status: 'async_launched', isAsync: true, agentId, description: e.description, prompt: e.prompt, outputFile, resolvedModel: model.id },
     }
@@ -231,6 +240,8 @@ export const register: Register = on => {
     const to = recipientOf(e)
     const run = to ? runOfKey.get(to) : undefined
     if (!run) return next(e)
+    await run.ready
+    if (!run.threadId) return { deny: `${run.agentId} failed to start, so it cannot take messages.` }
     if (run.turnId) {
       await rpc($, 'turn/steer', { threadId: run.threadId, expectedTurnId: run.turnId, input: textInput(e.message) })
       return { result: { success: true, message: `Message added to the running turn of ${run.agentId}.` } }
@@ -244,6 +255,7 @@ export const register: Register = on => {
     const id = taskOf(e)
     const run = id ? runOfKey.get(id) : undefined
     if (!run) return next(e)
+    await run.ready
     if (!run.turnId) return { deny: `Task ${run.agentId} is not running.` }
     await rpc($, 'turn/interrupt', { threadId: run.threadId, turnId: run.turnId })
     const result = { message: `Successfully stopped task: ${run.agentId} (${run.description})`, task_id: run.agentId, task_type: 'local_agent', command: run.description }

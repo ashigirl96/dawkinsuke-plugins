@@ -10,13 +10,15 @@ const MODELS = [
   { id: 'gpt-secret', hidden: true, description: 'Hidden.', supportedReasoningEfforts: [] },
 ]
 
-const relay = (on: On, { answers = {}, events = [] }: { answers?: Record<string, unknown>; events?: unknown[][] } = {}) => {
+type Answer = unknown | ((params: Record<string, unknown>) => unknown)
+
+const relay = (on: On, { answers = {}, events = [] }: { answers?: Record<string, Answer>; events?: unknown[][] } = {}) => {
   const requests: Rpc[] = []
   on('process.spawn', async function* () {
     yield { stream: 'stdout' as const, text: '{"socket":"/tmp/codex-subagent-x/relay.sock"}\n' }
     return { value: { code: 0, signal: null } }
   })
-  on('http.fetch', (_, e) => {
+  on('http.fetch', async (_, e) => {
     const path = new URL(e.url).pathname
     const body = e.init?.body ? JSON.parse(e.init.body) : undefined
     const respond = (value: unknown) => ({ value: { status: 200, ok: true, headers: {}, text: JSON.stringify(value) } })
@@ -24,7 +26,8 @@ const relay = (on: On, { answers = {}, events = [] }: { answers?: Record<string,
     if (path !== '/rpc') return respond({})
     requests.push(body)
     const defaults: Record<string, unknown> = { 'model/list': { data: MODELS, nextCursor: null }, 'turn/start': { turn: { id: 'u1' } } }
-    const answer = answers[body.method] ?? { result: defaults[body.method] ?? {} }
+    const given = answers[body.method]
+    const answer = (typeof given === 'function' ? await given(body.params) : given) ?? { result: defaults[body.method] ?? {} }
     return respond({ id: 1, ...(answer as object) })
   })
   return requests
@@ -430,11 +433,17 @@ test('an Agent row of another type is drawn as the engine draws it', async ($, o
 const heldEvents = (on: On) => {
   const queue: unknown[] = []
   let release = () => {}
+  let taken = () => {}
   on('http.fetch', { url: 'http://relay/events' }, async () => {
     while (!queue.length) await new Promise<void>(resolve => (release = resolve))
-    return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ events: queue.splice(0) }) } }
+    const events = queue.splice(0)
+    taken()
+    return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ events }) } }
   })
-  return (...events: unknown[]) => (queue.push(...events), release())
+  const push = (...events: unknown[]) => (queue.push(...events), release())
+  // Resolves once the poller has fetched what push queued.
+  const pushTaken = (...events: unknown[]) => new Promise<void>(resolve => ((taken = resolve), push(...events)))
+  return Object.assign(push, { pushTaken })
 }
 
 const answers = (texts: string[]) => texts.map(text => text.match(/<codex-output>\n([\s\S]*)\n<\/codex-output>$/)?.[1])
@@ -509,6 +518,48 @@ test('a TaskStop of a running codex subagent interrupts its turn and delivers no
   expect(result).toMatchObject({ task_type: 'local_agent', command: 'd' })
   expect(requests.find(r => r.method === 'turn/interrupt')?.params).toEqual({ threadId: 't1', turnId: 'u1' })
   expect(texts).toEqual([])
+})
+
+test('a TaskStop sent right after the Agent call still reaches codex', async ($, on) => {
+  const clock = mock.clock(on)
+  heldEvents(on)
+  const requests = relay(on, { answers: { 'thread/start': THREAD } })
+  on('tool.call', { tool: 'TaskStop' }, () => ({ result: 'engine' }))
+  await start($, on)
+
+  const { result: launched } = await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  const { result } = await $.tool.call({ tool: 'TaskStop', task_id: (launched as { agentId: string }).agentId })
+  await clock.settle()
+
+  expect(result).not.toBe('engine')
+  expect(requests.find(r => r.method === 'turn/interrupt')?.params).toEqual({ threadId: 't1', turnId: 'u1' })
+})
+
+test('a turn that completes before codex answers its turn/start still delivers', async ($, on) => {
+  const clock = mock.clock(on)
+  const { pushTaken } = heldEvents(on)
+  let threads = 0
+  relay(on, {
+    answers: {
+      'thread/start': () => ({ result: { thread: { id: `t${++threads}` } } }),
+      'turn/start': async (params: Record<string, unknown>) => {
+        if (params.threadId === 't2') {
+          const items = [{ type: 'agentMessage', text: 'fast' }]
+          await pushTaken({ method: 'turn/completed', params: { threadId: 't2', turn: { id: 'u2', status: 'completed', items, error: null } } })
+        }
+        return { result: { turn: { id: params.threadId === 't2' ? 'u2' : 'u1' } } }
+      },
+    },
+  })
+  const texts = delivered(on)
+  await start($, on)
+
+  await $.tool.call({ tool: 'Agent', description: 'slow', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+  await $.tool.call({ tool: 'Agent', description: 'fast', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+
+  expect(answers(texts)).toEqual(['fast'])
 })
 
 test('a TaskStop of anything else goes on to Claude Code', async ($, on) => {

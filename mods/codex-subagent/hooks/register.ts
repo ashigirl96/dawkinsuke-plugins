@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 import { type Item, record, registerSteps } from './steps'
 
 type Model = { id: string; hidden: boolean; description: string }
-type Run = { agentId: string; type: string; description: string; outputFile: string }
+type Run = { agentId: string; name?: string; type: string; description: string; outputFile: string }
 type Turn = { status: 'completed' | 'interrupted' | 'failed'; items: { type: string; text?: string }[]; error: { message: string } | null }
 type CodexMessage = { id?: number | string; method?: string; params?: { threadId?: string; turn?: Turn; item?: Item } }
 
@@ -12,6 +12,9 @@ const PREFIX = 'codex-subagent:'
 let socket: string | undefined
 const modelOfType = new Map<string, string>()
 const runOfThread = new Map<string, Run>()
+const turnOfThread = new Map<string, string>()
+// Keyed by agentId and by the Agent call's name, and kept after the run ends so SendMessage can continue it.
+const agentOfKey = new Map<string, { threadId: string; run: Run }>()
 let isPumping = false
 
 async function relay($: EngineInterface, path: string, body?: unknown) {
@@ -106,6 +109,12 @@ async function pump($: EngineInterface) {
   }
 }
 
+async function startTurn($: EngineInterface, threadId: string, run: Run, text: string) {
+  const { turn } = await rpc($, 'turn/start', { threadId, input: [{ type: 'text', text, text_elements: [] }] })
+  runOfThread.set(threadId, run)
+  turnOfThread.set(threadId, turn.id)
+}
+
 async function launch($: EngineInterface, run: Run, model: string, prompt: string) {
   try {
     const { thread } = await rpc($, 'thread/start', {
@@ -116,13 +125,19 @@ async function launch($: EngineInterface, run: Run, model: string, prompt: strin
       config: { 'sandbox_workspace_write.network_access': true },
       ephemeral: false,
     })
-    runOfThread.set(thread.id, run)
-    await rpc($, 'turn/start', { threadId: thread.id, input: [{ type: 'text', text: prompt, text_elements: [] }] })
+    for (const key of [run.agentId, run.name]) if (key) agentOfKey.set(key, { threadId: thread.id, run })
+    await startTurn($, thread.id, run, prompt)
   } catch (error) {
     await deliver($, run, { error: error instanceof Error ? error.message : String(error) })
     return
   }
   await pump($)
+}
+
+// Claude Code knows no agent by a codex subagent's id or name, so passing a failed call on would only say there is none.
+function refuse(next: { called: boolean; error: unknown }, key: string | undefined) {
+  if (next.called || !key || !agentOfKey.has(key)) return undefined
+  return { deny: `codex-subagent: ${next.error instanceof Error ? next.error.message : String(next.error)}` }
 }
 
 export const register: Register = on => {
@@ -133,7 +148,7 @@ export const register: Register = on => {
     const model = type.startsWith(PREFIX) ? modelOfType.get(type) : undefined
     if (!model || !socket) return next(e)
     const agentId = `codex-${crypto.randomUUID()}`
-    const run = { agentId, type, description: e.description, outputFile: `${socket.slice(0, socket.lastIndexOf('/'))}/${agentId}.txt` }
+    const run = { agentId, name: e.name, type, description: e.description, outputFile: `${socket.slice(0, socket.lastIndexOf('/'))}/${agentId}.txt` }
     void launch($, run, model, e.prompt)
     return {
       result: { status: 'async_launched', isAsync: true, agentId, description: e.description, prompt: e.prompt, outputFile: run.outputFile, resolvedModel: model },
@@ -142,6 +157,31 @@ export const register: Register = on => {
     // Passing a codex type on would run the task on Claude, which the caller would take for the codex model's work.
     next.called || !e.subagent_type?.startsWith(PREFIX) ? next(e) : { deny: `${$.plugin.name}: could not launch ${e.subagent_type}.` },
   )
+
+  on('tool.call', { tool: 'SendMessage' }, async ($, e, next) => {
+    const agent = typeof e.to === 'string' ? agentOfKey.get(e.to) : undefined
+    if (!agent) return next(e)
+    const { threadId, run } = agent
+    const input = [{ type: 'text', text: e.message, text_elements: [] }]
+    if (runOfThread.has(threadId)) {
+      await rpc($, 'turn/steer', { threadId, expectedTurnId: turnOfThread.get(threadId), input })
+      return { result: { success: true, message: `Message added to the running turn of ${run.agentId}.` } }
+    }
+    await startTurn($, threadId, run, e.message)
+    void pump($)
+    return { result: { success: true, message: `Resuming agent ${run.agentId}`, resumedAgentId: run.agentId } }
+  }).catch(($, e, next) => refuse(next, typeof e.to === 'string' ? e.to : undefined) ?? next(e))
+
+  on('tool.call', { tool: 'TaskStop' }, async ($, e, next) => {
+    const id = e.task_id ?? e.shell_id
+    const agent = id ? agentOfKey.get(id) : undefined
+    if (!agent) return next(e)
+    const { threadId, run } = agent
+    if (!runOfThread.has(threadId)) return { deny: `Task ${run.agentId} is not running.` }
+    await rpc($, 'turn/interrupt', { threadId, turnId: turnOfThread.get(threadId) })
+    const result = { message: `Successfully stopped task: ${run.agentId} (${run.description})`, task_id: run.agentId, task_type: 'local_agent', command: run.description }
+    return { result }
+  }).catch(($, e, next) => refuse(next, e.task_id ?? e.shell_id) ?? next(e))
 
   on('session.end', async ($, e, next) => {
     if (socket) await relay($, '/shutdown', {}).catch(() => {})

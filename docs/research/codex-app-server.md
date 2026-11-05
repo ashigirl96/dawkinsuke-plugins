@@ -101,7 +101,8 @@ item ではない turn 単位の通知:
 
 ## 6. 中断と終了
 
-- 中断: `turn/interrupt` `{threadId, turnId}`（`v2/turn.rs:357`）、応答は `{}`。応答は中断が実際に済んだとき（内部の `TurnAborted` を受けたとき）に返る（`codex-rs/app-server/src/request_processors/turn_processor.rs:1625-1665`、`bespoke_event_handling.rs:1217-1233`）。そのあと `turn/completed` が `status:"interrupted"` で来る（`bespoke_event_handling.rs:1565`）。実機では試していない（有料の turn を 2 回に抑えたため）。
+- 中断: `turn/interrupt` `{threadId, turnId}`（`v2/turn.rs:357`）、応答は `{}`。応答は中断が実際に済んだとき（内部の `TurnAborted` を受けたとき）に返る（`codex-rs/app-server/src/request_processors/turn_processor.rs:1625-1665`、`bespoke_event_handling.rs:1217-1233`）。そのあと `turn/completed` が `status:"interrupted"` で来る（`bespoke_event_handling.rs:1565`）。実機では試していない（有料の turn を 2 回に抑えたため）。のちに mod（issue #27）から送り、rollout に `"reason":"interrupted"` が残るのを確かめた。
+- 走っている turn への追加: `turn/steer` `{threadId, input, expectedTurnId}`、応答は `{turnId}`。`expectedTurnId` が今の turn と違うと失敗する（`codex app-server generate-ts --experimental` の `v2/TurnSteerParams.ts`）。mod から送り、足した指示が同じ turn の最後の答えに反映されるのを実機で確かめた。
 - 終了: stdio のときは client が stdin を閉じれば終わる。stdio は 1 client の扱いで（`codex-rs/app-server/src/lib.rs:815`）、その接続が閉じると main loop を抜け（`lib.rs:1215-1218`）、各接続の後片付けと全 thread の shutdown（上限 10 秒）をしてから終わる（`lib.rs:1364-1373`、`codex-rs/app-server/src/request_processors/thread_processor.rs:1339-1350`）。実機では stdin を閉じてから 17〜36ms で exit code 0 で終わった（turn が終わった後で閉じた場合）。turn の途中で閉じたときの振る舞いは確かめていない（**推測**: 上の shutdown で turn も止まる）。
 - 終了処理中に送った新しい仕事は `-32600`、`data: {"reason":"serverShuttingDown"}` で断られる（`codex-rs/app-server/README.md:22-26`）。
 - thread をやめるだけなら `thread/unsubscribe` `{threadId}` → `{status}`（`v2/thread.rs:734-741`）。
@@ -128,6 +129,7 @@ item ではない turn 単位の通知:
   - v2: 起動に成功すると `subAgentActivity` `{kind:"started", agentThreadId, agentPath, model, reasoningEffort}` を出す（`multi_agents_v2/spawn.rs:160-175`、`codex-rs/core/src/tools/handlers/multi_agents_v2.rs:44-52`）。子の turn が終わると `kind:"completed"`（`codex-rs/core/src/agent/control/completion.rs:72-84`）。v2 の `collabAgentToolCall` は analytics にしか送られず、item には出ない（`multi_agents_v2/spawn.rs:49-89`）。起動に失敗すると item は何も出ない。
 - 子の thread の event が同じ接続に来るか: source では来る。app-server は thread の作成を見張り、新しい thread ができるたびに、初期化済みのすべての接続に listener を付ける（`lib.rs:1324-1342`、`thread_processor.rs:3832-3900`）。子の `item/*`・`turn/*` は子自身の `threadId` で届き、`Thread.parentThreadId` と `Thread.source`（`SubAgent` の `ThreadSpawn`）で親を辿れる（**推測**: 子の `thread/started` が来るかは確かめていない）。
 - 実機（2 回目）: `ephemeral:true` の thread で subagent を頼むと、model の答えは `Subagent spawn failed: no rollout found for thread.` で、子の thread の event は 1 つも来なかった。v2 の `spawn_agent` は `fork_turns` の既定が `"all"`（親の履歴を全部引き継ぐ）で（`multi_agents_v2/spawn.rs:221-233`）、そのとき親の保存済みの履歴（rollout）を読む（`codex-rs/core/src/agent/control/spawn.rs:1116-1132`）。ephemeral の thread は rollout を持たないので失敗した、と読める（**推測**: 原因の特定は source を読んだ上での判断で、`ephemeral:false` での成功は確かめていない）。subagent を使わせるなら `ephemeral` を外すか、model に `fork_turns:"none"` を使わせる必要がある。
+- 実機（3 回目、mod `codex-subagent` 経由）: `ephemeral:false` の thread で subagent を頼むと起動に成功した。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、子の `echo nested-ok` の答えが親の thread の最後の答えに入った。
 
 ## 9. 認証
 

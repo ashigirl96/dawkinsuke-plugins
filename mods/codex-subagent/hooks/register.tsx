@@ -381,7 +381,8 @@ export const register: Register = on => {
   // A finished subagent's message is passed on, since Claude Code resumes the subagent with it.
   on('session.receive', async ($, e, next) => {
     const agent = await codexAgentOf($, e.agentId)
-    if (!agent || !e.agentId || (agent.status !== 'pending' && agent.status !== 'running')) return next(e)
+    // codex already holds its child's answer; Claude Code still has to deliver the notice to close the parent's wait.
+    if (!agent || !e.agentId || (agent.status !== 'pending' && agent.status !== 'running') || isChildNotice(e.text)) return next(e)
     const agentId = e.agentId
     const turnId = runningTurnOfAgent.get(agentId)
     if (turnId) {
@@ -397,9 +398,8 @@ export const register: Register = on => {
 
   // A message that waits for the handback skips session.receive: Claude Code writes it into the transcript as a hidden prompt row.
   on('session.append', async ($, e, next) => {
-    if (e.agentId && e.door === 'prompt' && e.message.isMeta && (await codexAgentOf($, e.agentId))) {
-      hold(e.agentId, e.message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('\n'))
-    }
+    const text = e.message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('\n')
+    if (e.agentId && e.door === 'prompt' && e.message.isMeta && !isChildNotice(text) && (await codexAgentOf($, e.agentId))) hold(e.agentId, text)
     return next(e)
   })
 

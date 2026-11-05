@@ -667,6 +667,24 @@ test('a TaskStop of a codex child interrupts the child turn codex started', { pl
   expect(interrupted).toEqual([{ threadId: 't2', turnId: 'u9' }])
 })
 
+test('a codex child result delivered to its running parent is left to Claude Code and never sent to codex again', async ($, on) => {
+  const steered: unknown[] = []
+  relay(on, {
+    answers: { 'turn/steer': (params: unknown) => (steered.push(params), { result: { turnId: 'u1' } }) },
+    events: [childStarted('t2'), [command('c1', 'echo nested-ok', 't2')]],
+  })
+  on('session.receive', (_, e) => ({ text: e.text }))
+  const { rows } = family(on)
+  await start($, on)
+  const spawn = await stepAs($, 'a1')
+  rows.a2!.push(user(String(spawn.input?.prompt)))
+  await stepAs($, 'a2')
+
+  const notice = '<agent-message from="a2">\nnested-ok\n</agent-message>'
+  expect(await $.session.receive({ origin: { kind: 'coordinator' }, text: notice, agentId: 'a1' })).toEqual({ text: notice })
+  expect(steered).toEqual([])
+})
+
 test('a codex child result that would wake its finished parent is refused, and other resumes go on', async ($, on) => {
   relay(on, { events: [childStarted('t2'), [turnCompleted({ id: 'u9' }, 't2')]] })
   const { rows } = family(on)

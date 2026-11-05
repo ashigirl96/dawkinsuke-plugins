@@ -97,6 +97,17 @@ test('a relay whose spawn throws leaves no codex type and lets the session start
   expect(registered).toEqual([])
 })
 
+for (const method of ['initialize', 'model/list']) {
+  test(`codex refusing ${method} leaves no codex type and no item tool, and lets every session start`, async ($, on) => {
+    relay(on, { answers: { [method]: { error: { code: -32603, message: 'codex is not signed in' } } } })
+    const { registered, tools } = await start($, on)
+    await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
+
+    expect(registered).toEqual([])
+    expect(tools).toEqual([])
+  })
+}
+
 test('a second session.start in the same worker starts no second relay and registers nothing again', async ($, on) => {
   const requests = relay(on)
   const { registered } = await start($, on)
@@ -112,10 +123,8 @@ const user = (text: string): Row => ({ role: 'user', text, toolUses: [] })
 const called = (id: string, tool: string): Row => ({ role: 'assistant', text: '', toolUses: [{ tool_use_id: id, tool, input: {} }] })
 const answered = (id: string, text: string, isError = false): Row => ({ role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: id, text, isError }] })
 
-// What one step said: its text, and the one tool it called.
 type Step = { text: string; tool?: string; input?: Record<string, unknown>; stopReason: string }
 
-// Drives a codex subagent's steps the way Claude Code does, keeping its transcript in `rows`.
 const subagent = (on: On, { type = 'codex-subagent:gpt-6-luna', status = 'running' as AgentStatus, agentId = 'a1' } = {}) => {
   const rows: Row[] = []
   const passed: unknown[] = []
@@ -139,7 +148,6 @@ const subagent = (on: On, { type = 'codex-subagent:gpt-6-luna', status = 'runnin
     const stopReason = chunks.find(c => c.kind === 'stop')?.stopReason ?? ''
     return tool ? { text, tool, input: JSON.parse(json), stopReason } : { text, stopReason }
   }
-  // Runs the step's tool as Claude Code would and puts both in the transcript.
   const act = async ($: $, s: Step) => {
     const id = `x${rows.length}`
     rows.push(called(id, s.tool!))
@@ -213,6 +221,15 @@ test('a command that exits non-zero is a failed call whose text starts with its 
   rows.push(user('read it'))
 
   expect(await act($, await step($))).toEqual({ deny: 'Exit code 1\ncat: missing.txt: No such file or directory' })
+})
+
+test('a command with no output answers (No output), as Claude Bash does', async ($, on) => {
+  relay(on, { events: [[command('c1', 'true')], [commandDone('c1', '')]] })
+  const { rows, step, act } = subagent(on)
+  await start($, on)
+  rows.push(user('run'))
+
+  expect(await act($, await step($))).toEqual({ result: '(No output)' })
 })
 
 test('a command output loses the escape sequences that would move the cursor or retitle the terminal', async ($, on) => {
@@ -301,7 +318,6 @@ test('an item tool called outside a codex subagent is refused and starts no thre
   expect(requests.map(r => r.method)).not.toContain('thread/start')
 })
 
-// The Agent call goes in first, then its subagent starts under the call's tool_use_id, as Claude Code orders them.
 const agentCall = async ($: $, input: Record<string, unknown>) => {
   await $.tool.call({ tool: 'Agent', tool_use_id: 'c1', prompt: 'p', ...input })
   await $.agent.spawn({
@@ -394,7 +410,7 @@ test('two codex subagents at once each get their own items, whichever call polle
   expect(await Promise.all([handback('a1'), handback('a2')])).toEqual(['from one', 'from two'])
 })
 
-// Stands above the mod and settles the call itself, which abandons the dispatch beneath, as a TaskStop does.
+// Settling the call above the mod abandons the dispatch beneath it, as a TaskStop does.
 const stopper = {
   name: 'stopper',
   tier: 'prepend' as const,
@@ -468,6 +484,32 @@ test('a message that comes after the codex turn ended goes to codex as one more 
   expect(await sendTo($, 'add BRAVO')).toMatchObject({ consumed: expect.any(String) })
   expect(await step($)).toMatchObject({ tool: HANDBACK, input: { message: 'ALPHA BRAVO' } })
   expect(requests.filter(r => r.method === 'turn/start').map(r => r.params)).toMatchObject([{ threadId: 't1' }, { threadId: 't1', input: [{ text: 'add BRAVO' }] }])
+})
+
+const prompted = ($: $, text: string, isMeta?: true) =>
+  $.session.append({ message: { type: 'user', role: 'user', content: [{ type: 'text', text }], ...(isMeta && { isMeta }) }, door: 'prompt', origin: { kind: 'coordinator' }, uuid: crypto.randomUUID(), agentId: 'a1' })
+
+test('a message Claude Code writes into the transcript at the handback goes to codex as one more turn and is handed back too', async ($, on) => {
+  let turns = 0
+  const requests = relay(on, {
+    answers: { 'turn/start': () => ({ result: { turn: { id: `u${++turns}` } } }) },
+    events: [[said('ALPHA'), turnCompleted({ id: 'u1' })], [said('ALPHA BRAVO'), turnCompleted({ id: 'u2' })]],
+  })
+  const { rows, step, act } = subagent(on)
+  await start($, on)
+  await prompted($, 'say ALPHA')
+  rows.push(user('say ALPHA'))
+  await act($, await step($))
+
+  await prompted($, 'The coordinator sent a message while you were working:\nadd BRAVO', true)
+  const next = await step($)
+  expect(next).toMatchObject({ tool: HANDBACK, input: { message: 'ALPHA BRAVO' } })
+  await act($, next)
+  expect((await step($)).stopReason).toBe('end_turn')
+  expect(requests.filter(r => r.method === 'turn/start').map(r => r.params)).toMatchObject([
+    { threadId: 't1', input: [{ text: 'say ALPHA' }] },
+    { threadId: 't1', input: [{ text: 'The coordinator sent a message while you were working:\nadd BRAVO' }] },
+  ])
 })
 
 test('a message sent to a finished codex subagent is queued, so Claude Code resumes it with the message', async ($, on) => {

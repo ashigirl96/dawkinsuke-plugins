@@ -9,12 +9,12 @@ export type Item = {
   changes?: { path: string; kind: { type: string }; diff?: string }[]
 }
 
+type Answer = { result: string } | { deny: string }
+export type RowInput = { command?: string; path?: string; kind?: string }
+type Row = [name: string, argument: string]
+
 export const NAME = 'codex-subagent' as const
 export const PREFIX = `${NAME}:` as const
-export const COMMAND = `mcp__${NAME}__command` as const
-export const FILE_CHANGE = `mcp__${NAME}__file_change` as const
-
-export const VERB: Record<string, string> = { add: 'Write', delete: 'Delete', update: 'Update' }
 
 // codex hands over raw command output and paths, whose escape sequences would move the cursor or retitle the terminal.
 const ESCAPE = /(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]|(?:\x1b\]|\x9d)[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?|\x1b[@-_]/g
@@ -27,23 +27,22 @@ const unwrap = (command: string) => command.match(/^\S+ -lc '(.*)'$/s)?.[1]?.rep
 
 const plural = (n: number) => `${n} line${n === 1 ? '' : 's'}`
 
-// The tool and input of the step that stands for an item codex started, or none for an item that is no step.
-export function stepOf(item: Item, cwd: string): { name: string; input: Record<string, string> } | undefined {
-  if (item.type === 'commandExecution') return { name: COMMAND, input: { command: unwrap(item.command ?? ''), item_id: item.id } }
-  if (item.type !== 'fileChange') return undefined
-  const [first] = item.changes ?? []
-  const path = (item.changes ?? []).map(c => (c.path.startsWith(`${cwd}/`) ? c.path.slice(cwd.length + 1) : c.path)).join(', ')
-  return { name: FILE_CHANGE, input: { path, kind: first?.kind.type ?? 'update', item_id: item.id } }
+const VERB: Record<string, string> = { add: 'Write', delete: 'Delete', update: 'Update' }
+
+function commandAnswer(item: Item): Answer {
+  const output = printable(item.aggregatedOutput ?? '').trimEnd()
+  if (item.exitCode === 0) return { result: output || '(No output)' }
+  const head = item.exitCode == null ? `Command ${item.status}` : `Exit code ${item.exitCode}`
+  return { deny: output ? `${head}\n${output}` : head }
 }
 
-// What the item's tool answers once codex completed the item, as Claude's Bash and Update answer.
-export function answerOf(item: Item): { result: string } | { deny: string } {
-  if (item.type === 'commandExecution') {
-    const output = printable(item.aggregatedOutput ?? '').trimEnd()
-    if (item.exitCode === 0) return { result: output }
-    const head = item.exitCode == null ? `Command ${item.status}` : `Exit code ${item.exitCode}`
-    return { deny: output ? `${head}\n${output}` : head }
-  }
+function fileChangeInput(item: Item, cwd: string) {
+  const changes = item.changes ?? []
+  const path = changes.map(c => (c.path.startsWith(`${cwd}/`) ? c.path.slice(cwd.length + 1) : c.path)).join(', ')
+  return { path, kind: changes[0]?.kind.type ?? 'update' }
+}
+
+function fileChangeAnswer(item: Item): Answer {
   if (item.status !== 'completed') return { deny: `File change ${item.status}` }
   let added = 0
   let removed = 0
@@ -59,3 +58,29 @@ export function answerOf(item: Item): { result: string } | { deny: string } {
   }
   return { result: `Added ${plural(added)}, removed ${plural(removed)}` }
 }
+
+export const KINDS = [
+  {
+    item: 'commandExecution',
+    name: 'command',
+    tool: `mcp__${NAME}__command`,
+    description: 'Shows a command codex runs and answers with its output once codex finished it.',
+    input: ['command'],
+    inputOf: (item: Item, _cwd: string): Record<string, string> => ({ command: unwrap(item.command ?? '') }),
+    answerOf: commandAnswer,
+    rowOf: (input: RowInput): Row => ['Bash', input.command ?? ''],
+  },
+  {
+    item: 'fileChange',
+    name: 'file_change',
+    tool: `mcp__${NAME}__file_change`,
+    description: 'Shows a file change codex makes and answers with its size once codex made it.',
+    input: ['path', 'kind'],
+    inputOf: fileChangeInput,
+    answerOf: fileChangeAnswer,
+    rowOf: (input: RowInput): Row => [VERB[input.kind ?? ''] ?? 'Update', input.path ?? ''],
+  },
+] as const
+
+export const kindOfItem = (item: Item) => KINDS.find(kind => kind.item === item.type)
+export const kindOfTool = (tool: string) => KINDS.find(kind => kind.tool === tool)

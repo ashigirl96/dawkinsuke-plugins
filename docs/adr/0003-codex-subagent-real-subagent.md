@@ -10,7 +10,7 @@
 - hook の持ち時間は 10 秒で、`$.clock.sleep` はこれに数えられる。`$.http.fetch` や `$.process.run` の完了を待つ間は数えられないので、codex を待つ処理は中継への `$.http.fetch` の待ちだけで組む。`turn.step` の hook も同じで、次の item を待つ間は数えられない（#35）。
 - 最後の手は text で終わらせず `SubagentHandback` を返す。text で終わると、Claude Code が handback を求める文を足して `turn.step` がまた来る。
 
-item ごとに tool が返るので、走っている間の `SendMessage` の文は item の合間に `session.receive` で mod に届く。codex の turn が走っていれば `turn/steer` で今の turn に足し、終わっていれば同じ thread の次の turn にする。
+item ごとに tool が返るので、走っている間の `SendMessage` の文は item の合間に `session.receive` で mod に届く。codex の turn が走っていれば `turn/steer` で今の turn に足し、終わっていれば同じ thread の次の turn にする。`SubagentHandback` の区切りで届く文だけは `session.receive` を通らず、Claude Code が subagent の記録に隠れた行として書くので、`session.append` で拾って同じ thread の次の turn にする。
 
 mod が全部の手を答えた subagent の結果には、Claude Code が「auto mode の分類器が使えなかったので、subagent の行動と出力を確かめてほしい」という注記を付ける。これは受け入れる。codex の出力は、もともと親が確かめてから使うものだから。
 

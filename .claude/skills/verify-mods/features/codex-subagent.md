@@ -9,10 +9,11 @@
 - `deliver`: 終わると `› Message from @codex-subagent-<モデル>…` が来て、codex の最後の答えが本文になり、`⏺ Agent "<説明>" finished` が出る。本文の頭に Claude Code が「auto mode の分類器が使えなかった」という注記を付ける（ADR 0003 で受け入れた）。
 - `network`: codex が `gh api` を走らせ、GitHub の答えが届く。
 - `nested`: codex が自分の subagent（`spawn_agent`）を起動でき、その答えが届く。
-- `send-running`: 走っている codex subagent に `SendMessage` を送ると、次の item の区切りで `turn/steer` によって codex の今の turn に足され、その turn の答えが親に届く。codex の turn は 1 つのまま。turn が終わったあとに届いた文は、`SubagentHandback` の前に同じ thread の次の turn にする。
+- `send-running`: 走っている codex subagent に `SendMessage` を送ると、次の item の区切りで `turn/steer` によって codex の今の turn に足され、その turn の答えが親に届く。codex の turn は 1 つのまま。turn が終わったあとに届いた文は、`SubagentHandback` の前に同じ thread の次の turn にする。`SubagentHandback` の区切りで届いた文も同じ thread の次の turn にし、その答えも `SubagentHandback` で親に届く（親には答えが 2 つ届く）。
 - `resume`: 終わった codex subagent に `SendMessage` を送ると、`Resuming agent <id>` が出て、同じ thread の次の turn が走り、答えが親に届く。codex は前の turn を覚えている。
 - `effort`: Agent tool に `effort` を付けると、codex の turn がその段階で走る。モデルに無い段階は 1 つ下、`max` はモデルの一番上に読み替える。
 - `worktree`: Agent tool に `isolation: "worktree"` を付けると、Claude Code が作った worktree で codex が作業する。mod は worktree を作らない。
+- `failure`: codex との接続が切れるなど codex 側で失敗すると、`codex failed: <codex のエラー文>` が答えの本文として届く。Claude Code の subagent は `finished` で終わる（失敗の状態で終える口が無い）。Claude のモデルには切り替わらない。
 - `stop`: TaskStop で走っている codex subagent を止めると、`Stop Task ⎿ <説明> · stopped` と `Agent "<説明>" was stopped by Claude` が出て、答えは届かない。codex の turn も中断される。
 - `cleanup`: `/exit` で、mod が起こした中継（`relay/relay.ts`）と `codex app-server` が止まる。
 
@@ -32,7 +33,9 @@
 - **effort・worktree.** 1 回の起動で両方見る。``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna"、effort "xhigh"、isolation "worktree" を付けて起動し、「pwd と git branch --show-current の出力だけを返して」と頼んで。結果が届いたらそのまま見せて。'``、`$T wait codex-$id 'Agent ".*" finished' 300`、`$T shot`。届いた本文の pwd が `.claude/worktrees/agent-<id>` で、branch が `worktree-agent-<id>`。effort は画面に出ないので、`grep -l 'agent-<id>' $(find ~/.codex/sessions -name '*.jsonl' -mmin -5)` で見つけた rollout に `grep -o '"effort":"[a-z]*"'` を流し、`"effort":"xhigh"` が出ることを見る。worktree は変更が無ければ Claude Code が消すので、`git worktree list` に残っていないことも見る。
 - **stop.** ``$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「`sleep 90` を走らせ、そのあと LATE-D とだけ答えて」と頼んで。起動したら 20 秒待ってから（Bash で sleep 20）、TaskStop でその subagent を止めて。'``、`$T wait codex-$id 'stopped' 180`、`$T shot`。`Stop Task ⎿ … · stopped` と `was stopped by Claude` が出て、`Message from` の答えは来ない。codex の側で止まったかは、`grep -l 'sleep 90'` で見つけた `~/.codex/sessions` の新しい rollout に `"type":"turn_aborted"` と `"reason":"interrupted"` があり、`duration_ms` が 90 秒より短いかで確かめる。
 - **items・send-running.** codex にファイルを書かせるので、repo の外の一時の dir（`README.md` と `old line` の 1 行の `note.txt` を置く）で Claude Code を起こす。`$T start` は repo のルートに移るので、その dir で `tmux new-session -d -s vmods-codex-$id -x 200 -y 50 -c <dir> claude <起動と同じ引数>` と起こし、あとは `$T` で打つ。``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動して、「まず一言書いてから、ls -la、sleep 25、cat missing.txt をそれぞれ別のコマンドとして順に走らせ、そのあと note.txt の old line を apply_patch で new line に書き換え、最後に ALPHA とだけ答えて」と頼んで。起動したら、Bash で sleep 10 してから SendMessage でその subagent に「最後の答えに BRAVO も足して」と送って。結果が届いたら本文をそのまま書いて。'``、`$T wait codex-$id 'Backgrounded agent' 90`。数秒おいて `$T key codex-$id Down` を 2 回、`$T key codex-$id Enter` で subagent の画面を開き、`sleep 25` が走っている間に `$T shot codex-$id "$run/codex-subagent-items-running.txt"`（色は `tmux capture-pane -e -p -t vmods-codex-$id -S -`）。`⏺ Bash(sleep 25)` の下に `⎿  Running…` が出ている。1 分ほどおいてもう 1 枚撮り、`Bash(cat missing.txt)` の `⏺` と `Error: Exit code 1` が赤（`38;5;211`）、ほかの `⏺` が緑（`38;5;114`）、`Update(note.txt)` の下に `Added 1 line, removed 1 line` があることを見る。`Up`・`Enter` で親の画面に戻り、届いた本文が `ALPHA BRAVO` で始まることを見る。SendMessage の結果は `Message queued for delivery to <id> at its next tool round` のままでよい。今の turn に足されたかは、`grep -l 'sleep 25'` で見つけた `~/.codex/sessions` の新しい rollout で、`"type":"task_started"` が 1 つだけで、`BRAVO` の user message の `turn_id` が `task_complete` のものと同じかで確かめる。
+- **send-handback・no-output.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「コマンドを使わずに、ALPHA とだけ答えて」と頼んで。起動の結果が返ったら、待たずにすぐ SendMessage でその subagent に「sleep 2 をコマンドとして走らせてから、答えを ALPHA BRAVO にして」と送って。届いた結果は、届いた順にどれも本文をそのまま書いて。'``、`$T wait codex-$id '^  ALPHA BRAVO' 240`、`$T shot`。`ALPHA` と `ALPHA BRAVO` が別の `Message from` で順に届く。SendMessage の文は、codex が答えを書き終えた `SubagentHandback` の区切りで届く。`sleep 2` の結果が `(No output)` かは、subagent の記録（`~/.claude/projects/<cwd>/<session-id>/subagents/agent-<id>.jsonl`）の `tool_result` で見る。終わった subagent は一覧から消えて画面を開けないので、画面で見るなら走っている間に開く。
 - **resume.** 続けて `$T send codex-$id '終わったその subagent に SendMessage で「あなたの前の答えの 1 行目を全部小文字にして、それだけ答えて」と送って。続きの結果が届いたら本文をそのまま書いて。'`、`$T wait codex-$id 'alpha bravo' 180`、`$T shot`。`Resuming agent` のあと `alpha bravo` が届く。同じ rollout の `"last_agent_message"` に `alpha bravo` が 2 つ目として足される。
+- **failure.** 最後に回す。`ps -o pid,ppid,command -ax` で、この session の `relay/relay.ts` の pid を親に持つ `codex app-server` を探して `kill` する（行の全体で合わせ、他の session のものに触れない）。`$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「OK とだけ答えて」と頼んで。結果が届いたら本文をそのまま書いて。'`、`$T wait codex-$id 'finished' 120`、`$T shot`。届いた本文が `codex failed:` で始まる。codex の turn は走らないので無料。
 - **cleanup.** `$T send codex-$id '/exit'` のあと数秒おいて `pgrep -fl 'relay/relay.ts|^codex app-server$'` を流し、何も出ないことを見る。
 
 ## Gotchas
@@ -48,7 +51,10 @@
 - worktree の subagent の `turn.step` の hook では、`$.session.cwd()` がその subagent の worktree を返す。`agent.spawn` の `cwd` は `isolation` では埋まらない。
 - 入力欄に薄く出る「結果はまだ？」のような文は候補で、打たれていない。
 - send-running の文は、送ったときではなく、subagent の次の tool の区切り（item を表す tool が返ったとき）に `session.receive` で mod に届く。item の合間に届くので、codex の turn がまだ走っていれば `turn/steer` で足せる。codex が最後の item のあとに答えを書き終えていれば、次の turn になる。
-- 出力の無いコマンド（`sleep 25` など）の行は、終わると `⎿` の行が出ない。Claude の `Bash` の `(No output)` は出ない。
+- 出力の無いコマンド（`sleep 25` など）の行は、終わると Claude の `Bash` と同じく `⎿  (No output)` が出る。
 - Claude の subagent の画面は `Bash` の行を `Ran 1 shell command` に畳むが、item を表す tool の行は畳まれず、いつも 1 つずつ並ぶ。
 - 一覧の 1 行の文は、Claude Code が要約を描くので古いまま残ることがある（`sleep 25 コマンドを実行中` など）。
+- `SubagentHandback` の区切りで届く SendMessage の文は `session.receive` を通らない。Claude Code が subagent の記録に `The coordinator sent a message while you were working:` で始まる隠れた行（`isMeta`）として書くので、mod は `session.append` でその文を持つ。codex にはその行の文がそのまま渡る。
+- `--plugin-dir` で読ませた session では、最初に `codex-subagent: its session.append hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` の 1 行が出る。組織の管理 plugin が先に走って、その行を mod の hook に回さなかったという知らせで、mod の失敗ではない（subagent の行は mod に届く）。
+- `/tasks` の一覧を開いたままにすると入力を奪う。`Escape` で閉じてから打つ。
 - Agent tool に `name` の欄は無い。SendMessage の宛先は、起動の行と一覧に出る agentId になる。

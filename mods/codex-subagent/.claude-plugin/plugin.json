@@ -1,0 +1,5 @@
+{
+  "name": "codex-subagent",
+  "version": "0.1.0",
+  "description": "Registers an Agent type per codex model and runs it on codex app-server in the background, delivering its last answer as a new turn"
+}

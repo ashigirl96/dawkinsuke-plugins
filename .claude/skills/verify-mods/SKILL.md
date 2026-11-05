@@ -1,6 +1,6 @@
 ---
 name: verify-mods
-description: mods/ の mod（glossary・mermaid-render・skill-chain）を本物の Claude Code の画面に checkout から読ませ、tmux で打って振る舞いを確かめる。mod の hooks を直したあと、Claude Code を上げたあと、mod が効いていないように見えるとき、`claude plugin test` は通るのに実機で崩れるかを見たいときに使う。
+description: mods/ の mod（glossary・mermaid-render・skill-chain・codex-subagent）を本物の Claude Code の画面に checkout から読ませ、tmux で打って振る舞いを確かめる。mod の hooks を直したあと、Claude Code を上げたあと、mod が効いていないように見えるとき、`claude plugin test` は通るのに実機で崩れるかを見たいときに使う。
 ---
 
 確かめる対象は、`claude --setting-sources project --plugin-dir mods/<name>` で checkout から読み込んだ mod が、Claude Code の端末の画面と会話の記録に出す結果。`claude plugin test` の単体テストは engine の代わりの `$` で流すので、組織の管理 plugin や描画の幅による崩れは、ここでしか見えない。
@@ -54,7 +54,7 @@ $T stop <名前>                       # その session を消す
 何かおかしいと思ったら、最初にこれを流す。どれも何も書き換えない。
 
 ```sh
-for m in glossary mermaid-render skill-chain; do
+for m in glossary mermaid-render skill-chain codex-subagent; do
   claude plugin validate mods/$m | tail -1
   claude --setting-sources project --plugin-dir mods/$m plugin details $m | sed -n 3p
 done
@@ -84,6 +84,7 @@ mod の印の例:
 
 - mermaid-render: `┌` `▼` などの罫線。描けなければ `mermaid-render: <理由>` の 1 行。
 - glossary: 右の pane の `┃ <用語>`。pane の枠の外に出る `✕` は pane を閉じる印。
+- codex-subagent: Agent の行の `Backgrounded agent` と、そのあとに来る `› Prompt from the codex-subagent plugin` の turn。
 - skill-chain: 画面ではなく会話の記録。期待したスキルの Skill tool の呼び出しと、`cannot be used with Skill tool due to disable-model-invocation` の有無。
 
 ## Evidence

@@ -77,6 +77,15 @@ test('no relay means no codex type, no fetch over TCP and no word about effort',
   expect((await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })).result).toBe('engine')
 })
 
+test('a relay whose spawn throws leaves no codex type and lets the session start', async ($, on) => {
+  on('process.spawn', async function* () {
+    yield* []
+    throw new Error('spawn failed')
+  })
+  const registered = await start($, on)
+  expect(registered).toEqual([])
+})
+
 test('a second session.start in the same worker starts no second relay and registers nothing again', async ($, on) => {
   const requests = relay(on)
   const registered = await start($, on)

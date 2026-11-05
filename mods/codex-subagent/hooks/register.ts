@@ -54,8 +54,9 @@ function startRelay($: EngineInterface) {
         isAnnounced = true
         resolve(JSON.parse(stdout.slice(0, end)).socket)
       }
-      resolve(undefined)
     })()
+      .catch(() => {})
+      .finally(() => resolve(undefined))
   })
 }
 

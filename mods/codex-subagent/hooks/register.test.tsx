@@ -6,6 +6,7 @@ type Rpc = { method: string; params?: Record<string, unknown> }
 
 const COMMAND = 'mcp__codex-subagent__command'
 const FILE_CHANGE = 'mcp__codex-subagent__file_change'
+const WAIT = 'mcp__codex-subagent__wait'
 const HANDBACK = 'SubagentHandback'
 
 const efforts = (...names: string[]) => names.map(reasoningEffort => ({ reasoningEffort, description: '' }))
@@ -67,11 +68,11 @@ test('each model codex lists and does not hide becomes an Agent type named with 
   expect(registered[0]?.description).toMatch(/^Delegates to `gpt-6\.1-sol`\. Latest workhorse model\./)
 })
 
-test('a codex type may call only the two item tools and SubagentHandback, which are registered once', async ($, on) => {
+test('a codex type may call only the item tools, Agent and SubagentHandback, and the item tools are registered once', async ($, on) => {
   relay(on)
   const { registered, tools } = await start($, on)
-  for (const agent of registered) expect(agent.tools).toEqual([COMMAND, FILE_CHANGE, HANDBACK])
-  expect(tools.map(t => t.name)).toEqual(['command', 'file_change'])
+  for (const agent of registered) expect(agent.tools).toEqual([COMMAND, FILE_CHANGE, WAIT, 'Agent', HANDBACK])
+  expect(tools.map(t => t.name)).toEqual(['command', 'file_change', 'wait'])
 })
 
 test('no relay means no codex type, no item tool and no fetch over TCP', async ($, on) => {
@@ -125,6 +126,21 @@ const answered = (id: string, text: string, isError = false): Row => ({ role: 'u
 
 type Step = { text: string; tool?: string; input?: Record<string, unknown>; stopReason: string }
 
+const stepAs = async ($: $, agentId: string | undefined, messageCount = 1): Promise<Step> => {
+  const stream = $.turn.step({ turnId: 't', index: 0, model: 'claude-sonnet', messageCount, agentId })
+  const chunks: { kind: string; text?: string; name?: string; json?: string; stopReason?: string }[] = []
+  for (;;) {
+    const { done, value } = await stream.next()
+    if (done) break
+    chunks.push(value as never)
+  }
+  const tool = chunks.find(c => c.kind === 'tool')?.name
+  const json = chunks.filter(c => c.kind === 'input').map(c => c.json).join('')
+  const text = chunks.filter(c => c.kind === 'text').map(c => c.text).join('')
+  const stopReason = chunks.find(c => c.kind === 'stop')?.stopReason ?? ''
+  return tool ? { text, tool, input: JSON.parse(json), stopReason } : { text, stopReason }
+}
+
 const subagent = (on: On, { type = 'codex-subagent:gpt-6-luna', status = 'running' as AgentStatus, agentId = 'a1' } = {}) => {
   const rows: Row[] = []
   const passed: unknown[] = []
@@ -134,20 +150,7 @@ const subagent = (on: On, { type = 'codex-subagent:gpt-6-luna', status = 'runnin
   })
   on('session.messages', () => ({ value: rows }))
   agents(on, [{ id: agentId, type, status }])
-  const step = async ($: $, isMain = false): Promise<Step> => {
-    const stream = $.turn.step({ turnId: 't', index: 0, model: 'claude-sonnet', messageCount: rows.length, agentId: isMain ? undefined : agentId })
-    const chunks: { kind: string; text?: string; name?: string; json?: string; stopReason?: string }[] = []
-    for (;;) {
-      const { done, value } = await stream.next()
-      if (done) break
-      chunks.push(value as never)
-    }
-    const tool = chunks.find(c => c.kind === 'tool')?.name
-    const json = chunks.filter(c => c.kind === 'input').map(c => c.json).join('')
-    const text = chunks.filter(c => c.kind === 'text').map(c => c.text).join('')
-    const stopReason = chunks.find(c => c.kind === 'stop')?.stopReason ?? ''
-    return tool ? { text, tool, input: JSON.parse(json), stopReason } : { text, stopReason }
-  }
+  const step = ($: $, isMain = false) => stepAs($, isMain ? undefined : agentId, rows.length)
   const act = async ($: $, s: Step) => {
     const id = `x${rows.length}`
     rows.push(called(id, s.tool!))
@@ -160,9 +163,9 @@ const subagent = (on: On, { type = 'codex-subagent:gpt-6-luna', status = 'runnin
 
 const item = (method: 'item/started' | 'item/completed', body: Record<string, unknown>, threadId = 't1') => ({ method, params: { threadId, item: body } })
 const said = (text: string, threadId = 't1') => item('item/completed', { type: 'agentMessage', id: `m-${text}`, text }, threadId)
-const command = (id: string, command: string) => item('item/started', { type: 'commandExecution', id, command, status: 'inProgress' })
-const commandDone = (id: string, aggregatedOutput: string, exitCode = 0) =>
-  item('item/completed', { type: 'commandExecution', id, command: '', status: exitCode === 0 ? 'completed' : 'failed', aggregatedOutput, exitCode })
+const command = (id: string, command: string, threadId = 't1') => item('item/started', { type: 'commandExecution', id, command, status: 'inProgress' }, threadId)
+const commandDone = (id: string, aggregatedOutput: string, exitCode = 0, threadId = 't1') =>
+  item('item/completed', { type: 'commandExecution', id, command: '', status: exitCode === 0 ? 'completed' : 'failed', aggregatedOutput, exitCode }, threadId)
 const change = (id: string, path: string, kind = 'update') => item('item/started', { type: 'fileChange', id, changes: [{ path, kind: { type: kind }, diff: '' }], status: 'inProgress' })
 const changeDone = (id: string, path: string, diff: string, kind = 'update') => item('item/completed', { type: 'fileChange', id, changes: [{ path, kind: { type: kind }, diff }], status: 'completed' })
 const turnCompleted = (turn: Record<string, unknown> = {}, threadId = 't1') => ({ method: 'turn/completed', params: { threadId, turn: { id: 'u1', status: 'completed', items: [], error: null, ...turn } } })
@@ -554,6 +557,13 @@ test('a file change row is drawn as Update, Write or Delete of its path', async 
   expect(await drawnText($, row(FILE_CHANGE, { path: 'b.txt', kind: 'delete', item_id: 'f1' }))).toContain('⏺ Delete(b.txt)')
 })
 
+test('a row of codex waiting on its child is drawn as Wait of the child', async ($, on) => {
+  relay(on)
+  await start($, on)
+
+  expect(await drawnText($, row(WAIT, { agent: 'echo_nested', item_id: 'sa-done' }))).toContain('⏺ Wait(echo_nested)')
+})
+
 test('a row drops escape sequences and puts a many-line command on one line', async ($, on) => {
   relay(on)
   await start($, on)
@@ -570,4 +580,105 @@ test('a row of another tool is left to Claude Code', async ($, on) => {
   await start($, on)
 
   expect(await drawnText($, row('Bash', { command: 'ls' }))).toEqual(['engine'])
+})
+
+const LUNA = 'codex-subagent:gpt-6-luna'
+// codex says a child started on both item/started and item/completed.
+const childStarted = (threadId: string, agentPath = '/root/echo_nested') =>
+  (['item/started', 'item/completed'] as const).map(method => item(method, { type: 'subAgentActivity', id: `sa-${threadId}`, kind: 'started', agentThreadId: threadId, agentPath }))
+
+const family = (on: On, others: { id: string; type: string }[] = []) => {
+  const rows: Record<string, Row[]> = { a1: [user('ask a child')], a2: [] }
+  on('session.messages', (_, e) => ({ value: rows[String(e.agentId)] ?? [] }))
+  const child = { id: 'a2', type: LUNA, status: 'running' as AgentStatus }
+  agents(on, [{ id: 'a1', type: LUNA }, child, ...others])
+  const answer = (agentId: string, s: Step, result: string) => rows[agentId]!.push(called(`x${rows[agentId]!.length}`, s.tool!), answered(`x${rows[agentId]!.length}`, result))
+  return { rows, answer, child }
+}
+
+test('codex starting its own subagent makes the parent codex subagent call Agent once, in the background with its own type', async ($, on) => {
+  relay(on, { events: [childStarted('t2'), [said('the child said hi'), turnCompleted()]] })
+  const { answer } = family(on)
+  await start($, on)
+
+  const spawn = await stepAs($, 'a1')
+  expect(spawn).toEqual({
+    text: '',
+    tool: 'Agent',
+    input: { subagent_type: LUNA, description: 'codex echo_nested', prompt: 'codex child thread t2\n\n/root/echo_nested', run_in_background: true },
+    stopReason: 'tool_use',
+  })
+  answer('a1', spawn, 'async_launched')
+  expect(await stepAs($, 'a1')).toMatchObject({ tool: HANDBACK, input: { message: 'the child said hi' } })
+})
+
+test('the Agent call for a codex child is allowed only inside the codex subagent that made it, and every other is left to the check', async ($, on) => {
+  relay(on, { events: [childStarted('t2')] })
+  family(on, [{ id: 'g1', type: 'general-purpose' }])
+  on('tool.check', () => ({ decision: 'ask' as const }))
+  await start($, on)
+  const { input } = await stepAs($, 'a1')
+  const check = (agentId: string | undefined, prompt: string) => $.tool.check({ tool: 'Agent', input: { ...input, prompt }, ...(agentId && { agentId }) })
+
+  expect(await check('a1', String(input?.prompt))).toMatchObject({ decision: 'allow' })
+  expect(await check('a1', 'codex child thread t9\n\n/root/other')).toMatchObject({ decision: 'ask' })
+  expect(await check(undefined, String(input?.prompt))).toMatchObject({ decision: 'ask' })
+  expect(await check('g1', String(input?.prompt))).toMatchObject({ decision: 'ask' })
+})
+
+test('a codex child subagent takes its thread from its prompt, starts no codex turn, and shows the child items until its handback', async ($, on) => {
+  const requests = relay(on, {
+    events: [[...childStarted('t2'), command('c1', 'echo nested-ok', 't2')], [commandDone('c1', 'nested-ok\n', 0, 't2')], [said('nested-ok', 't2'), turnCompleted({ id: 'u9' }, 't2')]],
+  })
+  const { rows, answer } = family(on)
+  await start($, on)
+  const spawn = await stepAs($, 'a1')
+  rows.a2!.push(user(String(spawn.input?.prompt)))
+
+  const first = await stepAs($, 'a2')
+  expect(first).toMatchObject({ tool: COMMAND, input: { command: 'echo nested-ok', item_id: 'c1' } })
+  expect(await $.tool.call({ tool: COMMAND, ...first.input, agentId: 'a2' })).toEqual({ result: 'nested-ok' })
+  answer('a2', first, 'nested-ok')
+  expect(await stepAs($, 'a2')).toMatchObject({ tool: HANDBACK, input: { message: 'nested-ok' } })
+  expect(requests.filter(r => r.method === 'turn/start').map(r => r.params?.threadId)).toEqual(['t1'])
+})
+
+test('a codex child result that would wake its finished parent is refused, and other resumes go on', async ($, on) => {
+  relay(on, { events: [childStarted('t2'), [turnCompleted({ id: 'u9' }, 't2')]] })
+  const { rows } = family(on)
+  on('agent.spawn', () => ({ model: 'claude-sonnet', agentId: 'a1' }))
+  await start($, on)
+  const spawn = await stepAs($, 'a1')
+  rows.a2!.push(user(String(spawn.input?.prompt)))
+  await stepAs($, 'a2')
+  const wake = (prompt: string) =>
+    $.agent.spawn({ tool_use_id: 'w', prompt, description: 'd', subagentType: LUNA, provider: { plugin: 'codex-subagent', tier: 'user' }, parentModel: 'claude-sonnet', background: true, fork: false, resume: { agentId: 'a1' } })
+
+  expect(await wake('<agent-message from="a2">\nnested-ok\n</agent-message>')).toMatchObject({ deny: expect.any(String) })
+  expect(await wake('<task-notification>\n<task-id>a2</task-id>\n<status>completed</status>\n</task-notification>')).toMatchObject({ deny: expect.any(String) })
+  expect(await wake('now fix them')).toEqual({ model: 'claude-sonnet', agentId: 'a1' })
+})
+
+test('codex seeing its child end is a step of the parent, answered only once the child subagent has ended', async ($, on) => {
+  const childEnded = (['item/started', 'item/completed'] as const).map(method =>
+    item(method, { type: 'subAgentActivity', id: 'sa-done', kind: 'completed', agentThreadId: 't2', agentPath: '/root/echo_nested' }),
+  )
+  relay(on, { events: [childStarted('t2'), [turnCompleted({ id: 'u9' }, 't2'), ...childEnded]] })
+  const { rows, answer, child } = family(on)
+  const clock = mock.clock(on)
+  await start($, on)
+  const spawn = await stepAs($, 'a1')
+  answer('a1', spawn, 'async_launched')
+  rows.a2!.push(user(String(spawn.input?.prompt)))
+  await stepAs($, 'a2')
+
+  const wait = await stepAs($, 'a1')
+  expect(wait).toMatchObject({ tool: WAIT, input: { agent: 'echo_nested', item_id: 'sa-done' } })
+  let settled = false
+  const call = $.tool.call({ tool: WAIT, ...wait.input, agentId: 'a1' }).finally(() => (settled = true))
+  await clock.advance(500)
+  expect(settled).toBe(false)
+  child.status = 'completed'
+  await clock.advance(500)
+  expect(await call).toEqual({ result: 'finished' })
 })

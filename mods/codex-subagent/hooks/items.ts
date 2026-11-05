@@ -7,10 +7,13 @@ export type Item = {
   aggregatedOutput?: string | null
   exitCode?: number | null
   changes?: { path: string; kind: { type: string }; diff?: string }[]
+  kind?: string
+  agentThreadId?: string
+  agentPath?: string
 }
 
 type Answer = { result: string } | { deny: string }
-export type RowInput = { command?: string; path?: string; kind?: string }
+export type RowInput = { command?: string; path?: string; kind?: string; agent?: string }
 type Row = [name: string, argument: string]
 
 export const NAME = 'codex-subagent' as const
@@ -61,7 +64,7 @@ function fileChangeAnswer(item: Item): Answer {
 
 export const KINDS = [
   {
-    item: 'commandExecution',
+    is: (item: Item) => item.type === 'commandExecution',
     name: 'command',
     tool: `mcp__${NAME}__command`,
     description: 'Shows a command codex runs and answers with its output once codex finished it.',
@@ -71,7 +74,7 @@ export const KINDS = [
     rowOf: (input: RowInput): Row => ['Bash', input.command ?? ''],
   },
   {
-    item: 'fileChange',
+    is: (item: Item) => item.type === 'fileChange',
     name: 'file_change',
     tool: `mcp__${NAME}__file_change`,
     description: 'Shows a file change codex makes and answers with its size once codex made it.',
@@ -80,7 +83,19 @@ export const KINDS = [
     answerOf: fileChangeAnswer,
     rowOf: (input: RowInput): Row => [VERB[input.kind ?? ''] ?? 'Update', input.path ?? ''],
   },
+  {
+    is: (item: Item) => item.type === 'subAgentActivity' && item.kind === 'completed',
+    name: 'wait',
+    tool: `mcp__${NAME}__wait`,
+    description: "Shows codex seeing one of its own subagents end and answers once that subagent's Claude Code subagent has ended too.",
+    input: ['agent'],
+    inputOf: (item: Item, _cwd: string): Record<string, string> => ({ agent: item.agentPath?.split('/').at(-1) ?? '' }),
+    answerOf: (_item: Item): Answer => ({ result: 'finished' }),
+    rowOf: (input: RowInput): Row => ['Wait', input.agent ?? ''],
+  },
 ] as const
 
-export const kindOfItem = (item: Item) => KINDS.find(kind => kind.item === item.type)
+export const kindOfItem = (item: Item) => KINDS.find(kind => kind.is(item))
 export const kindOfTool = (tool: string) => KINDS.find(kind => kind.tool === tool)
+
+export const childThreadOf = (item: Item) => (item.type === 'subAgentActivity' && item.kind === 'started' ? item.agentThreadId : undefined)

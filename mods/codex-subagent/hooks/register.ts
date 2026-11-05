@@ -16,6 +16,8 @@ const modelOfType = new Map<string, Model>()
 // One thread per subagent, so a subagent resumed by SendMessage goes on in the same codex conversation.
 const threadOfAgent = new Map<string, string>()
 const agentOfThread = new Map<string, string>()
+// Messages a running subagent got, sent to codex as one more turn before the handback.
+const heldMessagesOfAgent = new Map<string, string[]>()
 // Keyed by turn id: the relay hands each event out once, so a call can poll another call's turn/completed.
 const completedTurns = new Map<string, Turn>()
 
@@ -201,6 +203,9 @@ export const register: Register = on => {
     const tool = rows.at(-2)?.toolUses.find(use => use.tool_use_id === answered.tool_use_id)?.tool
     // A text answer would not end the run: Claude Code asks for SubagentHandback and steps again.
     if (tool !== TOOL) return yield* endTurn(e)
+    const held = heldMessagesOfAgent.get(e.agentId!)
+    heldMessagesOfAgent.delete(e.agentId!)
+    if (held) return yield* callTool(e, TOOL, { prompt: held.join('\n\n') })
     return yield* callTool(e, HANDBACK, { message: answered.isError ? `codex failed: ${answered.text}` : answered.text })
   })
 
@@ -214,6 +219,16 @@ export const register: Register = on => {
       return { deny: messageOf(error) }
     }
   }).catch(() => ({ deny: `${NAME}: the codex tool stopped before codex answered.` }))
+
+  // A running subagent's message reaches here only after the codex tool returned, so it cannot steer that turn;
+  // queued, it would sit behind the tool's result, which the handback step never reads.
+  // A finished subagent's message is passed on, since Claude Code resumes the subagent with it.
+  on('session.receive', async ($, e, next) => {
+    const agent = (await $.agent.list()).find(agent => agent.id === e.agentId)
+    if (!agent || !modelOfType.has(agent.type) || (agent.status !== 'pending' && agent.status !== 'running')) return next(e)
+    heldMessagesOfAgent.set(agent.id, [...(heldMessagesOfAgent.get(agent.id) ?? []), e.text])
+    return { consumed: `${NAME}: held for one more codex turn` }
+  })
 
   on('session.end', async ($, e, next) => {
     // After /clear or /resume the process goes on and no session.start follows, so the relay must outlive the conversation.

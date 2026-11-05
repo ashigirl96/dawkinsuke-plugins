@@ -49,8 +49,12 @@ const start = async ($: $, on: On) => {
   return { registered, tools }
 }
 
-const agents = (on: On, list: { id: string; type: string }[]) =>
-  on('agent.list', () => ({ value: list.map(agent => ({ ...agent, description: 'd', status: 'running' as const })) }))
+type AgentStatus = 'running' | 'completed'
+
+const agents = (on: On, list: { id: string; type: string; status?: AgentStatus }[]) =>
+  on('agent.list', () => ({ value: list.map(agent => ({ status: 'running' as const, ...agent, description: 'd' })) }))
+
+const sendTo = ($: $, text: string) => $.session.receive({ origin: { kind: 'coordinator' }, text, agentId: 'a1' })
 
 test('each model codex lists and does not hide becomes an Agent type named with dashes for dots', async ($, on) => {
   relay(on)
@@ -115,21 +119,25 @@ const user = (text: string): Row => ({ role: 'user', text, toolUses: [] })
 const called = (id: string, tool: string): Row => ({ role: 'assistant', text: '', toolUses: [{ tool_use_id: id, tool, input: {} }] })
 const answered = (id: string, text: string, isError = false): Row => ({ role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: id, text, isError }] })
 
-const stepOf = async ($: $, on: On, rows: Row[], { isMain = false, type = 'codex-subagent:gpt-6-luna' } = {}) => {
+type StepOptions = { isMain?: boolean; type?: string; status?: AgentStatus; send?: string }
+
+const stepOf = async ($: $, on: On, rows: Row[], { isMain = false, type = 'codex-subagent:gpt-6-luna', status = 'running', send }: StepOptions = {}) => {
   const passed: unknown[] = []
   on('turn.step', async function* (_, e) {
     passed.push(e)
     return { turnId: e.turnId, index: e.index, answer: 'claude', toolUses: [], stopReason: 'end_turn' as const, usage: null }
   })
-  agents(on, [{ id: 'a1', type }])
   on('session.messages', () => ({ value: rows }))
+  agents(on, [{ id: 'a1', type, status }])
+  on('session.receive', (_, e) => ({ text: e.text }))
   relay(on)
   await start($, on)
+  const sent = send === undefined ? undefined : await sendTo($, send)
   const stream = $.turn.step({ turnId: 't1', index: 0, model: 'claude-sonnet', messageCount: rows.length, agentId: isMain ? undefined : 'a1' })
   const chunks: unknown[] = []
   for (;;) {
     const { done, value } = await stream.next()
-    if (done) return { chunks, result: value, passed }
+    if (done) return { chunks, result: value, passed, sent }
     chunks.push(value)
   }
 }
@@ -328,4 +336,18 @@ test('a codex tool call whose dispatch is abandoned interrupts the codex turn', 
   expect((await call).result).toBe('stopped')
   await clock.settle()
   expect(interrupted).toEqual([{ threadId: 't1', turnId: 'u1' }])
+})
+
+test('a message a running codex subagent receives, which arrives only after codex answered, goes to codex as one more turn before the handback', async ($, on) => {
+  const { chunks, sent } = await stepOf($, on, [user('say ALPHA'), called('x1', TOOL), answered('x1', 'ALPHA')], { send: 'add BRAVO' })
+
+  expect(sent).toMatchObject({ consumed: expect.any(String) })
+  expect(toolCalled(chunks)).toEqual({ name: TOOL, input: { prompt: 'add BRAVO' } })
+})
+
+test('a message sent to a finished codex subagent is queued, so Claude Code resumes it with the message', async ($, on) => {
+  const { chunks, sent } = await stepOf($, on, [user('say ALPHA'), called('x1', TOOL), answered('x1', 'ALPHA')], { send: 'add BRAVO', status: 'completed' })
+
+  expect(sent).toEqual({ text: 'add BRAVO' })
+  expect(toolCalled(chunks)?.name).toBe('SubagentHandback')
 })

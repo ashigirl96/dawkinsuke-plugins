@@ -1,7 +1,5 @@
-import { read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
-
-import type { Step } from '../types'
+import { update } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 
 export type Item = {
   type: string
@@ -13,7 +11,6 @@ export type Item = {
   changes?: { path: string; kind: { type: string } }[]
 }
 
-const SHOWN = 5
 const TAIL = 3
 const VERB: Record<string, string> = { add: 'Write', delete: 'Delete', update: 'Update' }
 
@@ -51,33 +48,4 @@ export async function storeStep($: EngineInterface, agentId: string, item: Item)
     list.some(step => step.id === item.id) ? list.map(step => (step.id === item.id ? { id: item.id, lines } : step)) : [...list, { id: item.id, lines }],
   )
   return lines
-}
-
-export const registerSteps = (on: Parameters<Register>[0]) => {
-  // The Agent row stops counting as running as soon as the launch returns, so the steps are drawn whenever there are any.
-  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
-    const agentId = (e.props.output as { agentId?: unknown } | undefined)?.agentId
-    const type = (e.props.input as { subagent_type?: unknown } | undefined)?.subagent_type
-    if (e.props.tool !== 'Agent' || typeof agentId !== 'string' || typeof type !== 'string' || !type.startsWith(PREFIX)) return next(e)
-    const list: Step[] = (await read($, { ...steps, id: agentId })) ?? []
-    if (!list.length) return next(e)
-    const shown = e.props.isExpanded ? list : list.slice(-SHOWN)
-    const hidden = list.length - shown.length
-    const { Box, Text } = $.ui.resolve(e)
-    return (
-      <Box flexDirection="column">
-        {await next(e)}
-        <Box flexDirection="column" paddingLeft={2}>
-          {hidden > 0 && <Text dimColor>{`   … +${hidden} more`}</Text>}
-          {shown.flatMap(step =>
-            step.lines.map((line, i) => (
-              <Text key={`${step.id}:${i}`} dimColor={line.startsWith(' ')} wrap="truncate-end">
-                {line}
-              </Text>
-            )),
-          )}
-        </Box>
-      </Box>
-    )
-  })
 }

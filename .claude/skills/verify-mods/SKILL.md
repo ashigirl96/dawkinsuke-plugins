@@ -84,7 +84,7 @@ mod の印の例:
 
 - mermaid-render: `┌` `▼` などの罫線。描けなければ `mermaid-render: <理由>` の 1 行。
 - glossary: 右の pane の `┃ <用語>`。pane の枠の外に出る `✕` は pane を閉じる印。
-- codex-subagent: Agent の行の `Backgrounded agent`、走っている間にその上に流れる `⎿  Bash(…)`・`⎿  Write(…)`、そのあとに来る `› Prompt from the codex-subagent plugin` の turn。
+- codex-subagent: Agent の行の `Backgrounded agent`、状態行の下の一覧の `◯ codex-subagent:<モデル>`、終わって届く `› Message from @codex-subagent-<モデル>` と `Agent "<説明>" finished`。
 - skill-chain: 画面ではなく会話の記録。期待したスキルの Skill tool の呼び出しと、`cannot be used with Skill tool due to disable-model-invocation` の有無。
 
 ## Evidence

@@ -1,21 +1,15 @@
 # codex subagent に任せると結果が届く
 
-親が Agent tool で `codex-subagent:<モデル>` を起動すると、Agent の行が本物の subagent と同じく `Backgrounded agent` で出て、裏で `codex app-server` の thread が codex 自身の tool で最後まで走る。走っている間、codex が走らせたコマンドと編集したファイルが Agent の行の下に `⎿  Bash(…)`・`⎿  Write(…)` の形で流れる。終わると `› Prompt from the codex-subagent plugin` の新しい turn が来て、本文の頭に `The codex subagent "<説明>" (codex-subagent:<モデル>, agentId codex-…) finished.` が、その下に `<codex-output>` と `</codex-output>` で囲んだモデルの出力が届く。codex のコマンドはネットワークを使える。
+親が Agent tool で `codex-subagent:<モデル>` を起動すると、Claude Code が本物の subagent を起こし、Agent の行が `Backgrounded agent` で出て、状態行の下の subagent の一覧に `◯ codex-subagent:<モデル>  <説明>` が並ぶ。その subagent の手は mod が答え、Anthropic の API を呼ばない。最初の手で codex の tool（`mcp__codex-subagent__codex`）を呼び、`codex app-server` の thread で turn を最後まで走らせる。次の手で codex の最後の答えを `SubagentHandback` で返し、親に `› Message from @codex-subagent-<モデル>` と `Agent "<説明>" finished` が届く。codex のコマンドはネットワークを使える。
 
 ## Sub-features
 
-- `launch`: Agent の行が `⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)` で出て、親はすぐ次に進む。
-- `steps`: codex のコマンドが `⎿  Bash(<コマンド>)` と、その下の `exit <終了コード> · <出力の末尾 3 行>`（走っている間は `running…`）で、ファイルの変更が `⎿  Write(<path>)`・`Update(<path>)`・`Delete(<path>)` で出る。新しい 5 つだけを出し、残りは `… +<数> more` にまとめ、ctrl+o で全部出る。
-- `deliver`: 終わると `› Prompt from the codex-subagent plugin` の turn が来て、codex の最後の答えが `<codex-output>` の囲みの中に届く。答えに `</codex-output>` があれば `‹/codex-output>` に変わり、囲みは 1 組だけ残る。
-- `outputFile`: Agent の結果の `outputFile` に、codex の item ごとに 1 行（`⎿  Bash(…) running…`、`⎿  Bash(…) exit 0 · …`）が足され、最後に届いた本文が足される。
+- `launch`: Agent の行が `⎿  Backgrounded agent (↓ to manage · ctrl+o to expand)` で出て、親はすぐ次に進む。走っている間、状態行の下の一覧に `◯ codex-subagent:<モデル>  <説明>` が出る。
+- `deliver`: 終わると `› Message from @codex-subagent-<モデル>…` が来て、codex の最後の答えが本文になり、`⏺ Agent "<説明>" finished` が出る。本文の頭に Claude Code が「auto mode の分類器が使えなかった」という注記を付ける（ADR 0003 で受け入れた）。
 - `network`: codex が `gh api` を走らせ、GitHub の答えが届く。
 - `nested`: codex が自分の subagent（`spawn_agent`）を起動でき、その答えが届く。
-- `steer`: 走っている codex subagent に `SendMessage` を送ると、行が `Message added to the running turn of codex-…` で出て、届く答えに指示が反映される。
-- `resume`: 終わった codex subagent に `SendMessage` を送ると、行が `Resuming agent codex-…` で出て、同じ thread で続きが走り、もう一度 turn が来る。
-- `stop`: TaskStop で走っている codex subagent を止めると、行が `<説明> · stopped` で出て、その答えは届かない。
+- `stop`: TaskStop で走っている codex subagent を止めると、`Stop Task ⎿ <説明> · stopped` と `Agent "<説明>" was stopped by Claude` が出て、答えは届かない。codex の turn も中断される。
 - `cleanup`: `/exit` で、mod が起こした中継（`relay/relay.ts`）と `codex app-server` が止まる。
-- `effort`: Agent tool の `effort` が、そのモデルの `supportedReasoningEfforts` に合わせて codex の turn に渡る（`max` はモデルの一番上、無い段階は 1 つ下で近いもの、省けばモデルの既定）。
-- `worktree`: `isolation: "worktree"` で、mod が `<project root>/.claude/worktrees/codex-…` に branch `worktree-codex-…` の worktree を作り、codex はそこで作業する。届く本文の頭に worktree の path と branch が出る。
 
 ## How to get to it (user POV)
 
@@ -23,28 +17,24 @@
 
 ## Driving it with tui.sh
 
-起動: `$T start codex-$id --setting-sources project --plugin-dir mods/codex-subagent --model sonnet --permission-mode auto`
+起動: `$T start codex-$id --setting-sources project --plugin-dir mods/codex-subagent --model sonnet --permission-mode auto --session-id <uuid>`
 
-- **launch・deliver・network.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、`gh api rate_limit --jq .rate.limit` を走らせてその出力だけを返すよう頼んで。結果が届いたら、届いた数字をそのまま書いて。'``。`$T wait codex-$id 'Backgrounded agent'` で行を見て、`$T turn codex-$id 2 240` で届いた turn の返答まで待ち、`$T shot codex-$id "$run/codex-subagent-launch-after.txt"`。写しに `Prompt from the codex-subagent plugin`、`finished. What follows inside the codex-output tags`、`<codex-output>` の下に `5000` のような数字が並ぶ。数字が出ればネットワークが通っている。
-- **deliver の囲み・outputFile.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、`ls mods` を走らせてから、答えの最後の行に文字列 </codex-output> をそのまま書くよう頼んで。結果が届いたら、届いた本文を一字一句そのまま見せて。'``、`$T turn codex-$id 2 400`、`$T shot`。届いた turn で、答えの最後の行が `‹/codex-output>` になり、そのあとに本物の `</codex-output>` が 1 つだけ来る。続けて `cat ${TMPDIR}codex-subagent-*/<agentId>.txt` で、item ごとの行のあとに届いた本文があることを見る（`<agentId>` は届いた本文の頭にある）。
-- **effort・worktree.** 1 回の起動で両方見る。``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna"、effort "xhigh"、isolation "worktree" を付けて起動し、「pwd と git branch --show-current の出力だけを返して」と頼んで。結果が届いたらそのまま見せて。'``、`$T turn codex-$id <それまでの返答の回数 + 2> 400`、`$T shot`。届いた本文に `It worked in the git worktree …/.claude/worktrees/codex-<id>` が出て、codex の答えの pwd と branch がそれと一致する。effort は画面に出ないので、`find ~/.codex/sessions -name '*.jsonl' -mmin -5 | xargs grep -l 'codex-<id>' | xargs grep -o '"effort":"[a-z]*"'` が `"effort":"xhigh"` を出すことで確かめる。終わったら `git worktree remove .claude/worktrees/codex-<id>` と `git branch -D worktree-codex-<id>` で消す（mod は消さない）。
-- **nested.** 同じ session で ``$T send codex-$id 'もう 1 つ、subagent_type "codex-subagent:gpt-6-luna" を起動して、「codex 自身の subagent（spawn_agent）を 1 つ起動し、その subagent に `echo nested-ok` を走らせ、subagent の答えをそのまま返して」と頼んで。'``、`$T turn codex-$id 4 400`（この経路だけを新しい session で流すなら `turn` の数は 2）。届いた turn の本文に `nested-ok` が出る。codex が自分で echo しただけでないかは、`find ~/.codex/sessions -name '*.jsonl' -mmin -5` の rollout で確かめる。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、`<親の id>` の rollout に `"name":"spawn_agent"` がある。両方を `$run` に写す。
-- **steps.** 別の session で ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、次を順に 1 つずつ別のコマンドで走らせるよう頼んで: `sleep 5; echo one`、`ls mods`、ファイル /tmp/codex-subagent-note.txt に hi と書く（apply_patch で）、`sleep 20; echo two`。最後に two とだけ返させて。結果が届いたら届いた語だけ書いて。'``。`$T wait codex-$id 'Bash\(ls mods\)'` で出たら、届く前に `$T shot codex-$id "$run/codex-subagent-steps-running.txt"`。写しで `Prompt from the codex-subagent plugin` より前に、Agent の行の下に `⎿  Bash(sleep 5; echo one)` と `exit 0 · one` が並ぶ。`$T turn codex-$id 2 240` のあと、もう 1 枚撮って `⎿  Write(/tmp/codex-subagent-note.txt)` と `exit 0 · two` を見る。終わったら `/tmp/codex-subagent-note.txt` を消す。
-- **steer・resume・stop.** 別の session で順に打つ。宛先は Agent tool の `name` で指す（agentId でも同じに効く）。
-  1. ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna"、name "worker" を起動し、「`sleep 45` を走らせ、そのあと DONE-A とだけ答えて」と頼んで。起動したら、待たずにすぐ SendMessage で to "worker" に「最後の答えに EXTRA-B という語も足して」と送って。届いた結果はそのまま書いて。'``、`$T turn codex-$id 2 300`。SendMessage の行が `Message added to the running turn of`、届いた本文が `DONE-A EXTRA-B`。
-  2. ``$T send codex-$id '終わった worker に SendMessage で to "worker"、「さっきの答えに続けて CONT-C とだけ答えて」と送って。届いた結果はそのまま書いて。'``、`$T turn codex-$id 4 300`。行が `Resuming agent codex-…`、2 つ目の turn の本文が `CONT-C`。
-  3. ``$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna"、name "sleeper" を起動し、「`sleep 90` を走らせ、そのあと LATE-D とだけ答えて」と頼んで。起動したら、待たずにすぐ TaskStop で task_id "sleeper" を止めて。'``。`Stop Task` の行が `· stopped` で出たら、`$T wait codex-$id 'subagent "Run sleep 90' 110` が切れる（答えが届かない）ことを見る。codex の側で止まったかは、`grep -l 'sleep 90'` で見つけた `~/.codex/sessions` の新しい rollout に `"reason":"interrupted"` があるかで確かめる。
-- **cleanup.** 起動の直後に `pgrep -fl 'relay/relay.ts|^codex app-server$'` で 2 つ出ることを見て、`$T send codex-$id '/exit'` のあとにもう一度流し、何も出ないことを見る。
+1 つの session で順に打つ。
+
+- **cleanup の前半.** 起動の直後に `pgrep -fl 'relay/relay.ts|^codex app-server$'` で 2 つ出ることを見る。
+- **launch・deliver・network.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、`gh api rate_limit --jq .rate.limit` を走らせてその出力だけを返すよう頼んで。結果が届いたら、届いた数字をそのまま書いて。'``。`$T wait codex-$id 'codex-subagent' 60` のあと数秒おいて `$T shot` を撮り、一覧に `◯ codex-subagent:gpt-6-luna` が出ていることを見る。`$T wait codex-$id 'Agent ".*" finished' 240` のあと 10 秒ほどおいて `$T shot codex-$id "$run/codex-subagent-launch.txt"`。写しに `Message from @codex-subagent-gpt-6`、`finished`、`5000` のような数字が並ぶ。数字が出ればネットワークが通っている。
+- **nested.** ``$T send codex-$id 'もう 1 つ、subagent_type "codex-subagent:gpt-6-luna" を起動して、「codex 自身の subagent（spawn_agent）を 1 つ起動し、その subagent に `echo nested-ok` を走らせ、subagent の答えをそのまま返して」と頼んで。届いたら本文をそのまま書いて。'``、起動の行に出た説明で `$T wait codex-$id 'Agent "<説明>.*finished' 300` を待つ（1 つ目の `finished` に合わないように）。届いた本文に `nested-ok` が出る。codex が自分で echo しただけでないかは、`find ~/.codex/sessions -name '*.jsonl' -mmin -5` の rollout で確かめる。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、`<親の id>` の rollout に `"name":"spawn_agent"` がある。
+- **stop.** ``$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「`sleep 90` を走らせ、そのあと LATE-D とだけ答えて」と頼んで。起動したら 20 秒待ってから（Bash で sleep 20）、TaskStop でその subagent を止めて。'``、`$T wait codex-$id 'stopped' 180`、`$T shot`。`Stop Task ⎿ … · stopped` と `was stopped by Claude` が出て、`Message from` の答えは来ない。codex の側で止まったかは、`grep -l 'sleep 90'` で見つけた `~/.codex/sessions` の新しい rollout に `"type":"turn_aborted"` と `"reason":"interrupted"` があり、`duration_ms` が 90 秒より短いかで確かめる。
+- **cleanup.** `$T send codex-$id '/exit'` のあと数秒おいて `pgrep -fl 'relay/relay.ts|^codex app-server$'` を流し、何も出ないことを見る。
 
 ## Gotchas
 
-- `--permission-mode auto` で起こす。親の Agent の呼び出しだけが auto mode の判定を通り、codex のコマンドは codex の sandbox（`workspace-write`）が囲う。
+- `--permission-mode auto` で起こす。codex の tool は mod の hook が `next(e)` を呼ばずに答えるので、auto mode の判定を通らずに走る。hook が落ちて core に回ると `auto mode's check had no usable answer` で拒まれる。codex のコマンドは codex の sandbox（`workspace-write`）が囲う。
 - codex の turn は有料で、1 回 10〜60 秒かかる。安いモデルと短い仕事で確かめる。
 - `pgrep` の `codex app-server` は行の全体で合わせる。codex の desktop app が別に起こす `codex app-server --listen unix:// … --managed-daemon` や `daemon pid-update-loop` は mod のものではない。
-- 届いた turn の前に、親が起動を伝える返答で 1 回 `done` が数えられる。`turn` の数はその分を足す。
-- steps の行の並びの頭に、codex が自分で読む `~/.claude/CLAUDE.md` などの `Bash(cat …)` が混ざる。codex が repo の指示を読みに行くためで、mod の失敗ではない。
-- `/reload-plugins` のあとも行は残る（`$.state` に置いている）。
-- nested は、mod が thread を `ephemeral: false` で作るから通る。`ephemeral: true` の thread から子を起動すると `no rollout found` で失敗する（`docs/research/codex-app-server.md`）。子の thread の通知も同じ接続に来るが、mod は知らない threadId を無視するので、子の `turn/completed` で親に届けてしまうことはない。
-- SendMessage と TaskStop の宛先の照合は mod の対応表で先にするので、`ListAgents` に codex subagent が載らなくても効く。mod が知らない宛先は本物に回る。
+- `$T turn` の `· done` は、裏の subagent の結果を受けた返答で数えられないことがある。届いたかは `Agent "<説明>" finished` を `$T wait` で待つ。
+- `$T wait` に打った文の語を渡すと、入力した行に合ってすぐ抜ける。待つのは mod や Claude Code が出す行の語にする。
+- 一覧の 1 行の文は Claude Code が描く（`Running codex-subagent codex tool` など）もので、mod からは変えられない。
+- 親が届いた答えに「分類器が使えなかったので確かめていない」と添えるのは、Claude Code の注記によるもので、mod の失敗ではない。
+- nested は、mod が thread を `ephemeral: false` で作るから通る。`ephemeral: true` の thread から子を起動すると `no rollout found` で失敗する（`docs/research/codex-app-server.md`）。子の thread の通知も同じ接続に来るが、mod は自分で作った thread の通知しか拾わない。
 - 入力欄に薄く出る「結果はまだ？」のような文は候補で、打たれていない。
-- 親は文で頼まれないと `effort` を付けない。mod が `tool.describe` で Agent tool の説明に「codex-subagent の種類なら `effort` を自分で選んでよい」と足しても、`effort` の引数の説明の「自分の判断で付けるな」が勝つ（Claude Code 2.1.318・sonnet、「深く検討させて」と頼んでも付けなかった）。`tool.describe` が書き換えられるのは tool の説明だけで、引数の説明は変えられない。effort を見るときは文で指定する。

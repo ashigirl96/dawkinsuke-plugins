@@ -22,7 +22,7 @@
 起動: `$T start codex-$id --setting-sources project --plugin-dir mods/codex-subagent --model sonnet --permission-mode auto`
 
 - **launch・deliver・network.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、`gh api rate_limit --jq .rate.limit` を走らせてその出力だけを返すよう頼んで。結果が届いたら、届いた数字をそのまま書いて。'``。`$T wait codex-$id 'Backgrounded agent'` で行を見て、`$T turn codex-$id 2 240` で届いた turn の返答まで待ち、`$T shot codex-$id "$run/codex-subagent-launch-after.txt"`。写しに `Prompt from the codex-subagent plugin`、`finished. What follows is its model output`、`5000` のような数字が並ぶ。数字が出ればネットワークが通っている。
-- **nested.** 同じ session で ``$T send codex-$id 'もう 1 つ、subagent_type "codex-subagent:gpt-6-luna" を起動して、「codex 自身の subagent（spawn_agent）を 1 つ起動し、その subagent に `echo nested-ok` を走らせ、subagent の答えをそのまま返して」と頼んで。'``、`$T turn codex-$id 4 400`。届いた本文に `nested-ok` が出る。codex が自分で echo しただけでないかは、`find ~/.codex/sessions -name '*.jsonl' -mmin -5` の新しい rollout の 1 行目に `"thread_spawn":{"parent_thread_id":…}` があるかで確かめる。
+- **nested.** 同じ session で ``$T send codex-$id 'もう 1 つ、subagent_type "codex-subagent:gpt-6-luna" を起動して、「codex 自身の subagent（spawn_agent）を 1 つ起動し、その subagent に `echo nested-ok` を走らせ、subagent の答えをそのまま返して」と頼んで。'``、`$T turn codex-$id 4 400`（この経路だけを新しい session で流すなら `turn` の数は 2）。届いた turn の本文に `nested-ok` が出る。codex が自分で echo しただけでないかは、`find ~/.codex/sessions -name '*.jsonl' -mmin -5` の rollout で確かめる。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、`<親の id>` の rollout に `"name":"spawn_agent"` がある。両方を `$run` に写す。
 - **steer・resume・stop.** 別の session で順に打つ。宛先は Agent tool の `name` で指す（agentId でも同じに効く）。
   1. ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna"、name "worker" を起動し、「`sleep 45` を走らせ、そのあと DONE-A とだけ答えて」と頼んで。起動したら、待たずにすぐ SendMessage で to "worker" に「最後の答えに EXTRA-B という語も足して」と送って。届いた結果はそのまま書いて。'``、`$T turn codex-$id 2 300`。SendMessage の行が `Message added to the running turn of`、届いた本文が `DONE-A EXTRA-B`。
   2. ``$T send codex-$id '終わった worker に SendMessage で to "worker"、「さっきの答えに続けて CONT-C とだけ答えて」と送って。届いた結果はそのまま書いて。'``、`$T turn codex-$id 4 300`。行が `Resuming agent codex-…`、2 つ目の turn の本文が `CONT-C`。
@@ -35,5 +35,6 @@
 - codex の turn は有料で、1 回 10〜60 秒かかる。安いモデルと短い仕事で確かめる。
 - `pgrep` の `codex app-server` は行の全体で合わせる。codex の desktop app が別に起こす `codex app-server --listen unix:// … --managed-daemon` や `daemon pid-update-loop` は mod のものではない。
 - 届いた turn の前に、親が起動を伝える返答で 1 回 `done` が数えられる。`turn` の数はその分を足す。
+- nested は、mod が thread を `ephemeral: false` で作るから通る。`ephemeral: true` の thread から子を起動すると `no rollout found` で失敗する（`docs/research/codex-app-server.md`）。子の thread の通知も同じ接続に来るが、mod は知らない threadId を無視するので、子の `turn/completed` で親に届けてしまうことはない。
 - SendMessage と TaskStop の宛先の照合は mod の対応表で先にするので、`ListAgents` に codex subagent が載らなくても効く。mod が知らない宛先は本物に回る。
 - 入力欄に薄く出る「結果はまだ？」のような文は候補で、打たれていない。

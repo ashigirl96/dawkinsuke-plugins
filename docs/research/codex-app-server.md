@@ -129,6 +129,7 @@ item ではない turn 単位の通知:
   - v2: 起動に成功すると `subAgentActivity` `{kind:"started", agentThreadId, agentPath, model, reasoningEffort}` を出す（`multi_agents_v2/spawn.rs:160-175`、`codex-rs/core/src/tools/handlers/multi_agents_v2.rs:44-52`）。子の turn が終わると `kind:"completed"`（`codex-rs/core/src/agent/control/completion.rs:72-84`）。v2 の `collabAgentToolCall` は analytics にしか送られず、item には出ない（`multi_agents_v2/spawn.rs:49-89`）。起動に失敗すると item は何も出ない。
 - 子の thread の event が同じ接続に来るか: source では来る。app-server は thread の作成を見張り、新しい thread ができるたびに、初期化済みのすべての接続に listener を付ける（`lib.rs:1324-1342`、`thread_processor.rs:3832-3900`）。子の `item/*`・`turn/*` は子自身の `threadId` で届き、`Thread.parentThreadId` と `Thread.source`（`SubAgent` の `ThreadSpawn`）で親を辿れる（**推測**: 子の `thread/started` が来るかは確かめていない）。
 - 実機（2 回目）: `ephemeral:true` の thread で subagent を頼むと、model の答えは `Subagent spawn failed: no rollout found for thread.` で、子の thread の event は 1 つも来なかった。v2 の `spawn_agent` は `fork_turns` の既定が `"all"`（親の履歴を全部引き継ぐ）で（`multi_agents_v2/spawn.rs:221-233`）、そのとき親の保存済みの履歴（rollout）を読む（`codex-rs/core/src/agent/control/spawn.rs:1116-1132`）。ephemeral の thread は rollout を持たないので失敗した、と読める（**推測**: 原因の特定は source を読んだ上での判断で、`ephemeral:false` での成功は確かめていない）。subagent を使わせるなら `ephemeral` を外すか、model に `fork_turns:"none"` を使わせる必要がある。
+- 実機（3 回目、mod `codex-subagent` 経由）: `ephemeral:false` の thread で subagent を頼むと起動に成功した。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、子の `echo nested-ok` の答えが親の thread の最後の答えに入った。
 
 ## 9. 認証
 

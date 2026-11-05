@@ -501,6 +501,26 @@ test('a SendMessage by name to a finished codex subagent runs a new turn on its 
   expect(answers(texts)).toEqual(['first', 'second'])
 })
 
+test('two SendMessages at once to a finished codex subagent start one turn and steer it with its real id', async ($, on) => {
+  const clock = mock.clock(on)
+  const push = heldEvents(on)
+  let turns = 0
+  const requests = relay(on, { answers: { 'thread/start': THREAD, 'turn/start': () => ({ result: { turn: { id: `u${++turns}` } } }) } })
+  delivered(on)
+  await start($, on)
+
+  await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna', name: 'reviewer' })
+  push(turnCompleted({ id: 'u1', status: 'completed', items: [] }))
+  await clock.settle()
+  await Promise.all([
+    $.tool.call({ tool: 'SendMessage', to: 'reviewer', message: 'first' }),
+    $.tool.call({ tool: 'SendMessage', to: 'reviewer', message: 'second' }),
+  ])
+
+  expect(requests.filter(r => r.method === 'turn/start')).toHaveLength(2)
+  expect(requests.find(r => r.method === 'turn/steer')?.params).toMatchObject({ expectedTurnId: 'u2', input: [{ type: 'text', text: 'second' }] })
+})
+
 test('a SendMessage to anyone else goes on to Claude Code', async ($, on) => {
   const requests = relay(on)
   on('tool.call', { tool: 'SendMessage' }, () => ({ result: 'engine' }))

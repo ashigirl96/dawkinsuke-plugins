@@ -241,13 +241,17 @@ export const register: Register = on => {
     const to = recipientOf(e)
     const run = to ? runOfKey.get(to) : undefined
     if (!run) return next(e)
-    await run.ready
+    // A turn started meanwhile replaces ready; the check sits here, not in a helper, so nothing runs between it and the code below.
+    do await run.ready
+    while (run.turnId === STARTING)
     if (!run.threadId) return { deny: `${run.agentId} failed to start, so it cannot take messages.` }
     if (run.turnId) {
       await rpc($, 'turn/steer', { threadId: run.threadId, expectedTurnId: run.turnId, input: textInput(e.message) })
       return { result: { success: true, message: `Message added to the running turn of ${run.agentId}.` } }
     }
-    await startTurn($, run, e.message)
+    const started = startTurn($, run, e.message)
+    run.ready = started.catch(() => {})
+    await started
     void pump($)
     return { result: { success: true, message: `Resuming agent ${run.agentId}`, resumedAgentId: run.agentId } }
   }).catch(($, e, next) => refuse(next, recipientOf(e)) ?? next(e))
@@ -256,7 +260,8 @@ export const register: Register = on => {
     const id = taskOf(e)
     const run = id ? runOfKey.get(id) : undefined
     if (!run) return next(e)
-    await run.ready
+    do await run.ready
+    while (run.turnId === STARTING)
     if (!run.turnId) return { deny: `Task ${run.agentId} is not running.` }
     await rpc($, 'turn/interrupt', { threadId: run.threadId, turnId: run.turnId })
     const result = { message: `Successfully stopped task: ${run.agentId} (${run.description})`, task_id: run.agentId, task_type: 'local_agent', command: run.description }

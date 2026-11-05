@@ -1,0 +1,73 @@
+import { read, update } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
+
+import type { Step } from '../types'
+
+export type Item = {
+  type: string
+  id: string
+  command?: string
+  status?: string
+  aggregatedOutput?: string | null
+  exitCode?: number | null
+  changes?: { path: string; kind: { type: string } }[]
+}
+
+const SHOWN = 5
+const TAIL = 3
+const VERB: Record<string, string> = { add: 'Write', delete: 'Delete', update: 'Update' }
+
+const steps = { plugin: 'codex-subagent', key: 'steps' } as const
+
+// codex wraps every command in the login shell (`/bin/zsh -lc '…'`), which says nothing about what ran.
+const unwrap = (command: string) => command.match(/^\S+ -lc '(.*)'$/s)?.[1]?.replaceAll(`'\\''`, `'`) ?? command
+
+function linesOf(item: Item): string[] | undefined {
+  if (item.type === 'commandExecution') {
+    const tail = (item.aggregatedOutput ?? '').split('\n').filter(Boolean).slice(-TAIL)
+    const detail = item.status === 'inProgress' ? 'running…' : item.exitCode == null ? item.status : [`exit ${item.exitCode}`, ...tail].join(' · ')
+    return [`⎿  Bash(${unwrap(item.command ?? '').replace(/\s*\n\s*/g, ' ')})`, `   ${detail}`]
+  }
+  if (item.type === 'fileChange') {
+    const lines = (item.changes ?? []).map(change => `⎿  ${VERB[change.kind.type] ?? 'Update'}(${change.path})`)
+    return item.status === 'failed' || item.status === 'declined' ? [...lines, `   ${item.status}`] : lines
+  }
+  return undefined
+}
+
+export async function record($: EngineInterface, agentId: string, item: Item) {
+  const lines = linesOf(item)
+  if (!lines) return
+  await update($, { ...steps, id: agentId }, (list = []) =>
+    list.some(step => step.id === item.id) ? list.map(step => (step.id === item.id ? { id: item.id, lines } : step)) : [...list, { id: item.id, lines }],
+  )
+}
+
+export const registerSteps = (on: Parameters<Register>[0], prefix: string) => {
+  // The Agent row stops counting as running as soon as the launch returns, so the steps are drawn whenever there are any.
+  on('ui.render', { component: 'ToolUse' }, async ($, e, next) => {
+    const agentId = (e.props.output as { agentId?: unknown } | undefined)?.agentId
+    const type = (e.props.input as { subagent_type?: unknown } | undefined)?.subagent_type
+    if (e.props.tool !== 'Agent' || typeof agentId !== 'string' || typeof type !== 'string' || !type.startsWith(prefix)) return next(e)
+    const list: Step[] = (await read($, { ...steps, id: agentId })) ?? []
+    if (!list.length) return next(e)
+    const shown = e.props.isExpanded ? list : list.slice(-SHOWN)
+    const hidden = list.length - shown.length
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box flexDirection="column">
+        {await next(e)}
+        <Box flexDirection="column" paddingLeft={2}>
+          {hidden > 0 && <Text dimColor>{`   … +${hidden} more`}</Text>}
+          {shown.flatMap(step =>
+            step.lines.map((line, i) => (
+              <Text key={`${step.id}:${i}`} dimColor={line.startsWith(' ')} wrap="truncate-end">
+                {line}
+              </Text>
+            )),
+          )}
+        </Box>
+      </Box>
+    )
+  })
+}

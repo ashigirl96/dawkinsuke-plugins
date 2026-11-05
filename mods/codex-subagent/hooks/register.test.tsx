@@ -139,3 +139,119 @@ test('a request codex sends is answered with an error so the turn does not stall
 
   expect(sent).toContainEqual({ id: 7, error: expect.objectContaining({ code: -32601 }) })
 })
+
+const item = (method: string, item: Record<string, unknown>) => ({ method, params: { threadId: 't1', item } })
+const command = (id: string, command: string, rest: Record<string, unknown>) => item('item/completed', { type: 'commandExecution', id, command, ...rest })
+
+// Stands for the engine drawing the row itself.
+const engineRow = (on: On) =>
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text>Agent(review)</Text>
+  })
+
+const agentRow = ($: Parameters<TestBody>[0], output: unknown, isExpanded?: boolean) =>
+  $.ui.mount({
+    plugin: 'codex-subagent',
+    surface: 'terminal',
+    component: 'ToolUse',
+    requestId: 'tu1',
+    props: { tool_use_id: 'tu1', tool: 'Agent', input: { subagent_type: 'codex-subagent:gpt-6-luna' }, isRunning: false, isErrored: false, isInterrupted: false, isExpanded, output },
+  })
+
+test('codex commands and edits are drawn under the Agent row while codex runs', async ($, on) => {
+  const clock = mock.clock(on)
+  relay(on, {
+    answers: { 'thread/start': THREAD },
+    events: [
+      [
+        command('c1', "/bin/zsh -lc 'echo hello &&\n  ls -a'", { status: 'completed', aggregatedOutput: 'hello\nl1\nl2\nl3\n\n', exitCode: 0 }),
+        item('item/completed', {
+          type: 'fileChange',
+          id: 'f1',
+          status: 'completed',
+          changes: [
+            { path: '/work/note.txt', kind: { type: 'add' }, diff: 'hi\n' },
+            { path: '/work/old.txt', kind: { type: 'delete' }, diff: '' },
+            { path: '/work/a.ts', kind: { type: 'update', move_path: null }, diff: '@@' },
+          ],
+        }),
+        item('item/started', { type: 'commandExecution', id: 'c2', command: 'bun test', status: 'inProgress', aggregatedOutput: null, exitCode: null }),
+        item('item/completed', { type: 'agentMessage', id: 'm1', text: 'thinking out loud' }),
+        turnCompleted({ status: 'completed' }),
+      ],
+    ],
+  })
+  engineRow(on)
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'Agent', description: 'review', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+  const ui = await agentRow($, result)
+
+  const texts = await Promise.all(
+    ['Bash\\(echo hello', 'exit 0', 'Write', 'Delete', 'Update', 'Bash\\(bun', 'running', 'thinking'].map(async text => (await ui.find({ type: 'Text', text: new RegExp(text) }))?.text),
+  )
+  expect(texts).toEqual([
+    '⎿  Bash(echo hello && ls -a)',
+    '   exit 0 · l1 · l2 · l3',
+    '⎿  Write(/work/note.txt)',
+    '⎿  Delete(/work/old.txt)',
+    '⎿  Update(/work/a.ts)',
+    '⎿  Bash(bun test)',
+    '   running…',
+    undefined,
+  ])
+})
+
+test('a command that is redrawn on completion replaces its running line, and a failure shows its exit code', async ($, on) => {
+  const clock = mock.clock(on)
+  relay(on, {
+    answers: { 'thread/start': THREAD },
+    events: [
+      [item('item/started', { type: 'commandExecution', id: 'c1', command: 'false', status: 'inProgress', aggregatedOutput: null, exitCode: null })],
+      [command('c1', 'false', { status: 'failed', aggregatedOutput: '', exitCode: 1 }), turnCompleted({ status: 'completed' })],
+    ],
+  })
+  engineRow(on)
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'Agent', description: 'review', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+  const ui = await agentRow($, result)
+
+  expect((await ui.find({ type: 'Text', text: /exit/ }))?.text).toBe('   exit 1')
+  expect(await ui.find({ type: 'Text', text: /running/ })).toBeUndefined()
+})
+
+test('only the last few codex items show until the row is expanded', async ($, on) => {
+  const clock = mock.clock(on)
+  const commands = Array.from({ length: 7 }, (_, i) => command(`c${i}`, `echo ${i}`, { status: 'completed', aggregatedOutput: '', exitCode: 0 }))
+  relay(on, { answers: { 'thread/start': THREAD }, events: [[...commands, turnCompleted({ status: 'completed' })]] })
+  engineRow(on)
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'Agent', description: 'review', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+
+  const folded = await agentRow($, result)
+  expect((await folded.find({ type: 'Text', text: /more/ }))?.text).toBe('   … +2 more')
+  expect(await folded.find({ type: 'Text', text: /echo 1\)/ })).toBeUndefined()
+  expect(await folded.find({ type: 'Text', text: /echo 6\)/ })).toBeDefined()
+  await folded.unmount()
+
+  const expanded = await agentRow($, result, true)
+  expect(await expanded.find({ type: 'Text', text: /echo 0\)/ })).toBeDefined()
+})
+
+test('an Agent row of another type is drawn as the engine draws it', async ($, on) => {
+  engineRow(on)
+  const ui = await $.ui.mount({
+    plugin: 'codex-subagent',
+    surface: 'terminal',
+    component: 'ToolUse',
+    requestId: 'tu2',
+    props: { tool_use_id: 'tu2', tool: 'Agent', input: { subagent_type: 'general-purpose' }, isRunning: true, isErrored: false, isInterrupted: false },
+  })
+  expect(await ui.find({ type: 'Text', text: /⎿/ })).toBeUndefined()
+})

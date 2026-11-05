@@ -1,9 +1,11 @@
 import type { EngineInterface, Register } from 'claude-code'
 
+import { type Item, record, registerSteps } from './steps'
+
 type Model = { id: string; hidden: boolean; description: string }
 type Run = { agentId: string; type: string; description: string; outputFile: string }
 type Turn = { status: 'completed' | 'interrupted' | 'failed'; items: { type: string; text?: string }[]; error: { message: string } | null }
-type CodexMessage = { id?: number | string; method?: string; params?: { threadId?: string; turn?: Turn } }
+type CodexMessage = { id?: number | string; method?: string; params?: { threadId?: string; turn?: Turn; item?: Item } }
 
 const PREFIX = 'codex-subagent:'
 
@@ -77,8 +79,9 @@ async function handle($: EngineInterface, message: CodexMessage) {
     await relay($, '/send', { id: message.id, error: { code: -32601, message: `codex-subagent does not handle ${message.method}` } })
     return
   }
-  const { threadId, turn } = message.params ?? {}
+  const { threadId, turn, item } = message.params ?? {}
   const run = threadId ? runOfThread.get(threadId) : undefined
+  if (run && item && (message.method === 'item/started' || message.method === 'item/completed')) return record($, run.agentId, item)
   if (message.method !== 'turn/completed' || !run || !turn) return
   runOfThread.delete(threadId!)
   if (turn.status === 'completed') await deliver($, run, { output: lastAnswer(turn) })
@@ -123,6 +126,8 @@ async function launch($: EngineInterface, run: Run, model: string, prompt: strin
 }
 
 export const register: Register = on => {
+  registerSteps(on, PREFIX)
+
   on('tool.call', { tool: 'Agent' }, async ($, e, next) => {
     const type = e.subagent_type ?? ''
     const model = type.startsWith(PREFIX) ? modelOfType.get(type) : undefined

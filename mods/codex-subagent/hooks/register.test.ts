@@ -23,7 +23,8 @@ const relay = (on: On, { answers = {}, events = [] }: { answers?: Record<string,
     if (path === '/events') return respond({ events: events.shift() ?? [] })
     if (path !== '/rpc') return respond({})
     requests.push(body)
-    const answer = answers[body.method] ?? { result: body.method === 'model/list' ? { data: MODELS, nextCursor: null } : {} }
+    const defaults: Record<string, unknown> = { 'model/list': { data: MODELS, nextCursor: null }, 'turn/start': { turn: { id: 'u1' } } }
+    const answer = answers[body.method] ?? { result: defaults[body.method] ?? {} }
     return respond({ id: 1, ...(answer as object) })
   })
   return requests
@@ -138,4 +139,99 @@ test('a request codex sends is answered with an error so the turn does not stall
   await clock.settle()
 
   expect(sent).toContainEqual({ id: 7, error: expect.objectContaining({ code: -32601 }) })
+})
+
+// Holds /events until the test pushes, so a codex turn stays running for as long as the test needs.
+const heldEvents = (on: On) => {
+  const queue: unknown[] = []
+  let release = () => {}
+  on('http.fetch', { url: 'http://relay/events' }, async () => {
+    while (!queue.length) await new Promise<void>(resolve => (release = resolve))
+    return { value: { status: 200, ok: true, headers: {}, text: JSON.stringify({ events: queue.splice(0) }) } }
+  })
+  return (...events: unknown[]) => (queue.push(...events), release())
+}
+
+const answers = (texts: string[]) => texts.map(text => text.slice(text.lastIndexOf('\n') + 1))
+
+test('a SendMessage to a running codex subagent by agentId steers its current turn', async ($, on) => {
+  const clock = mock.clock(on)
+  const push = heldEvents(on)
+  const requests = relay(on, { answers: { 'thread/start': THREAD, 'turn/steer': { result: { turnId: 'u1' } } } })
+  const texts = delivered(on)
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna' })
+  await clock.settle()
+  const { agentId } = result as { agentId: string }
+  await $.tool.call({ tool: 'SendMessage', to: agentId, message: 'also check the tests' })
+  push(turnCompleted({ id: 'u1', status: 'completed', items: [{ type: 'agentMessage', text: 'checked both' }] }))
+  await clock.settle()
+
+  expect(requests.find(r => r.method === 'turn/steer')?.params).toMatchObject({
+    threadId: 't1',
+    expectedTurnId: 'u1',
+    input: [{ type: 'text', text: 'also check the tests' }],
+  })
+  expect(requests.filter(r => r.method === 'turn/start')).toHaveLength(1)
+  expect(answers(texts)).toEqual(['checked both'])
+})
+
+test('a SendMessage by name to a finished codex subagent runs a new turn on its thread and delivers again', async ($, on) => {
+  const clock = mock.clock(on)
+  const push = heldEvents(on)
+  const requests = relay(on, { answers: { 'thread/start': THREAD } })
+  const texts = delivered(on)
+  await start($, on)
+
+  await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna', name: 'reviewer' })
+  push(turnCompleted({ id: 'u1', status: 'completed', items: [{ type: 'agentMessage', text: 'first' }] }))
+  await clock.settle()
+  await $.tool.call({ tool: 'SendMessage', to: 'reviewer', message: 'now fix them' })
+  push(turnCompleted({ id: 'u1', status: 'completed', items: [{ type: 'agentMessage', text: 'second' }] }))
+  await clock.settle()
+
+  expect(requests.filter(r => r.method === 'turn/start').map(r => r.params)).toMatchObject([
+    { threadId: 't1' },
+    { threadId: 't1', input: [{ type: 'text', text: 'now fix them' }] },
+  ])
+  expect(answers(texts)).toEqual(['first', 'second'])
+})
+
+test('a SendMessage to anyone else goes on to Claude Code', async ($, on) => {
+  const requests = relay(on)
+  on('tool.call', { tool: 'SendMessage' }, () => ({ result: 'engine' }))
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'SendMessage', to: 'main', message: 'hi' })
+  expect(result).toBe('engine')
+  expect(requests.map(r => r.method)).not.toContain('turn/start')
+})
+
+test('a TaskStop of a running codex subagent interrupts its turn and delivers nothing', async ($, on) => {
+  const clock = mock.clock(on)
+  const push = heldEvents(on)
+  const requests = relay(on, { answers: { 'thread/start': THREAD } })
+  const texts = delivered(on)
+  await start($, on)
+
+  await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna', name: 'reviewer' })
+  await clock.settle()
+  const { result } = await $.tool.call({ tool: 'TaskStop', task_id: 'reviewer' })
+  push(turnCompleted({ id: 'u1', status: 'interrupted' }))
+  await clock.settle()
+
+  expect(result).toMatchObject({ task_type: 'local_agent', command: 'd' })
+  expect(requests.find(r => r.method === 'turn/interrupt')?.params).toEqual({ threadId: 't1', turnId: 'u1' })
+  expect(texts).toEqual([])
+})
+
+test('a TaskStop of anything else goes on to Claude Code', async ($, on) => {
+  const requests = relay(on)
+  on('tool.call', { tool: 'TaskStop' }, () => ({ result: 'engine' }))
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'TaskStop', task_id: 'b1234' })
+  expect(result).toBe('engine')
+  expect(requests.map(r => r.method)).not.toContain('turn/interrupt')
 })

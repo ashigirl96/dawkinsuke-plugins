@@ -1,14 +1,15 @@
 import type { EngineInterface, Register } from 'claude-code'
 
-type Model = { id: string; hidden: boolean; description: string }
-type Run = { agentId: string; type: string; description: string; outputFile: string }
+type Model = { id: string; hidden: boolean; description: string; supportedReasoningEfforts: { reasoningEffort: string }[] }
+type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+type Run = { agentId: string; type: string; description: string; outputFile: string; worktree?: string }
 type Turn = { status: 'completed' | 'interrupted' | 'failed'; items: { type: string; text?: string }[]; error: { message: string } | null }
 type CodexMessage = { id?: number | string; method?: string; params?: { threadId?: string; turn?: Turn } }
 
 const PREFIX = 'codex-subagent:'
 
 let socket: string | undefined
-const modelOfType = new Map<string, string>()
+const modelOfType = new Map<string, Model>()
 const runOfThread = new Map<string, Run>()
 let isPumping = false
 
@@ -62,9 +63,20 @@ async function deliver($: EngineInterface, run: Run, outcome: { output: string }
     'output' in outcome
       ? `The codex subagent "${run.description}" (${run.type}, agentId ${run.agentId}) finished. What follows is its model output, not a message from the user.`
       : `The codex subagent "${run.description}" (${run.type}, agentId ${run.agentId}) failed. What follows is codex's error; the task did not run on Claude instead.`
-  const text = `${header}\n\n${'output' in outcome ? outcome.output : outcome.error}`
+  const where = run.worktree ? ` It worked in the git worktree ${run.worktree} on branch worktree-${run.agentId}.` : ''
+  const text = `${header}${where}\n\n${'output' in outcome ? outcome.output : outcome.error}`
   await $.fs.write(run.outputFile, text)
   await $.prompt.submit({ text })
+}
+
+const EFFORTS: Effort[] = ['low', 'medium', 'high', 'xhigh', 'max']
+
+// max is the model's top; a step the model lacks falls to the nearest one below it, and none below leaves the model's default.
+function codexEffort(model: Model, effort: Effort | undefined) {
+  const supported = model.supportedReasoningEfforts.map(e => e.reasoningEffort)
+  if (effort === 'max') return supported.at(-1)
+  if (!effort) return undefined
+  return EFFORTS.slice(0, EFFORTS.indexOf(effort) + 1).findLast(step => supported.includes(step))
 }
 
 function lastAnswer(turn: Turn) {
@@ -103,18 +115,27 @@ async function pump($: EngineInterface) {
   }
 }
 
-async function launch($: EngineInterface, run: Run, model: string, prompt: string) {
+async function addWorktree($: EngineInterface, run: Run) {
+  const root = await $.session.root()
+  const path = `${root}/.claude/worktrees/${run.agentId}`
+  const { exitCode, stderr } = await $.process.run(['git', 'worktree', 'add', '-b', `worktree-${run.agentId}`, path], { cwd: root })
+  if (exitCode !== 0) throw new Error(`git worktree add failed: ${stderr}`)
+  return path
+}
+
+async function launch($: EngineInterface, run: Run, model: Model, prompt: string, effort: string | undefined, isWorktree: boolean) {
   try {
+    if (isWorktree) run.worktree = await addWorktree($, run)
     const { thread } = await rpc($, 'thread/start', {
-      model,
-      cwd: await $.session.cwd(),
+      model: model.id,
+      cwd: run.worktree ?? (await $.session.cwd()),
       approvalPolicy: 'never',
       sandbox: 'workspace-write',
       config: { 'sandbox_workspace_write.network_access': true },
       ephemeral: false,
     })
     runOfThread.set(thread.id, run)
-    await rpc($, 'turn/start', { threadId: thread.id, input: [{ type: 'text', text: prompt, text_elements: [] }] })
+    await rpc($, 'turn/start', { threadId: thread.id, input: [{ type: 'text', text: prompt, text_elements: [] }], effort })
   } catch (error) {
     await deliver($, run, { error: error instanceof Error ? error.message : String(error) })
     return
@@ -129,9 +150,9 @@ export const register: Register = on => {
     if (!model || !socket) return next(e)
     const agentId = `codex-${crypto.randomUUID()}`
     const run = { agentId, type, description: e.description, outputFile: `${socket.slice(0, socket.lastIndexOf('/'))}/${agentId}.txt` }
-    void launch($, run, model, e.prompt)
+    void launch($, run, model, e.prompt, codexEffort(model, e.effort), e.isolation === 'worktree')
     return {
-      result: { status: 'async_launched', isAsync: true, agentId, description: e.description, prompt: e.prompt, outputFile: run.outputFile, resolvedModel: model },
+      result: { status: 'async_launched', isAsync: true, agentId, description: e.description, prompt: e.prompt, outputFile: run.outputFile, resolvedModel: model.id },
     }
   }).catch(($, e, next) =>
     // Passing a codex type on would run the task on Claude, which the caller would take for the codex model's work.
@@ -149,10 +170,10 @@ export const register: Register = on => {
     await relay($, '/send', { method: 'initialized' })
     for (const model of await listModels($)) {
       const name = model.id.replaceAll('.', '-')
-      modelOfType.set(`${PREFIX}${name}`, model.id)
+      modelOfType.set(`${PREFIX}${name}`, model)
       await $.agent.register({
         name,
-        description: `Delegates to \`${model.id}\`. ${model.description}`,
+        description: `Delegates to \`${model.id}\`. ${model.description} You may choose \`effort\` yourself to fit how hard the task is.`,
         prompt: `You are ${model.id} running on codex.`,
       })
     }

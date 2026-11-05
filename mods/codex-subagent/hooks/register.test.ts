@@ -3,10 +3,11 @@ import { expect, mock, test, type TestBody } from 'claude-code/testing'
 type On = Parameters<TestBody>[1]
 type Rpc = { method: string; params?: Record<string, unknown> }
 
+const efforts = (...names: string[]) => names.map(reasoningEffort => ({ reasoningEffort, description: '' }))
 const MODELS = [
-  { id: 'gpt-6.1-sol', hidden: false, description: 'Latest workhorse model.' },
-  { id: 'gpt-6-luna', hidden: false, description: 'Fast and affordable model.' },
-  { id: 'gpt-secret', hidden: true, description: 'Hidden.' },
+  { id: 'gpt-6.1-sol', hidden: false, description: 'Latest workhorse model.', supportedReasoningEfforts: efforts('low', 'medium', 'high', 'ultra') },
+  { id: 'gpt-6-luna', hidden: false, description: 'Fast and affordable model.', supportedReasoningEfforts: efforts('medium', 'high') },
+  { id: 'gpt-secret', hidden: true, description: 'Hidden.', supportedReasoningEfforts: [] },
 ]
 
 // Plays the relay: answers each JSON-RPC request from `answers` and hands out `events` one batch per poll.
@@ -44,6 +45,7 @@ test('each model codex lists and does not hide becomes an Agent type named with 
   const registered = await start($, on)
   expect(registered.map(r => r.name)).toEqual(['gpt-6-1-sol', 'gpt-6-luna'])
   expect(registered[0]?.description).toMatch(/^Delegates to `gpt-6\.1-sol`\. Latest workhorse model\./)
+  expect(registered[0]?.description).toContain('choose `effort` yourself')
 })
 
 const THREAD = { result: { thread: { id: 't1' } } }
@@ -138,4 +140,70 @@ test('a request codex sends is answered with an error so the turn does not stall
   await clock.settle()
 
   expect(sent).toContainEqual({ id: 7, error: expect.objectContaining({ code: -32601 }) })
+})
+
+const EFFORT_CASES: [string, 'low' | 'medium' | 'high' | 'xhigh' | 'max' | undefined, string | undefined][] = [
+  ['gpt-6-1-sol', 'max', 'ultra'],
+  ['gpt-6-1-sol', 'xhigh', 'high'],
+  ['gpt-6-1-sol', 'medium', 'medium'],
+  ['gpt-6-luna', 'low', undefined],
+  ['gpt-6-1-sol', undefined, undefined],
+]
+for (const [name, effort, expected] of EFFORT_CASES) {
+  test(`effort ${effort} on ${name} reaches codex as ${expected ?? "the model's default"}`, async ($, on) => {
+    const clock = mock.clock(on)
+    const requests = relay(on, { answers: { 'thread/start': THREAD }, events: [[turnCompleted({ status: 'completed' })]] })
+    await start($, on)
+
+    await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: `codex-subagent:${name}`, effort })
+    await clock.settle()
+
+    expect(requests.find(r => r.method === 'turn/start')?.params?.effort).toBe(expected)
+  })
+}
+
+const gitRuns = (on: On, exitCode = 0) => {
+  const runs: { argv: readonly string[]; cwd?: string }[] = []
+  on('process.run', (_, e) => {
+    runs.push({ argv: e.argv, cwd: e.init?.cwd })
+    const stderr = exitCode ? 'fatal: not a git repository' : ''
+    return { value: { exitCode, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return runs
+}
+
+test('isolation worktree runs the thread in a new git worktree under the project root and says where', async ($, on) => {
+  const clock = mock.clock(on)
+  const requests = relay(on, {
+    answers: { 'thread/start': THREAD },
+    events: [[turnCompleted({ status: 'completed', items: [{ type: 'agentMessage', text: 'done' }] })]],
+  })
+  const runs = gitRuns(on)
+  on('session.root', () => ({ value: '/work' }))
+  const texts = delivered(on)
+  await start($, on)
+
+  const { result } = await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna', isolation: 'worktree' })
+  await clock.settle()
+
+  const { agentId } = result as { agentId: string }
+  const path = `/work/.claude/worktrees/${agentId}`
+  expect(runs).toEqual([{ argv: ['git', 'worktree', 'add', '-b', `worktree-${agentId}`, path], cwd: '/work' }])
+  expect(requests.find(r => r.method === 'thread/start')?.params?.cwd).toBe(path)
+  expect(texts[0]).toContain(path)
+})
+
+test('a worktree git cannot make arrives as a failure and starts no thread', async ($, on) => {
+  const clock = mock.clock(on)
+  const requests = relay(on)
+  gitRuns(on, 128)
+  on('session.root', () => ({ value: '/work' }))
+  const texts = delivered(on)
+  await start($, on)
+
+  await $.tool.call({ tool: 'Agent', description: 'd', prompt: 'p', subagent_type: 'codex-subagent:gpt-6-luna', isolation: 'worktree' })
+  await clock.settle()
+
+  expect(requests.map(r => r.method)).not.toContain('thread/start')
+  expect(texts[0]).toContain('not a git repository')
 })

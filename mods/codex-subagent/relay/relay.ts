@@ -18,7 +18,9 @@ const write = (message: Message) => {
 let nextId = 1
 const pending = new Map<number, (message: Message) => void>()
 const events: Message[] = []
-let wake = () => {}
+// Every waiting poll is woken: a codex subagent's step and another's item tool may wait at once.
+const waiters = new Set<() => void>()
+const wake = () => waiters.forEach(resolve => resolve())
 
 void (async () => {
   let buffer = ''
@@ -65,10 +67,10 @@ Bun.serve({
     }
     if (path === '/events') {
       if (!events.length) await new Promise<void>(resolve => {
-        const timer = setTimeout(resolve, EVENTS_WAIT_MS)
-        wake = () => (clearTimeout(timer), resolve())
+        const done = () => (clearTimeout(timer), waiters.delete(done), resolve())
+        const timer = setTimeout(done, EVENTS_WAIT_MS)
+        waiters.add(done)
       })
-      wake = () => {}
       return Response.json({ events: events.splice(0) })
     }
     if (path === '/shutdown') {

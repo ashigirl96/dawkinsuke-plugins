@@ -1,5 +1,4 @@
-// Relays between the mod and `codex app-server`: the mod's $.process.spawn writes stdin only once and its $.http.fetch is one request, one response.
-// POST /rpc {method, params} answers codex's response, POST /send writes a message as is, GET /events hands over what codex sent unasked.
+// The mod cannot talk to `codex app-server` itself: its $.process.spawn writes stdin only once and its $.http.fetch is one request, one response.
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 

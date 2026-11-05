@@ -101,8 +101,8 @@ item ではない turn 単位の通知:
 
 ## 6. 中断と終了
 
-- 中断: `turn/interrupt` `{threadId, turnId}`（`v2/turn.rs:357`）、応答は `{}`。応答は中断が実際に済んだとき（内部の `TurnAborted` を受けたとき）に返る（`codex-rs/app-server/src/request_processors/turn_processor.rs:1625-1665`、`bespoke_event_handling.rs:1217-1233`）。そのあと `turn/completed` が `status:"interrupted"` で来る（`bespoke_event_handling.rs:1565`）。実機では試していない（有料の turn を 2 回に抑えたため）。のちに mod（issue #27）から送り、rollout に `"reason":"interrupted"` が残るのを確かめた。
-- 走っている turn への追加: `turn/steer` `{threadId, input, expectedTurnId}`、応答は `{turnId}`。`expectedTurnId` が今の turn と違うと失敗する（`codex app-server generate-ts --experimental` の `v2/TurnSteerParams.ts`）。mod から送り、足した指示が同じ turn の最後の答えに反映されるのを実機で確かめた。
+- 中断: `turn/interrupt` `{threadId, turnId}`（`v2/turn.rs:357`）、応答は `{}`。応答は中断が実際に済んだとき（内部の `TurnAborted` を受けたとき）に返る（`codex-rs/app-server/src/request_processors/turn_processor.rs:1625-1665`、`bespoke_event_handling.rs:1217-1233`）。そのあと `turn/completed` が `status:"interrupted"` で来る（`bespoke_event_handling.rs:1565`）。実機では、送ると rollout に `"reason":"interrupted"` が残る。
+- 走っている turn への追加: `turn/steer` `{threadId, input, expectedTurnId}`、応答は `{turnId}`。`expectedTurnId` が今の turn と違うと失敗する（`codex app-server generate-ts --experimental` の `v2/TurnSteerParams.ts`）。足した指示は同じ turn の最後の答えに反映される（実機で確認）。
 - 終了: stdio のときは client が stdin を閉じれば終わる。stdio は 1 client の扱いで（`codex-rs/app-server/src/lib.rs:815`）、その接続が閉じると main loop を抜け（`lib.rs:1215-1218`）、各接続の後片付けと全 thread の shutdown（上限 10 秒）をしてから終わる（`lib.rs:1364-1373`、`codex-rs/app-server/src/request_processors/thread_processor.rs:1339-1350`）。実機では stdin を閉じてから 17〜36ms で exit code 0 で終わった（turn が終わった後で閉じた場合）。turn の途中で閉じたときの振る舞いは確かめていない（**推測**: 上の shutdown で turn も止まる）。
 - 終了処理中に送った新しい仕事は `-32600`、`data: {"reason":"serverShuttingDown"}` で断られる（`codex-rs/app-server/README.md:22-26`）。
 - thread をやめるだけなら `thread/unsubscribe` `{threadId}` → `{status}`（`v2/thread.rs:734-741`）。

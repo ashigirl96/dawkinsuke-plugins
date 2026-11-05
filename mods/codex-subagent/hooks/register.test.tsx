@@ -37,13 +37,13 @@ const relay = (on: On, { answers = {}, events = [] }: { answers?: Record<string,
   return requests
 }
 
-const start = async ($: $, on: On) => {
+const start = async ($: $, on: On, cwd = '/work') => {
   const registered: { name: string; description: string; tools?: readonly string[] }[] = []
   const tools: { name: string; isDeferred?: unknown }[] = []
   on('agent.register', (_, e) => (registered.push(e), { value: { agent: `codex-subagent:${e.name}` } }))
   on('tool.register', (_, e) => (tools.push(e), { value: { tool: `mcp__codex-subagent__${e.name}` } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('session.cwd', () => ({ value: '/work' }))
+  on('session.cwd', () => ({ value: cwd }))
   on('fs.read', () => ({ value: '{"name":"codex-subagent","version":"9.9.9"}' }))
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
   return { registered, tools }
@@ -70,29 +70,18 @@ test('a codex type may call only the codex tool and SubagentHandback, and the co
   expect(tools.map(t => t.name)).toEqual(['codex'])
 })
 
-test('the Agent tool tells the model it may choose effort itself for a codex type', async ($, on) => {
-  relay(on)
-  on('tool.describe', (_, e) => ({ description: e.description }))
-  await start($, on)
-  const { description } = await $.tool.describe({ tool: 'Agent', description: 'Launch an agent.', provider: { plugin: 'engine', tier: 'core' } })
-  expect(description).toStartWith('Launch an agent.')
-  expect(description).toMatch(/codex-subagent:.*choose `effort` yourself/)
-})
-
-test('no relay means no codex type, no codex tool, no fetch over TCP and no word about effort', async ($, on) => {
+test('no relay means no codex type, no codex tool and no fetch over TCP', async ($, on) => {
   const fetched: string[] = []
   on('process.spawn', async function* () {
     yield { stream: 'stderr' as const, text: 'bun: command not found\n' }
     return { value: { code: 127, signal: null } }
   })
   on('http.fetch', (_, e) => (fetched.push(e.url), ok({})))
-  on('tool.describe', (_, e) => ({ description: e.description }))
   const { registered, tools } = await start($, on)
 
   expect(registered).toEqual([])
   expect(tools).toEqual([])
   expect(fetched).toEqual([])
-  expect((await $.tool.describe({ tool: 'Agent', description: 'Launch an agent.', provider: { plugin: 'engine', tier: 'core' } })).description).toBe('Launch an agent.')
 })
 
 test('a relay whose spawn throws leaves no codex type and lets the session start', async ($, on) => {
@@ -223,6 +212,57 @@ test('the codex tool runs a codex turn to the end and answers with its last agen
     ephemeral: false,
   })
   expect(requests.find(r => r.method === 'turn/start')?.params).toMatchObject({ threadId: 't1', input: [{ type: 'text', text: 'review the diff' }] })
+})
+
+// The Agent call goes in first, then its subagent starts under the call's tool_use_id, as Claude Code orders them.
+const agentCall = async ($: $, input: Record<string, unknown>) => {
+  await $.tool.call({ tool: 'Agent', tool_use_id: 'c1', prompt: 'p', ...input })
+  await $.agent.spawn({
+    tool_use_id: 'c1',
+    prompt: 'p',
+    description: 'd',
+    subagentType: String(input.subagent_type),
+    provider: { plugin: 'codex-subagent', tier: 'user' },
+    parentModel: 'claude-sonnet',
+    background: true,
+    fork: false,
+  })
+}
+
+const coreAnswersAgent = (on: On) => {
+  on('tool.call', { tool: 'Agent' }, () => ({ result: 'Backgrounded agent' }))
+  on('agent.spawn', () => ({ model: 'claude-sonnet', agentId: 'a1' }))
+}
+
+for (const [given, sent] of [
+  ['xhigh', 'high'],
+  ['max', 'ultra'],
+  [undefined, undefined],
+] as const) {
+  test(`effort ${given} on the Agent call reaches the codex turn as ${sent}`, async ($, on) => {
+    const requests = relay(on, { answers: { 'thread/start': THREAD }, events: [[turnCompleted({ status: 'completed' })]] })
+    agents(on, [{ id: 'a1', type: 'codex-subagent:gpt-6-1-sol' }])
+    coreAnswersAgent(on)
+    await start($, on)
+
+    await agentCall($, { subagent_type: 'codex-subagent:gpt-6-1-sol', ...(given && { effort: given }) })
+    await runCodex($, 'p')
+
+    expect(requests.find(r => r.method === 'turn/start')?.params?.effort).toBe(sent)
+  })
+}
+
+test('a codex subagent Claude Code put in a worktree runs its codex thread there', async ($, on) => {
+  const requests = relay(on, { answers: { 'thread/start': THREAD }, events: [[turnCompleted({ status: 'completed' })]] })
+  agents(on, [{ id: 'a1', type: 'codex-subagent:gpt-6-luna' }])
+  coreAnswersAgent(on)
+  // Inside the subagent's own tool call, the session's directory is its worktree.
+  await start($, on, '/repo/.claude/worktrees/agent-a1')
+
+  await agentCall($, { subagent_type: 'codex-subagent:gpt-6-luna', isolation: 'worktree' })
+  await runCodex($, 'p')
+
+  expect(requests.find(r => r.method === 'thread/start')?.params?.cwd).toBe('/repo/.claude/worktrees/agent-a1')
 })
 
 test('a second codex tool call of the same subagent goes on in the same thread', async ($, on) => {

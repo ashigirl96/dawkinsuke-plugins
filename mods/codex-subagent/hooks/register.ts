@@ -20,6 +20,9 @@ const agentOfThread = new Map<string, string>()
 const heldMessagesOfAgent = new Map<string, string[]>()
 // Keyed by turn id: the relay hands each event out once, so a call can poll another call's turn/completed.
 const completedTurns = new Map<string, Turn>()
+// agent.spawn carries no effort, so the Agent call's is kept under its tool_use_id until the spawn names the subagent.
+const effortOfCall = new Map<string, Effort>()
+const effortOfAgent = new Map<string, Effort>()
 
 const textInput = (text: string) => [{ type: 'text', text, text_elements: [] }]
 const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
@@ -132,7 +135,8 @@ async function threadFor($: EngineInterface, agentId: string, model: Model) {
 
 async function runCodex($: EngineInterface, model: Model, agentId: string, prompt: string, signal: AbortSignal) {
   const threadId = await threadFor($, agentId, model)
-  const started: Promise<{ turn: Turn }> = rpc($, 'turn/start', { threadId, input: textInput(prompt) })
+  const effort = codexEffort(model, effortOfAgent.get(agentId))
+  const started: Promise<{ turn: Turn }> = rpc($, 'turn/start', { threadId, input: textInput(prompt), effort })
   // TaskStop abandons this call; codex would otherwise run the turn on to its end.
   signal.addEventListener('abort', () => void started.then(({ turn }) => rpc($, 'turn/interrupt', { threadId, turnId: turn.id })).catch(() => {}))
   const turn = await waitTurn($, (await started).turn.id, signal)
@@ -183,15 +187,7 @@ async function setUp($: EngineInterface) {
   }
 }
 
-// The real Agent tool says to set effort only when asked, which would leave every codex run at the model's default.
-const EFFORT_RULE = ` For a ${PREFIX}* subagent_type, you may choose \`effort\` yourself to fit how hard the task is.`
-
 export const register: Register = on => {
-  on('tool.describe', { tool: 'Agent' }, async (_, e, next) => {
-    const described = await next(e)
-    return modelOfType.size ? { ...described, description: described.description + EFFORT_RULE } : described
-  })
-
   // Answered here, never by the model: the codex subagent's steps are codex's work, and Claude only carries the answer back.
   on('turn.step', async function* ($, e, next) {
     if (!(await modelOfAgent($, e.agentId))) return yield* next(e)
@@ -207,6 +203,19 @@ export const register: Register = on => {
     heldMessagesOfAgent.delete(e.agentId!)
     if (held) return yield* callTool(e, TOOL, { prompt: held.join('\n\n') })
     return yield* callTool(e, HANDBACK, { message: answered.isError ? `codex failed: ${answered.text}` : answered.text })
+  })
+
+  on('tool.call', { tool: 'Agent' }, ($, e, next) => {
+    if (typeof e.effort === 'string' && String(e.subagent_type).startsWith(PREFIX)) effortOfCall.set(e.tool_use_id, e.effort as Effort)
+    return next(e)
+  })
+
+  on('agent.spawn', async ($, e, next) => {
+    const effort = effortOfCall.get(e.tool_use_id)
+    effortOfCall.delete(e.tool_use_id)
+    const spawned = await next(e)
+    if (effort && 'agentId' in spawned && spawned.agentId) effortOfAgent.set(spawned.agentId, effort)
+    return spawned
   })
 
   // Never passed on: core would put the call to auto mode's check, which has no verdict for a step the model did not take, and refuse it.

@@ -10,6 +10,8 @@
 - `nested`: codex が自分の subagent（`spawn_agent`）を起動でき、その答えが届く。
 - `send-running`: 走っている codex subagent に `SendMessage` を送ると、codex の今の turn が終わったあと、同じ thread の次の turn にその文が渡り、その turn の答えが親に届く。最初の turn の答えは届かない。
 - `resume`: 終わった codex subagent に `SendMessage` を送ると、`Resuming agent <id>` が出て、同じ thread の次の turn が走り、答えが親に届く。codex は前の turn を覚えている。
+- `effort`: Agent tool に `effort` を付けると、codex の turn がその段階で走る。モデルに無い段階は 1 つ下、`max` はモデルの一番上に読み替える。
+- `worktree`: Agent tool に `isolation: "worktree"` を付けると、Claude Code が作った worktree で codex が作業する。mod は worktree を作らない。
 - `stop`: TaskStop で走っている codex subagent を止めると、`Stop Task ⎿ <説明> · stopped` と `Agent "<説明>" was stopped by Claude` が出て、答えは届かない。codex の turn も中断される。
 - `cleanup`: `/exit` で、mod が起こした中継（`relay/relay.ts`）と `codex app-server` が止まる。
 
@@ -26,6 +28,7 @@
 - **cleanup の前半.** 起動の直後に `pgrep -fl 'relay/relay.ts|^codex app-server$'` で 2 つ出ることを見る。
 - **launch・deliver・network.** ``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、`gh api rate_limit --jq .rate.limit` を走らせてその出力だけを返すよう頼んで。結果が届いたら、届いた数字をそのまま書いて。'``。`$T wait codex-$id 'codex-subagent' 60` のあと数秒おいて `$T shot` を撮り、一覧に `◯ codex-subagent:gpt-6-luna` が出ていることを見る。`$T wait codex-$id 'Agent ".*" finished' 240` のあと 10 秒ほどおいて `$T shot codex-$id "$run/codex-subagent-launch.txt"`。写しに `Message from @codex-subagent-gpt-6`、`finished`、`5000` のような数字が並ぶ。数字が出ればネットワークが通っている。
 - **nested.** ``$T send codex-$id 'もう 1 つ、subagent_type "codex-subagent:gpt-6-luna" を起動して、「codex 自身の subagent（spawn_agent）を 1 つ起動し、その subagent に `echo nested-ok` を走らせ、subagent の答えをそのまま返して」と頼んで。届いたら本文をそのまま書いて。'``、起動の行に出た説明で `$T wait codex-$id 'Agent "<説明>.*finished' 300` を待つ（1 つ目の `finished` に合わないように）。届いた本文に `nested-ok` が出る。codex が自分で echo しただけでないかは、`find ~/.codex/sessions -name '*.jsonl' -mmin -5` の rollout で確かめる。子の rollout の 1 行目に `"thread_spawn":{"parent_thread_id":"<親の id>"` と `"depth":1` があり、`<親の id>` の rollout に `"name":"spawn_agent"` がある。
+- **effort・worktree.** 1 回の起動で両方見る。``$T send codex-$id 'Agent tool で subagent_type "codex-subagent:gpt-6-luna"、effort "xhigh"、isolation "worktree" を付けて起動し、「pwd と git branch --show-current の出力だけを返して」と頼んで。結果が届いたらそのまま見せて。'``、`$T wait codex-$id 'Agent ".*" finished' 300`、`$T shot`。届いた本文の pwd が `.claude/worktrees/agent-<id>` で、branch が `worktree-agent-<id>`。effort は画面に出ないので、`grep -l 'agent-<id>' $(find ~/.codex/sessions -name '*.jsonl' -mmin -5)` で見つけた rollout に `grep -o '"effort":"[a-z]*"'` を流し、`"effort":"xhigh"` が出ることを見る。worktree は変更が無ければ Claude Code が消すので、`git worktree list` に残っていないことも見る。
 - **stop.** ``$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「`sleep 90` を走らせ、そのあと LATE-D とだけ答えて」と頼んで。起動したら 20 秒待ってから（Bash で sleep 20）、TaskStop でその subagent を止めて。'``、`$T wait codex-$id 'stopped' 180`、`$T shot`。`Stop Task ⎿ … · stopped` と `was stopped by Claude` が出て、`Message from` の答えは来ない。codex の側で止まったかは、`grep -l 'sleep 90'` で見つけた `~/.codex/sessions` の新しい rollout に `"type":"turn_aborted"` と `"reason":"interrupted"` があり、`duration_ms` が 90 秒より短いかで確かめる。
 - **send-running.** ``$T send codex-$id 'もう 1 つ、Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動し、「`sleep 30` を走らせ、そのあと ALPHA とだけ答えて」と頼んで。起動したら 10 秒待ってから、SendMessage でその subagent に「最後の答えに BRAVO も足して」と送って。結果が届いたら本文をそのまま書いて。'``、起動の行に出た説明で `$T wait codex-$id 'Agent "<説明>.*finished' 240`、`$T shot`。届いた本文が `ALPHA BRAVO` になる。SendMessage の結果は `Message queued for delivery to <id> at its next tool round` のままでよい。同じ thread で 2 turn 走ったかは、`grep -rl 'ALPHA BRAVO' ~/.codex/sessions` の rollout の `"last_agent_message"` が `ALPHA`・`ALPHA BRAVO` と並ぶかで確かめる。
 - **resume.** 続けて `$T send codex-$id '終わったその subagent に SendMessage で「あなたの前の答えを全部小文字にして、それだけ答えて」と送って。続きの結果が届いたら本文をそのまま書いて。'`、`$T wait codex-$id 'alpha bravo' 180`、`$T shot`。`Resuming agent` のあと `alpha bravo` が届く。同じ rollout の `"last_agent_message"` に `alpha bravo` が 3 つ目として足される。
@@ -41,6 +44,8 @@
 - 一覧の 1 行の文は Claude Code が描く（`Running codex-subagent codex tool` など）もので、mod からは変えられない。
 - 親が届いた答えに「分類器が使えなかったので確かめていない」と添えるのは、Claude Code の注記によるもので、mod の失敗ではない。
 - nested は、mod が thread を `ephemeral: false` で作るから通る。`ephemeral: true` の thread から子を起動すると `no rollout found` で失敗する（`docs/research/codex-app-server.md`）。子の thread の通知も同じ接続に来るが、mod は自分で作った thread の通知しか拾わない。
+- 親は文で頼まれないと `effort` を付けない。Agent tool の説明の「頼まれたときだけ付ける」が勝つ（Claude Code 2.1.318・sonnet、深いレビューを頼んでも付けなかった）。effort を見るときは文で指定する。
+- worktree の subagent の codex の tool の hook では、`$.session.cwd()` がその subagent の worktree を返す。`agent.spawn` の `cwd` は `isolation` では埋まらない。
 - 入力欄に薄く出る「結果はまだ？」のような文は候補で、打たれていない。
 - send-running の文は、codex の turn が走っている間は mod に見えない。Claude Code は subagent の次の tool の区切り（codex の tool が返ったとき）に渡すので、mod はその文を `session.receive` で受け取って持ち、`SubagentHandback` の前に同じ thread の次の turn で codex に渡す。`turn/steer` で今の turn に足すことはできない。
 - Agent tool に `name` の欄は無い。SendMessage の宛先は、起動の行と一覧に出る agentId になる。

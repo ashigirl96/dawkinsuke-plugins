@@ -20,6 +20,8 @@ const modelOfType = new Map<string, Model>()
 const threadOfAgent = new Map<string, string>()
 const agentOfThread = new Map<string, string>()
 const runningTurnOfAgent = new Map<string, string>()
+// A codex child's turn starts before its subagent is bound, and the mod never calls turn/start for it.
+const startedTurnOfThread = new Map<string, string>()
 // The relay hands each notification out once, so whichever hook polled it files it under its thread: a codex child's come before its subagent exists.
 const eventsOfThread = new Map<string, CodexMessage[]>()
 const endedThreads = new Set<string>()
@@ -110,9 +112,14 @@ async function poll($: EngineInterface) {
       message.method === 'turn/completed'
     if (isStep) eventsOfThread.set(threadId, [...(eventsOfThread.get(threadId) ?? []), message])
     if (message.method === 'item/completed' && item && kindOfItem(item)) completedItems.set(item.id, item)
+    const agentId = agentOfThread.get(threadId)
+    if (message.method === 'turn/started' && turn?.id) {
+      startedTurnOfThread.set(threadId, turn.id)
+      if (agentId) runningTurnOfAgent.set(agentId, turn.id)
+    }
     if (message.method !== 'turn/completed') continue
     endedThreads.add(threadId)
-    const agentId = agentOfThread.get(threadId)
+    if (startedTurnOfThread.get(threadId) === turn?.id) startedTurnOfThread.delete(threadId)
     if (agentId && runningTurnOfAgent.get(agentId) === turn?.id) runningTurnOfAgent.delete(agentId)
   }
 }
@@ -128,6 +135,8 @@ function interruptOnAbort($: EngineInterface, agentId: string, signal: AbortSign
 function bind(agentId: string, threadId: string) {
   threadOfAgent.set(agentId, threadId)
   agentOfThread.set(threadId, agentId)
+  const started = startedTurnOfThread.get(threadId)
+  if (started) runningTurnOfAgent.set(agentId, started)
 }
 
 const isChildNotice = (text: string) => childAgents.has(text.match(CHILD_NOTICE)?.slice(1).find(Boolean) ?? '')

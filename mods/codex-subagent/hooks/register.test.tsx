@@ -643,6 +643,30 @@ test('a codex child subagent takes its thread from its prompt, starts no codex t
   expect(requests.filter(r => r.method === 'turn/start').map(r => r.params?.threadId)).toEqual(['t1'])
 })
 
+test('a TaskStop of a codex child interrupts the child turn codex started', { plugins: [stopper] }, async ($, on) => {
+  const interrupted: unknown[] = []
+  let release = () => {}
+  let polls = 0
+  on('http.fetch', { url: 'http://relay/events' }, async () => {
+    if (polls++ === 0) return ok({ events: [...childStarted('t2'), { method: 'turn/started', params: { threadId: 't2', turn: { id: 'u9' } } }, command('c1', 'sleep 90', 't2')] })
+    await new Promise<void>(resolve => (release = resolve))
+    return ok({ events: [turnCompleted({ id: 'u9', status: 'interrupted' }, 't2')] })
+  })
+  relay(on, { answers: { 'turn/interrupt': (params: unknown) => (interrupted.push(params), release(), { result: {} }) } })
+  const { rows } = family(on)
+  const clock = mock.clock(on)
+  await start($, on)
+  const spawn = await stepAs($, 'a1')
+  rows.a2!.push(user(String(spawn.input?.prompt)))
+
+  const first = await stepAs($, 'a2')
+  const call = $.tool.call({ tool: COMMAND, ...first.input, agentId: 'a2' })
+  await clock.advance(20)
+  await call
+  await clock.settle()
+  expect(interrupted).toEqual([{ threadId: 't2', turnId: 'u9' }])
+})
+
 test('a codex child result that would wake its finished parent is refused, and other resumes go on', async ($, on) => {
   relay(on, { events: [childStarted('t2'), [turnCompleted({ id: 'u9' }, 't2')]] })
   const { rows } = family(on)

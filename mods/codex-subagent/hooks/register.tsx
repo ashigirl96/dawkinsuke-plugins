@@ -146,7 +146,8 @@ const childThreadIn = (text: unknown) => {
   return threadId && childThreads.has(threadId) ? threadId : undefined
 }
 
-async function startTurn($: EngineInterface, agentId: string, model: Model, prompt: string) {
+// A TaskStop that lands before codex names the turn finds nothing to interrupt, so the start checks the signal itself.
+async function startTurn($: EngineInterface, agentId: string, model: Model, prompt: string, signal: AbortSignal) {
   let threadId = threadOfAgent.get(agentId)
   if (!threadId) {
     const { thread } = await rpc($, 'thread/start', {
@@ -160,9 +161,14 @@ async function startTurn($: EngineInterface, agentId: string, model: Model, prom
     threadId = thread.id as string
     bind(agentId, threadId)
   }
+  signal.throwIfAborted()
   endedThreads.delete(threadId)
   const { turn } = await rpc($, 'turn/start', { threadId, input: textInput(prompt), effort: codexEffort(model, effortOfAgent.get(agentId)) })
   runningTurnOfAgent.set(agentId, turn.id)
+  if (signal.aborted) {
+    void rpc($, 'turn/interrupt', { threadId, turnId: turn.id }).catch(() => {})
+    signal.throwIfAborted()
+  }
 }
 
 const hold = (agentId: string, text: string) => heldMessagesOfAgent.set(agentId, [...(heldMessagesOfAgent.get(agentId) ?? []), text])
@@ -206,7 +212,7 @@ async function nextStep($: EngineInterface, agentId: string, { model, type }: Co
     if (message.method !== 'turn/completed' || !turn) continue
     const held = takeHeld(agentId)
     if (held) {
-      await startTurn($, agentId, model, held)
+      await startTurn($, agentId, model, held, signal)
       continue
     }
     if (turn.status !== 'completed') {
@@ -307,7 +313,7 @@ export const register: Register = on => {
       if (child) {
         bind(agentId, child)
         childAgents.add(agentId)
-      } else if (held || !answered) await startTurn($, agentId, agent.model, held ?? last?.text ?? '')
+      } else if (held || !answered) await startTurn($, agentId, agent.model, held ?? last?.text ?? '', next.signal)
       return yield* callTool(e, await nextStep($, agentId, agent, next.signal))
     } catch (error) {
       return yield* callTool(e, { text: '', name: HANDBACK, input: { message: `codex failed: ${messageOf(error)}` } })

@@ -6,7 +6,7 @@
 
 - `file-same-skill`: 同じフォルダの文書へのリンクが解ける。
 - `file-sibling`: `../<スキル>/...` の向き先のスキルが入っている。
-- `file-pstack-docs`: pstack のスキルが読む `../../docs/` と `../../README.md` が `pstack/` にある。
+- `file-pstack-docs`: pstack のスキルが読む `../../docs/` と `../../README.md` が `pstack/` にある。今は読み込まれるスキルにこの参照は無い（adapter を読ませるスキルは fork して参照を消した）ので、テストが参照を足して検出を確かめる。
 
 ## How to get to it (user POV)
 
@@ -19,7 +19,7 @@ Preconditions:
 - Doctor が通っている。
 
 - **全スキルを調べる.** `sh scripts/check-refs.sh > "$run/check-refs.txt"; echo $? > "$run/check-refs.exit"` を流す。`missing-file` の行が無い。
-- **検出できることを確かめる.** `sh scripts/check-refs.test.sh > "$run/check-refs.test.txt"` を流す。最後の行が `ok`。このテストは写しで `mattpocock-skills/implement` を除外し、`missing-file matt/skills/setup-matt-pocock-skills/SKILL.md: ../implement/SKILL.md` が出ることと、`pstack/docs` を消して `../../docs/harness/claude-code.md` が出ることを見る。
+- **検出できることを確かめる.** `sh scripts/check-refs.test.sh > "$run/check-refs.test.txt"` を流す。最後の行が `ok`。このテストは写しで `mattpocock-skills/implement` を除外し、`missing-file matt/skills/setup-matt-pocock-skills/SKILL.md: ../implement/SKILL.md` が出ることと、`pstack/skills/bro/SKILL.md` に `../../docs/harness/claude-code.md` へのリンクを足して `pstack/docs/harness` を消すと `missing-file pstack/skills/bro/SKILL.md: ../../docs/harness/claude-code.md` が出ることを見る。
 - **抜けの中身を写す.** `missing-file` が出たら、`rg -n -F '<path>' <file> >> "$run/evidence.txt"` で該当行を残す。
 
 ## Gotchas

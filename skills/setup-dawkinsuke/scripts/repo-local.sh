@@ -7,5 +7,5 @@ case $url in
 *) exit 1 ;;
 esac
 path=$(printf '%s' "$path" | sed -e 's#/*$##' -e 's#\.git$##')
-printf '%s' "$path" | grep -qE '^[^/]+/[^/]+/.+[^/]$' || exit 1
+printf '%s' "$path" | grep -qE '^[^/]+/[^/]+(/[^/]+)+$' || exit 1
 printf '%s\n' "$path"

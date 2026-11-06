@@ -30,17 +30,22 @@ Preconditions:
   mkdir -p "$play/home" "$play/repo"
   git -C "$play/repo" init -q
   git -C "$play/repo" remote add origin git@example.com:fake-owner/fake-repo.git
-  git -C "$play/repo" commit -q --allow-empty -m init
+  mkdir -p "$play/repo/docs/agents"
+  printf '## Agent skills\n' > "$play/repo/CLAUDE.md"
+  git -C "$play/repo" add -A
+  git -C "$play/repo" commit -q -m init
   ```
 
-- **1 回目.** 聞かれる問いには、既定どおりに答えるよう prompt で言っておく。matt の設定は GitHub の issue tracker・既定のラベル・single-context で答える。
+  matt の設定は済ませた形にしておく。`setup-matt-pocock-skills` は GitHub の issue tracker に届く repo を求めるので、偽の origin では止まり、本物の repo につなぐとラベルを作ってしまう。ここでは段 2 が飛ばされることを見る。
+
+- **1 回目.** 聞かれる問いには、既定どおりに答えるよう prompt で言っておく。
 
   ```sh
   cd "$play/repo"
   HOME=$play/home claude -p --model opus --setting-sources project \
     --plugin-dir "$dawk" --plugin-dir "$dawk/mods/skill-chain" \
     --permission-mode bypassPermissions --output-format stream-json --verbose \
-    '/setup-dawkinsuke 質問にはすべて推奨の答えか既定を選んだものとして進める。issue tracker は GitHub、ラベルは既定、domain docs は single-context。モデル表は既定のまま書く。' > "$run/setup1.jsonl"
+    '/setup-dawkinsuke 質問にはすべて推奨の答えか既定を選んだものとして進める。モデル表は既定のまま書く。' > "$run/setup1.jsonl"
   cd "$dawk"
   ```
 
@@ -50,7 +55,7 @@ Preconditions:
   - `$play/home/.claude/repo-local/example.com/fake-owner/fake-repo.md` に `@~/.claude/repo-local/example.com/fake-owner/fake-repo-models.md` の行がある。
   - `sh skills/setup-dawkinsuke/scripts/check-sheet.sh $play/home/.claude/repo-local/example.com/fake-owner/fake-repo-models.md` が `sheet ok`。
   - `diff -r templates/play "$play/repo/.claude/skills/play"` が `Only in ...: principles.md` だけを出し、`cmp pstack/docs/harness/principles.md "$play/repo/.claude/skills/play/principles.md"` が通る。
-  - `$play/repo/.claude/skills/tackle/SKILL.md` と `$play/repo/docs/agents/` がある。
+  - `$play/repo/CLAUDE.md` が `## Agent skills` の 1 行のまま（段 2 を飛ばした）。
 
 - **2 回目.** 生成物の写しを取ってから同じコマンドを `setup2.jsonl` に流し、比べる。
 
@@ -75,6 +80,5 @@ Preconditions:
 ## Gotchas
 
 - `--setting-sources project` を付けないと、利用者の設定で入れた dawkinsuke と skill-chain も読み込まれ、checkout を確かめたことにならない。
-- 1 回目の `setup-matt-pocock-skills` は `CLAUDE.md` に節を足すので、2 回目が飛ばしたかは `repo2.diff` が空かで見る。
 - `live.sh` は Write・Edit・Bash を外して流すので、`/play` は聞き取りの最初で止まる。見るのは Skill tool の呼び出しまで。
 - 終わったら `rm -rf "$play"` で使い捨ての repo と `HOME` を消す。`$run` は消さない。

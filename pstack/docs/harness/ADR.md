@@ -24,3 +24,11 @@ upstream の adapter には、`cursor-team-kit` の `deslop`・`control-ui`・`c
 ## 冒頭を、fork を書くときの翻訳の決まりとして説明する
 
 upstream は冒頭で、この file を session ごとに読み、スキルの Cursor の名前を実行中に読み替えるよう書く。表は Cursor の名前を Claude Code の名前に移す決まりで、pstack の fork はこれに従って Claude Code の名前で書き、`ADR.md` に従った節を引く、と書き直した。adapter は実行中に読ませず、fork を書くときの決まりにしたため（`docs/adr/0005-fork-adapter-readers.md`）。
+
+## モデル表を repo ごとのファイルから読み、推論の強さを `@<level>` と `default effort` で書く
+
+upstream は役割の行を `~/.claude/rules/pstack-models.md` から読み、値を `<model> <effort>` と書く。手元ではモデル表を repo ごとの `~/.claude/repo-local/<host>/<owner>/<repo>-models.md` に置き、repo-local の `<repo>.md` が import するので、表が context に無ければその repo には表が無いとみなして既定を使うようにした。値は `<model>` か `<model> @<level>` と書き、suffix の無い値は `default effort` の行に従う。`setup-dawkinsuke` が pstack-claude の setup-pstack と同じ形で表を書くので、それに合わせるため。7 本の fork が読む役割の名前と既定を節に並べ、`setup-dawkinsuke` がこの名前で表を書けるようにした。
+
+## setup-pstack の節を消す
+
+upstream は `setup-pstack` を Claude Code で動かすための節を持つ。`setup-pstack` は除外し、モデル表は `setup-dawkinsuke` が書くので、節を消した（`docs/adr/0005-fork-adapter-readers.md`）。

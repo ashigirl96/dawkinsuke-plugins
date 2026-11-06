@@ -1,0 +1,70 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/architect/SKILL.md pstack/skills/architect/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/architect/SKILL.md
++++ pstack/skills/architect/SKILL.md
+@@ -6,13 +6,11 @@
+ 
+ # Architect
+ 
+-Claude Code では、このスキルに従う前に、session ごとに 1 度 [Claude Code の adapter](../../docs/harness/claude-code.md) を読む。adapter は pstack スキルの中の Cursor の名前を Claude Code の名前に対応させる。
+-
+ 型、関数のシグネチャ、クラスの形、モジュールの境界を、`not implemented` の本体と擬似コードで下書きする。複数のモデルの視点をまとめ、選んだ下書きに沿ってコードを埋める。
+ 
+ ## Start
+ 
+-始める前に、段階ごとに 1 項目ずつの todolist を開く。
++始める前に、段階ごとに 1 項目ずつの todo リストを `TodoWrite` で開く。session に `TodoWrite` が無いときは返答の中に置く。
+ 
+ 1. Ground
+ 2. Sketch
+@@ -22,17 +20,17 @@
+ 
+ ## Phase A: Ground the problem
+ 
+-新しいコードが触るすべてのシステムについて、本物の頭の中の模型を作る。関係するサブシステムに **how** スキルを流す。ファイルの名前を挙げるだけでは足場にならない。`how` が定める構造の説明を作る。設計が持ち主や層の分け方を定め直すなら、今の形にも **why** スキルを流し、その理由を推測ではなく制約にする。
++新しいコードが触るすべてのシステムについて、本物の頭の中の模型を作る。関係するサブシステムに対して Skill tool で `how` を呼ぶ。ファイルの名前を挙げるだけでは足場にならない。`how` が定める構造の説明を作る。設計が持ち主や層の分け方を定め直すなら、今の形に対しても Skill tool で `why` を呼び、その理由を推測ではなく制約にする。
+ 
+ Phase A を飛ばすのは、つなぐべき周りのシステムが無い、本当にまっさらな作業のときだけにする。
+ 
+ ## Phase B: Sketch
+ 
+-設計の下書きの課題と Phase A の足場の成果物を渡して **arena** スキルを流す。各 runner のプロンプトには `references/runner-prompt.md` を渡す。
++設計の下書きの課題と Phase A の足場の成果物を渡して、Skill tool で `arena` を呼ぶ。各 runner のプロンプトには `references/runner-prompt.md` を渡す。
+ 
+-runner は、`arena runners` の行の代わりに、`pstack-models.mdc` ルールの `architect runners` の行から取る。ルールかその行が無ければ、`claude-opus-5-5-xhigh` と `grok-4.7-xhigh-fast` を使う。別名と却下の項目は、**arena** スキルの Phase A の runner の決まりに従う。
++runner は、`arena runners` の行の代わりに、モデル表の `architect runners` の行から取る。表かその行が無ければ、`opus @xhigh` と `gpt-6.1-sol` を使う。effort の接尾辞、別名の項目、却下の項目は、`arena` スキルの Phase A の runner の決まりに従う。
+ 
+-設計を 2 度する。最初の案で足りるように見えても、まとめる前に、構造の違う候補を少なくとも 2 つ求める。これは **exhaust-the-design-space** 原則スキルを形にしたものだ。1 つの形の中の部分的な直しではなく、形全体の代わりを出す。
++設計を 2 度する。最初の案で足りるように見えても、まとめる前に、構造の違う候補を少なくとも 2 つ求める。これは `principle-exhaust-the-design-space` を形にしたものだ（Skill tool で `principle-exhaust-the-design-space` を呼ぶ）。1 つの形の中の部分的な直しではなく、形全体の代わりを出す。
+ 
+ まとめる前に、すべての候補を [`references/design-red-flags.md`](references/design-red-flags.md) に照らしてふるいにかける。次の貢献者は、開いたファイルしか見ず、いちばん近い例を写し、コンパイルが通るいちばん短い道を取る agent だと考える。1 つのファイルから見て正しく見える変更が、repo 全体にとっても正しくなる設計を選ぶ。
+ 
+@@ -46,7 +44,7 @@
+ 
+ 呼び出した人がはっきり頼んだときだけ、確認の区切りを入れる。「/architect with checkpoint」「実装する前に止めて見せて」などだ。そのときは、まとめた設計を見せて、承認を待つ。
+ 
+-どちらの場合も、まとめたものは単独の commit として出してよい。**foundational-thinking** 原則スキルの「scaffold first」のやり方だ。埋める間の、計画して範囲を決めた壊れは、**outcome-oriented-execution** 原則スキルに従って構わない。実装する前に設計へ敵対的な圧をかけるなら、まとめた下書きに **interrogate** スキルを流す。
++どちらの場合も、まとめたものは単独の commit として出してよい。`principle-foundational-thinking` の「scaffold first」のやり方だ（Skill tool で `principle-foundational-thinking` を呼ぶ）。埋める間の、計画して範囲を決めた壊れは、`principle-outcome-oriented-execution` に従って構わない（Skill tool で `principle-outcome-oriented-execution` を呼ぶ）。実装する前に設計へ敵対的な圧をかけるなら、まとめた下書きに対して Skill tool で `interrogate` を呼ぶ。
+ 
+ 人が形に異を唱えたら（確認の区切りでも、あとからでも）、それを Phase A の証拠として扱う。足場を作り直し、さらにコードを書く前に Phase B を流し直す。
+ 
+@@ -56,7 +54,7 @@
+ 
+ ## Phase E: Scrap when the architecture is wrong
+ 
+-実装が、下書きでは吸収できない摩擦を出し続けるなら、下書きを捨てる。**redesign-from-first-principles** と **fix-root-causes** の原則スキルに従い、間違った設計に直しを継ぎ足さない。
++実装が、下書きでは吸収できない摩擦を出し続けるなら、下書きを捨てる。`principle-redesign-from-first-principles` と `principle-fix-root-causes` に従い、間違った設計に直しを継ぎ足さない（Skill tool で `principle-redesign-from-first-principles` と `principle-fix-root-causes` を呼ぶ）。
+ 
+ 合図は 1 つ 1 つの出来事ではなく、*型* だ。兆しは次のとおり。
+ 
+@@ -71,9 +69,9 @@
+ 
+ 捨てるときは次のようにする。
+ 
+-1. 作ったものに **how** スキルを流し直す。
++1. 作ったものに対して、もう一度 Skill tool で `how` を呼ぶ。
+ 2. redesign-from-first-principles に従い、新しい制約が初日からの前提だったかのように設計し直す。
+-3. **subtract-before-you-add** 原則スキルに従い、足す前に引く。新しい下書きは、育つ前に古いものより小さくする。
++3. `principle-subtract-before-you-add` に従い、足す前に引く（Skill tool で `principle-subtract-before-you-add` を呼ぶ）。新しい下書きは、育つ前に古いものより小さくする。
+ 4. Phase B に戻り、arena を流し直す。
+ 
+ ## Outputs

@@ -1,0 +1,16 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/how/SKILL.md pstack/skills/how/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/how/SKILL.md
++++ pstack/skills/how/SKILL.md
+@@ -6,11 +6,9 @@
+ 
+ # How
+ 
+-Claude Code では、このスキルに従う前に、session ごとに 1 度 [Claude Code の adapter](../../docs/harness/claude-code.md) を読む。adapter は pstack のスキルにある Cursor の名前を Claude Code の名前に対応づける。
+-
+ コードベースを調べて「X はどう動くのか」という問いに答える。サブシステムに新しく入るシニアエンジニア向けの水準で、構造の説明を作る。動く頭の中のモデルを組み立てられるだけの量にし、注釈付きのソースコードのように読めるほどには詳しくしない。
+ 
+-起動するものはすべて、`subagent_type: generalPurpose` と `readonly: true` を付けた Task subagent にする。explorer は `pstack-models.mdc` の rule の `how explorer` 行（既定は `grok-4.7-xhigh-fast`）を使い、explainer はすべて `how explainer` 行（既定は `claude-opus-5-5-xhigh`）を使う。`model` をその行の値にし、rule か行が無ければ既定の値にする。値が `auto` か `inherit-parent` なら `model` を設定しない。Task tool が slug を受け付けなければ、既定の値を使い、そう伝える。既定の値も受け付けなければ、エラーメッセージにある同じ系統の最も近い有効な slug を使う。各 subagent の推論の水準と、fast か standard の速度は、**poteto-mode** スキルの Subagents の節に従い、仕事に合わせて選ぶ。
++起動するものはすべて、`subagent_type: "Explore"` を付けた読み取り専用の `Agent` subagent にする。依頼文に「ファイルを編集しない」と書き、戻ったあとに `git status` を確かめる。explorer はモデル表の `how explorer` 行（既定は `gpt-6.1-sol`）を使い、explainer はすべて `how explainer` 行（既定は `opus @xhigh`）を使う。モデル表は `<repo>-models.md` で、repo ごとの `<repo>.md` が import するので、その行はすでに context にある。無ければ、その repo には表が無い。各起動はその役割の行から設定し、表か行が無ければ既定の値から設定する。値のモデルを `model` に、`@<level>` の接尾辞を `effort` に渡す。接尾辞の無い値は表の `default effort` 行に従い、その行が `session` か無ければ `effort` を省く。値が `auto` か `inherit-parent` なら `model` を設定しない。`gpt-*` の値なら、そのモデルに任せると説明に書かれた `Agent` の subagent type を `subagent_type` に渡し、`model` を設定しない。それを名指す subagent type が無ければ、`model` を省き、そう伝える。`Agent` tool が値を受け付けなければ、既定の値を使い、そう伝える。
+ 
+ ## 1. 複雑さを見積もる
+ 

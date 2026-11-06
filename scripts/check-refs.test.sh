@@ -8,7 +8,7 @@ cd "$tmp/r"
 
 fail() { echo "FAIL: $1"; exit 1; }
 setup=matt/skills/setup-matt-pocock-skills/SKILL.md
-reader=pstack/skills/architect/SKILL.md
+reader=pstack/skills/bro/SKILL.md
 
 sh scripts/check-refs.sh > out || true
 grep -q '\.\./implement/SKILL.md' out && fail "reference through a symlinked sibling was reported"
@@ -24,18 +24,19 @@ sh scripts/check-refs.sh > out || status=$?
 grep -qx "missing-file $setup: ../implement/SKILL.md" out || fail "missing sibling file not reported"
 grep -qx "missing-skill $setup: implement" out || fail "missing skill not reported"
 
+echo 'Read [the adapter](../../docs/harness/claude-code.md).' >> $reader
 rm -r pstack/docs/harness
 sh scripts/check-refs.sh > out || true
 grep -qx "missing-file $reader: ../../docs/harness/claude-code.md" out || fail "missing pstack doc not reported"
 
-for n in figure-it-out principle-encode-lessons-in-structure blast-radius arena poteto-mode why; do
+for n in figure-it-out principle-encode-lessons-in-structure blast-radius unslop poteto-mode; do
 	echo "cursor-plugins/$n" >> upstream/exclude.txt
 done
 sh scripts/sync-skills.sh > /dev/null
 grilling=matt/skills/grilling/SKILL.md
-echo 'Then type /dawkinsuke:arena.' >> $grilling
+echo 'Then type /dawkinsuke:unslop.' >> $grilling
 sh scripts/check-refs.sh > out || true
-grep -qx "missing-skill $grilling: arena" out || fail "skill named with the plugin prefix not reported"
+grep -qx "missing-skill $grilling: unslop" out || fail "skill named with the plugin prefix not reported"
 cp upstream/exclude.txt exclude.before
 sh scripts/try-include.sh cursor-plugins/figure-it-out > out 2> /dev/null || true
 cmp -s upstream/exclude.txt exclude.before || fail "try-include changed the checkout"
@@ -45,9 +46,9 @@ grep -qx "missing-skill $fio: principle-encode-lessons-in-structure" out || fail
 grep -qx "missing-skill $fio: poteto-mode" out || fail "skill named in bold not reported"
 
 sh scripts/try-include.sh cursor-plugins/blast-radius > out 2> /dev/null || true
-grep -qx "missing-skill pstack/skills/blast-radius/SKILL.md: arena" out || fail "skill named in backticks not reported"
+grep -qx "missing-skill pstack/skills/blast-radius/SKILL.md: unslop" out || fail "skill named in backticks not reported"
 
-sh scripts/try-include.sh cursor-plugins/poteto-mode cursor-plugins/why > out 2> /dev/null || true
+sh scripts/try-include.sh cursor-plugins/poteto-mode > out 2> /dev/null || true
 grep -q '<name>' out && fail "placeholder path was reported"
 grep -q ': url$' out && fail "placeholder link target was reported"
 

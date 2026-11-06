@@ -36,20 +36,28 @@ pstack skills use Cursor names. The tables below map each Cursor name to Claude 
 
 | Cursor | Claude Code |
 | --- | --- |
-| `claude-<family>-<version>-<effort>[-fast]`, such as `claude-opus-5-5-xhigh` | `model: "opus"` and `effort: "xhigh"`. `model` takes only `opus`, `sonnet`, `haiku`, `fable`. Drop `-fast`. |
+| `claude-<family>-<version>-<effort>[-fast]`, such as `claude-opus-5-5-xhigh` | `opus @xhigh`: pass `model: "opus"` and `effort: "xhigh"`. `model` takes only `opus`, `sonnet`, `haiku`, `fable`. Drop `-fast`. |
 | A `grok-*`, `cursor-grok-*`, or `composer-*` slug | `gpt-6.1-sol`, then map it with the next row. Map it before any family check, so its family is `gpt-*`. |
 | A `gpt-*` or other non-Claude model, such as `gpt-6.1-sol` | Pass as `subagent_type` the `Agent` subagent type whose description says it delegates to that model, in place of `general-purpose` or `Explore`. Omit `model`, which that subagent ignores. For `readonly: true`, the brief says "do not edit files". If no subagent type names the model, omit `model` so the agent runs on the session model, and say so. A model's family is its name prefix, so `gpt-*` is a family apart from `claude-*`. |
 | `auto` or `inherit-parent` | Omit `model`. |
-| The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`. Claude Code loads it into every new session, so its role lines are already in context. If they are not, read the file. If the file or the role's line is missing, use the skill's default slug. |
-| A role value `<model> <effort>`, such as `opus high` | `model: "opus"` and `effort: "high"`. |
+| The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | The model table, `~/.claude/repo-local/<host>/<owner>/<repo>-models.md`. The repo-local `<repo>.md` imports it, so its lines are in context. When they are not, the repo has no table, so use the skill's defaults. A missing role line also takes the default. |
+| A role value, such as `opus` or `opus @high` | `model: "opus"`, and `effort: "high"` from the `@<level>` suffix. Levels are `low`, `medium`, `high`, `xhigh`, `max`. A value without the suffix takes the table's `default effort` line. When that line is `session` or missing, omit `effort`. In a panel list, each entry takes its own suffix, as in `opus @xhigh, sonnet`. |
 
-## setup-pstack
+The pstack forks read these role lines. A list value is a panel, and one subagent runs per entry.
 
-Claude Code loads every `.md` file in `~/.claude/rules/` into each new session, so `setup-pstack` writes its rule there. Follow its steps with these changes:
-
-- Detect. The detected models are the `model` values that the `Agent` tool schema lists, each with an effort from its `effort` values. Write a real model as `<model> <effort>`, such as `opus xhigh`. The effort is the last token, so the budget step works as written. Also detect each model that an `Agent` subagent type's description says it delegates to, and write it by its bare name, such as `gpt-6.1-sol`, with no effort. The budget step leaves it as is.
-- Defaults. Map each default slug with the rows above: `claude-opus-5-5-xhigh` is `opus xhigh`, and `grok-4.7-xhigh-fast` is `gpt-6.1-sol`.
-- Write. Write `~/.claude/rules/pstack-models.md` with no frontmatter, then the comment lines, the `# budget` line, and one line per role from step 5. Overwrite the whole file. Never put the role lines in `CLAUDE.md` or `AGENTS.md`.
+| Role line | Fork | Default |
+| --- | --- | --- |
+| `arena runners` | `arena` | `opus @xhigh, gpt-6.1-sol` (list) |
+| `arena cross-judge pool` | `arena` | `opus @xhigh, gpt-6.1-sol` (list) |
+| `architect runners` | `architect` | `opus @xhigh, gpt-6.1-sol` (list) |
+| `interrogate reviewers` | `interrogate` | the `arena runners` defaults (list) |
+| `swarm workers` | `swarm` | `gpt-6.1-sol` |
+| `how explorer` | `how` | `gpt-6.1-sol` |
+| `how explainer` | `how` | `opus @xhigh` |
+| `why investigators` | `why` | `gpt-6.1-sol` |
+| `why synthesizer` | `why` | `opus @xhigh` |
+| `reflect tooling` | `reflect` | `gpt-6.1-sol` |
+| `reflect judgment, divergent, synthesizer` | `reflect` | `opus @xhigh` |
 
 ## Paths
 

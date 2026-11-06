@@ -17,7 +17,7 @@ grep -qx 'removed wait-what (excluded)' out || fail "removal not reported"
 [ "$(readlink matt/skills/tdd)" = ../../upstream/mattpocock-skills/skills/engineering/tdd ] || fail "same-named skill of another upstream was not kept"
 [ ! -e pstack/skills/tdd ] || fail "a name clash was linked twice"
 grep -qx 'conflict tdd (matt/skills/tdd has the same name)' out || fail "upstream name clash not reported"
-[ "$(readlink pstack/skills/architect)" = "../../$pstack/architect" ] || fail "pstack skill was not linked under pstack/skills"
+[ "$(readlink pstack/skills/bro)" = "../../$pstack/bro" ] || fail "pstack skill was not linked under pstack/skills"
 
 : > upstream/exclude.txt
 sh scripts/sync-skills.sh > out
@@ -29,11 +29,11 @@ sh scripts/sync-skills.sh > out
 [ "$(readlink pstack/skills/tdd)" = "../../$pstack/tdd" ] || fail "excluding one upstream did not hand the name to the other"
 
 printf '%s\n' cursor-plugins/tdd cursor-plugins/teach > upstream/exclude.txt
-ln -sfn "../../$pstack/architect" matt/skills/architect
+ln -sfn "../../$pstack/bro" matt/skills/bro
 sh scripts/sync-skills.sh > out
 [ -L matt/skills/tdd ] || fail "matt skill did not come back"
-[ ! -e matt/skills/architect ] || fail "link in the wrong directory was kept"
-[ -L pstack/skills/architect ] || fail "pstack link was removed"
+[ ! -e matt/skills/bro ] || fail "link in the wrong directory was kept"
+[ -L pstack/skills/bro ] || fail "pstack link was removed"
 
 rm matt/skills/tdd
 mkdir matt/skills/tdd && touch matt/skills/tdd/ADR.md

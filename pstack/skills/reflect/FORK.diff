@@ -1,0 +1,112 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/SKILL.md pstack/skills/reflect/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/SKILL.md
++++ pstack/skills/reflect/SKILL.md
+@@ -6,43 +6,35 @@
+ 
+ # Reflect
+ 
+-Claude Code では、このスキルに従う前に [Claude Code の adapter](../../docs/harness/claude-code.md) を session ごとに 1 度読む。pstack のスキルにある Cursor の名前を Claude Code の名前に対応づけている。
+-
+ 今の会話から長く使える学びを掘り出し、それをスキルの編集に振り分ける。
+ 
+ ユーザーが「reflect」か「/reflect」と言ったときに使う。会話がささいなとき、本題から外れているとき、親が正しく従った既存のスキルですでに扱われているときは使わない。一度きりのことは学びではない。
+ 
+ ## 1. 今の transcript を見つける
+ 
+-並列に広げる前に、system prompt が示す `agent-transcripts/` ディレクトリの中から、この会話の transcript を見つける。`~/.cursor/projects/*/` をまたいで glob しない。workspace の境界を越え、関係のない project の私的な会話を読むことになる。
++並列に広げる前に、この会話の transcript `~/.claude/projects/<slug>/<session>.jsonl` を見つける。slug は workspace の path の `/` と `.` をそれぞれ `-` に変えたもので、`/work/proj` なら `-work-proj` になる。そのフォルダの直下で最も新しい `.jsonl` が今の session で、その `<session>/subagents/` フォルダに subagent の transcript がある。`~/.claude/projects/*/` をまたいで glob しない。workspace の境界を越え、関係のない project の私的な会話を読むことになる。見つからなければ、代わりに session を引き締めて要約したものを渡す。
+ 
+-```bash
+-ls -t <agent-transcripts>/*.jsonl <agent-transcripts>/*/*.jsonl <agent-transcripts>/*/subagents/*.jsonl 2>/dev/null | head -10
+-```
+-
+-これで、古い平らな配置（`<id>.jsonl`）、今の入れ子の配置（`<id>/<id>.jsonl`）、subagent の配置（`<parent>/subagents/<child>.jsonl`）を覆う。候補ごとに JSONL の最初の行を読む。`message.content[0].text` に会話の最初のユーザーの prompt を含むファイルを選ぶ。どれも合わなければ、代わりに session を引き締めて要約したものを渡す。
+-
+ ## 2. 3 人の reviewer を並列に起こす
+ 
+-1 つのメッセージで `Task` を 3 回呼び、`subagent_type: generalPurpose`、agent mode（`readonly: false`）にする。reviewer は transcript が触れる ticket、chat の thread、観測の trace を調べるのに MCP を使う必要があり、readonly にすると MCP が外れる。
++1 つのメッセージで `Agent` を 3 回呼び、`subagent_type: "general-purpose"` か、値が示す `gpt-*` の subagent type にする。reviewer は transcript が触れる ticket、chat の thread、観測の trace を調べるのに MCP を使う必要があり、`general-purpose` はこの session の MCP server を保つ。`gpt-*` の reviewer にはこの session の MCP server が無いので、transcript だけからレビューし、そのことを要約で言う。
+ 
+-各 reviewer と synthesizer は、`pstack-models.mdc` rule の役割の行と既定値を示す。`model` をその行の値にし、rule か行が無ければ既定値にする。値が `auto` か `inherit-parent` なら `model` を設定しない。Task tool が slug を拒んだら、既定値を使ってそう言う。既定値を拒んだら、エラーメッセージにある同じ系統の最も近い有効な slug を使う。各 subagent の推論の強さと、fast か standard の速さは、**poteto-mode** スキルの Subagents の節に従って仕事に合わせて選ぶ。
++各 reviewer と synthesizer は、モデル表の役割の行と既定値を示す。モデル表は `<repo>-models.md` で、repo-local の `<repo>.md` が import するので、その行はすでに context にある。無ければ、その repo には表が無い。各 spawn を役割の行から設定し、表か行が無ければ既定値から設定する。値のモデルを `model` に、`@<level>` の接尾辞を `effort` に渡す。接尾辞の無い値は表の `default effort` の行を使い、その行が `session` か無いときは `effort` を省く。値が `auto` か `inherit-parent` なら `model` を設定しない。`gpt-*` の値なら、説明にそのモデルへ任せると書いてある `Agent` の subagent type を `subagent_type` に渡し、`model` を設定しない。そのモデルを示す subagent type が無ければ、`model` を省いてそう言う。`Agent` tool が値を拒んだら、既定値を使ってそう言う。
+ 
+-| 観点 | 役割の行 | 既定の `model` | prompt の雛形 |
++| 観点 | 役割の行 | 既定値 | prompt の雛形 |
+ |---|---|---|---|
+-| Judgment | `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/judgment-reviewer.md` |
+-| Tooling | `reflect tooling` | `grok-4.7-xhigh-fast` | `references/tooling-reviewer.md` |
+-| Divergent | `reflect judgment, divergent, synthesizer` | `claude-opus-5-5-xhigh` | `references/divergent-reviewer.md` |
++| Judgment | `reflect judgment, divergent, synthesizer` | `opus @xhigh` | `references/judgment-reviewer.md` |
++| Tooling | `reflect tooling` | `gpt-6.1-sol` | `references/tooling-reviewer.md` |
++| Divergent | `reflect judgment, divergent, synthesizer` | `opus @xhigh` | `references/divergent-reviewer.md` |
+ 
+-各雛形を一字一句そのまま渡し、印の箇所を transcript の path か要約に置き換える。reviewer は指摘を `Task` の応答の本文で返す。
++各雛形を一字一句そのまま渡し、印の箇所を transcript の path か要約に置き換える。reviewer は指摘を `Agent` の結果で返す。
+ 
+ ## 3. まとめる
+ 
+-`Task` を 1 回呼び、`subagent_type: generalPurpose`、`model` は `reflect judgment, divergent, synthesizer` の行から（既定値 `claude-opus-5-5-xhigh`）、agent mode（`readonly: false`）にする。MCP で引用を抜き取りで確かめるので、readonly にすると MCP が外れる。`references/synthesizer.md` を一字一句そのまま渡し、印の箇所に各 reviewer の出力をすべて埋め込む。Accepted / Rejected / Backlog の一覧を返す。
++`Agent` を 1 回呼び、`subagent_type: "general-purpose"`、役割の行は `reflect judgment, divergent, synthesizer`（既定値 `opus @xhigh`）にする。MCP で引用を抜き取りで確かめるので、`general-purpose` でこの session の MCP server を保つ。役割の行が `gpt-*` のモデルを示すときは、synthesizer を `general-purpose` で `model` を設定せずに走らせ、そう言う。`references/synthesizer.md` を一字一句そのまま渡し、印の箇所に各 reviewer の出力をすべて埋め込む。Accepted / Rejected / Backlog の一覧を返す。
+ 
+ ## 4. 構造で強制できるかの確認
+ 
+-lint rule、script、metadata の flag、実行時の検査のほうが確実に強制できる Accepted の項目は Backlog に移す。**encode-lessons-in-structure** の原則スキルを見る。
++lint rule、script、metadata の flag、実行時の検査のほうが確実に強制できる Accepted の項目は Backlog に移す。Skill tool で `principle-encode-lessons-in-structure` を呼ぶ。
+ 
+ ## 5. 適用する
+ 
+@@ -50,14 +42,14 @@
+ 
+ Backlog の各項目は、待たずにチームの devex か backlog の tracker に起票する。承認を待つのは Accepted の一覧だけ。
+ 
+-`plugins/cache/` の下のスキルは決して編集しない。承認の前に、行き先 `.cursor/skills/<skill>/` か `~/.cursor/skills/<skill>/` を見せる。承認のあと、スキルのフォルダをそこへ複製し、複製を編集する。PR を開いたり push したりは決してしない。
++`~/.claude/plugins/cache/` の下のスキルは決して編集しない。承認の前に、行き先 `.claude/skills/<skill>/` か `~/.claude/skills/<skill>/` を見せる。承認のあと、スキルのフォルダをそこへ複製し、複製を編集する。PR を開いたり push したりは決してしない。
+ 
+ 承認された各行の Routing に正確に従う。
+ 
+ - ささいな既存スキルの編集（1 行の箇条、引き締めた 1 文、古い事実の訂正）: 親が直接行う。
+-- 中身のある既存スキルの編集（新しい節、新しいパターンの表、おおよそ 10 行を超えるもの）: Cursor に組み込みの `create-skill` スキルに渡し、その下書き / 試し / 繰り返しの流れを回す。
+-- `tune description: <skill path>`（スキルはあるが、発火すべきときに発火しなかった）: `create-skill` に渡し、その description の最適化の流れを回す。
+-- `new skill via create-skill: <kebab-name>`: 作成を `create-skill` に渡す。形をその場で考え出さない。
++- 中身のある既存スキルの編集（新しい節、新しいパターンの表、おおよそ 10 行を超えるもの）: Skill tool で `writing-for-agents` を呼び、それを使って下書き / 試し / 繰り返しの流れを回す。
++- `tune description: <skill path>`（スキルはあるが、発火すべきときに発火しなかった）: Skill tool で `writing-for-agents` を呼び、それを使って description を調整する。
++- `new skill via create-skill: <kebab-name>`: Skill tool で `writing-for-agents` を呼んで作る。形をその場で考え出さない。
+ 
+ 環境に SKILL.md の validator があれば、完了とする前に、触ったすべてのスキルにそれを流す。
+ 
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/divergent-reviewer.md pstack/skills/reflect/references/divergent-reviewer.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/divergent-reviewer.md
++++ pstack/skills/reflect/references/divergent-reviewer.md
+@@ -18,7 +18,7 @@
+ 
+ ## session が実際に使ったスキルと道具に絞る
+ 
+-指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にその `SKILL.md` の `Read`（`.cursor/skills/`、`~/.cursor/skills/`、`~/.cursor/plugins/` の下）、その path を示す `Task` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
++指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にそのスキルを示す `Skill` tool の呼び出し、その `SKILL.md` の `Read`（`.claude/skills/`、`~/.claude/skills/`、`~/.claude/plugins/` の下）、その path を示す `Agent` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
+ 
+ 有効な指摘の形は 2 つある。
+ - 親がスキルを使い、その本文に本物の抜けを見つけた。スキルの該当する節に振り分ける。
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/judgment-reviewer.md pstack/skills/reflect/references/judgment-reviewer.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/judgment-reviewer.md
++++ pstack/skills/reflect/references/judgment-reviewer.md
+@@ -17,7 +17,7 @@
+ 
+ ## session が実際に使ったスキルと道具に絞る
+ 
+-指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にその `SKILL.md` の `Read`（`.cursor/skills/`、`~/.cursor/skills/`、`~/.cursor/plugins/` の下）、その path を示す `Task` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
++指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にそのスキルを示す `Skill` tool の呼び出し、その `SKILL.md` の `Read`（`.claude/skills/`、`~/.claude/skills/`、`~/.claude/plugins/` の下）、その path を示す `Agent` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
+ 
+ 有効な指摘の形は 2 つある。
+ - 親がスキルを使い、その本文に本物の抜けを見つけた。スキルの該当する節に振り分ける。
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/tooling-reviewer.md pstack/skills/reflect/references/tooling-reviewer.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/reflect/references/tooling-reviewer.md
++++ pstack/skills/reflect/references/tooling-reviewer.md
+@@ -28,7 +28,7 @@
+ 
+ ## session が実際に使ったスキルと道具に絞る
+ 
+-指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にその `SKILL.md` の `Read`（`.cursor/skills/`、`~/.cursor/skills/`、`~/.cursor/plugins/` の下）、その path を示す `Task` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
++指摘は、この transcript が使ったスキル、道具、MCP にだけ振り分ける。スキルを使ったと数えるのは、transcript にそのスキルを示す `Skill` tool の呼び出し、その `SKILL.md` の `Read`（`.claude/skills/`、`~/.claude/skills/`、`~/.claude/plugins/` の下）、その path を示す `Agent` の prompt、文書にあるコマンドに合う tool の呼び出し（Shell、Grep、MCP など）があるとき。親が一度も開かなかったスキルへの推測の振り分けは数えない。
+ 
+ 有効な指摘の形は 2 つある。
+ - 親がスキルを使い、その本文に本物の抜けを見つけた。スキルの該当する節に振り分ける。

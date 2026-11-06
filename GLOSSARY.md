@@ -15,3 +15,11 @@ _Avoid_: family、provider
 **codex subagent**:
 `gpt-*` の model 系統を頭脳に持ち、親から Claude の subagent と同じ形で任されて、codex が自分の tool で最後まで走らせる agent。
 _Avoid_: GPT subagent、GPT の subagent
+
+**部品スキル**:
+1 つのことだけをし、他のスキルやプレイブックから組み合わされる前提のスキル。流れ全体を握らない。
+_Avoid_: primitive skill、基本スキル
+
+**プレイブック**:
+ある意図（設計したい・バグを調べたい など）に対し、部品スキルを呼ぶ順番を書いた手順書。各 repo の中にあり、使うたびに書き足されて育つ。スキルではなく、`/play` だけが読む。
+_Avoid_: playbook、ワークフロー、手順スキル

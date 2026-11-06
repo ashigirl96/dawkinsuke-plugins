@@ -5,7 +5,7 @@
 ## Language
 
 **adapter**:
-pstack のスキルが最初に読む、Cursor の名前を Claude Code の名前に読み替える表。
+pstack のスキルを fork するときに、Cursor の名前を Claude Code の名前に書き換える決まりの表。
 _Avoid_: harness doc、対応表
 
 **model 系統**:
@@ -15,6 +15,10 @@ _Avoid_: family、provider
 **codex subagent**:
 `gpt-*` の model 系統を頭脳に持ち、親から Claude の subagent と同じ形で任されて、codex が自分の tool で最後まで走らせる agent。
 _Avoid_: GPT subagent、GPT の subagent
+
+**モデル表**:
+repo ごとに、pstack のスキルの役割（`arena runners`・`swarm workers` など）ごとに使う model と推論の強さを書いた表。
+_Avoid_: models.md、pstack-models、override sheet、モデル設定
 
 **部品スキル**:
 1 つのことだけをし、他のスキルやプレイブックから組み合わされる前提のスキル。流れ全体を握らない。

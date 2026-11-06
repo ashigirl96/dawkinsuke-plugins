@@ -80,6 +80,8 @@ ls node_modules/beautiful-mermaid/package.json
 3. `$T wait` で、mod が出すはずの印（罫線の箱、pane の `┃`、禁止の文言）を待つ。model の返答を待つときは、続けて `$T turn <名前> <その session での返答の回数>` で返答の終わりも待つ。
 4. `$T shot` で画面を `$run` に書く。
 
+Claude Code の本物の振る舞いに似せる mod（codex-subagent が Claude の subagent に似せるなど）は、同じ頼みを本物の側（`general-purpose` の subagent など）でも同じ session で流し、同じ場所を `$T shot` で `$run/<機能>-<経路>-native.txt` に撮って**見本**にする。合否は mod の印に加えて、見本と行の並び・記号・畳み方・出る場所が揃っているかで決め、違いはすべて報告に書く。mod の出力だけを見ると、一覧に出ない、行が 1 つにまとまる、といった似せ方の食い違いを見落とす。
+
 mod の印の例:
 
 - mermaid-render: `┌` `▼` などの罫線。描けなければ `mermaid-render: <理由>` の 1 行。

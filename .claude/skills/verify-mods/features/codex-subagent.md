@@ -20,6 +20,7 @@
 ## How to get to it (user POV)
 
 - 「Agent tool で subagent_type "codex-subagent:gpt-6-luna" を起動して、〜を頼んで」と打つ。種類の名前はモデル ID の `.` を `-` にしたもの。並びは codex の `model/list` で決まるので、`gpt-6-luna` が無ければ一覧の安いモデルに替える。
+- 見本: 同じ頼みを `subagent_type "general-purpose"` で流し、状態行の下の一覧の 1 行、subagent の画面の tool の行、親への届き方を撮って、codex subagent の写しと並べる。
 
 ## Driving it with tui.sh
 

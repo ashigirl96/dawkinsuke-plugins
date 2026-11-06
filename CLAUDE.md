@@ -37,6 +37,8 @@ Claude Code の mod（hooks module で engine の挙動や描画を変える部�
 
 folder の marketplace の相対 path の plugin は checkout から直接読まれるので、mod の script が使う依存はルートの `package.json` に書き、clone したら `bun install` で入れる。mod を足したら、`claude plugin install <name>@dawkinsuke` で入れる。mod を本物の Claude Code の画面で確かめるときは `/verify-mods` を使い、mod を足したらその `features/` に手順を足す。
 
+mod の engine の振る舞いのうち、型定義と plugin-authoring の手引きに無く実機で確かめたものは `docs/research/claude-code-mod-engine.md` にある。mod を書く前に読み、新しく確かめた事実はそこに足す。
+
 ## Agent skills
 
 ### Issue tracker

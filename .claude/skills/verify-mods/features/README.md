@@ -23,7 +23,7 @@
 
 ## Feature entry contract
 
-各ファイルは H1 の題と、ユーザーから見た振る舞いを書いた 1 段落で始まり、`Sub-features`、`How to get to it (user POV)`、`Driving it with tui.sh`、`Gotchas` の 4 つの H2 をこの順に持つ。
+各ファイルは H1 の題と、ユーザーから見た振る舞いを書いた 1 段落で始まり、`Sub-features`、`How to get to it (user POV)`、`Driving it with tui.sh`、`Gotchas` の 4 つの H2 をこの順に持つ。本物の振る舞いに似せる機能は、`How to get to it (user POV)` に見本（`../SKILL.md` の Drive）の頼み方を書く。
 
 ## Features
 

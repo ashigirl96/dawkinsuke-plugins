@@ -1,0 +1,26 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/implement-spec/SKILL.md matt/skills/implement-spec/SKILL.md
+--- upstream/mattpocock-skills/skills/engineering/implement-spec/SKILL.md
++++ matt/skills/implement-spec/SKILL.md
+@@ -18,6 +18,8 @@
+ 
+ **Implementer subagents** は、並行度を最大にするため、可能なら background で走らせる。
+ 
++spec と ticket が信頼できる唯一の拠り所であり続ける。implementer、review、検査が、作った振る舞いが spec や ticket から **ずれている（drift）** ことを示したら、その作業を integration branch に merge する前に、spec と ticket の issue を更新する。issue を編集するのはあなただけで、subagent はずれを報告する。
++
+ ## 手順
+ 
+ 1. spec と ticket を読んで、task の依存グラフを把握する。
+@@ -29,9 +31,12 @@
+ 4. **implementer subagents** を使って各 ticket を実装する。それぞれ専用の worktree と専用の branch で動かす。各 implementer subagent は次を行う。
+    - 始める前に、自分の worktree が integration branch を土台にしていることを確かめ、そうでなければ integration branch に reset する。
+    - Skill tool で `tdd` を呼び、ticket を作る。
++   - spec や ticket からのずれがあれば報告し、issue には手を付けない。
+    - 完了を報告する前に、integration branch の先頭を自分の branch に merge する。
+ 
+-5. **implementer subagent** が完了したら、**merger subagent** でその成果を integration branch に merge する。
++5. **implementer subagent** が完了したら、報告されたずれについて issue を更新し、そのあと **merger subagent** でその成果を integration branch に merge する。
++
++   ticket が prototype なら、ここで止まる。結果と試し方をユーザーに渡し、それに依存する ticket を始める前に、ユーザーの確認を待つ。
+ 
+ 6. これで着手できる ticket の **frontier** が変わるなら、新しい ticket に取り組む **implementer subagents** をさらに起動する。これで並行度を最大にできる。
+ 

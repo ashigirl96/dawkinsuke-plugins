@@ -1,5 +1,7 @@
 # codex subagent は Agent tool の呼び出しを横取りし、codex が自分の tool で最後まで走る
 
+0003 で置き換えた。この作りでは codex subagent が Claude Code の subagent の一覧に出ないため。
+
 mod は起動時に `model/list` のモデルごとに subagent の種類（`codex-subagent:<モデル ID の . を - にしたもの>`）を登録し、その種類の Agent tool の呼び出しを `tool.call` で横取りする。Claude Code には裏で起動した形の結果（`status: "async_launched"`）を返し、中では `codex app-server` の thread が codex 自身の tool（shell・apply_patch）で最後まで走る。結果は終わったあとに `$.prompt.submit` で親に届け、宛先がその ID の `SendMessage` と TaskStop も横取りして codex に渡す。auto mode の判定は親が Agent tool を呼ぶ 1 回だけで、中のコマンドは codex の sandbox が囲う。
 
 ## Considered Options

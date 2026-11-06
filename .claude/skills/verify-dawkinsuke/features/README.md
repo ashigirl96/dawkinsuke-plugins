@@ -29,4 +29,3 @@ dawkinsuke プラグインの「入れたスキルが、必要なものを全部
 - [スキルが読む文書](./file-refs.md): スキルが相対 path で読む文書や隣のスキルのファイルが、その path にある。
 - [スキルが呼ぶスキル](./skill-refs.md): スキルが名前で呼ぶ upstream のスキルが、読み込まれている。
 - [スキルを入れる前に依存を調べる](./try-include.md): 除外しているスキルを入れたら何が足りなくなるかを、checkout を変えずに調べる。
-- [setup-dawkinsuke と /play](./setup-dawkinsuke.md): 使い捨ての repo で `/setup-dawkinsuke` を 2 回流して生成物と無変化を確かめ、`/play` が「設計→実装」を選んで部品スキルを呼べるかを見る。

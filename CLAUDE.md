@@ -27,8 +27,6 @@ upstream を上げるときは `/update-upstream-skill matt` か `/update-upstre
 
 fork の本文で別のスキルを使わせるときは、「Skill tool で `<name>` を呼ぶ」とだけ書く。pstack の本文が SKILL.md を Read させている箇所も、fork ではこの書き方に置き換える。呼ぶ先が手動専用（`disable-model-invocation: true`）でスキル一覧に無くても、この plugin の置き場所（`skills/`・`matt/skills`・`pstack/skills`）のどれかにあれば、mod の `skill-chain` が呼ばせて通す。仕組みは `mods/skill-chain/README.md` にある。
 
-`templates/play/` は、`/setup-dawkinsuke` が各 repo に写す `/play` のひな形。スキルのディレクトリの外に置くのは、skill-chain が呼び出し元のディレクトリの `.md` すべてを名指しに数え、中に置くと `/setup-dawkinsuke` を開いただけでひな形が名指しする手動専用スキルを呼べてしまうため。
-
 新しいスキルを足す前に `/vet-skill` を使う。matt と pstack の思想（`docs/philosophy/`）に合うか、既存のスキル・除外中の upstream スキル・fork で足りないかを評価する。
 
 matt と pstack について聞かれたら、`docs/philosophy/` で当たりを付け、止めている版の submodule の原文を読み、`path:line` で引いて答える。原文の場所は各要約の冒頭にある。そのスキルが fork なら `ADR.md` の決定を、除外中ならそのことも添える。

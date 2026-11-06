@@ -7,7 +7,7 @@ own: []
 
 ## Claude 以外の model を、その model に振り分ける subagent で走らせる
 
-upstream は `grok-*` や `gpt-*` などの Claude 以外の model 名を省き、session の model で走らせる。手元では opencodex が Agent tool に GPT へ振り分ける subagent を足しているので、description にその model の名前がある subagent を `subagent_type` に選び、grok の既定は `gpt-6.1-sol` に読み替えるようにした。省くと、`arena` の judge などが Claude しか選べず、書いた者と別の model 系統に判定させる pstack の柱が崩れるため。
+upstream は `grok-*` や `gpt-*` などの Claude 以外の model 名を省き、session の model で走らせる。手元では mod の codex subagent が Agent tool に GPT へ任せる subagent を足しているので、description にその model の名前がある subagent を `subagent_type` に選び、grok の既定は `gpt-6.1-sol` に読み替えるようにした。省くと、`arena` の judge などが Claude しか選べず、書いた者と別の model 系統に判定させる pstack の柱が崩れるため。
 
 ## plugin 名を dawkinsuke に読み替える
 

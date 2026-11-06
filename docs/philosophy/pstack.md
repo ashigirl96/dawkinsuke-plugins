@@ -49,7 +49,7 @@
 
 解釈: `arena`・`interrogate`・`swarm`・Comment Sicko・Shipping の verifier に共通する設計の根っこ。作者の family の区切りは model 名の接頭辞で、`claude-*` は 1 つの family。
 
-この柱は Claude Code でも Cursor と同じように効く。ocx（opencodex。Claude Code の要求を GPT などの model に振り分ける手元の proxy）が Agent ツールに GPT へ振り分ける `subagent_type` を足していれば、それが Claude と別の model 系統になり、judge・panel・二つ目の意見に使える。upstream の adapter（`docs/harness/claude-code.md`）は Claude 以外の model を省いて session の model で走らせるが、この repo の adapter の fork（`pstack/docs/harness/`）は、grok の既定を `gpt-6.1-sol` に読み替え、description にその model の名前がある subagent で走らせる。そうした subagent が一覧に無い session では、judge が飛ばされ panel が同じ系統の重複になる。
+この柱は Claude Code でも Cursor と同じように効く。mod の codex subagent が Agent ツールに GPT へ任せる `subagent_type` を足していれば、それが Claude と別の model 系統になり、judge・panel・二つ目の意見に使える。upstream の adapter（`docs/harness/claude-code.md`）は Claude 以外の model を省いて session の model で走らせるが、この repo の adapter の fork（`pstack/docs/harness/`）は、grok の既定を `gpt-6.1-sol` に読み替え、description にその model の名前がある subagent で走らせる。そうした subagent が一覧に無い session では、judge が飛ばされ panel が同じ系統の重複になる。
 
 ### 人を待たないが、人の判断の領域は守る
 

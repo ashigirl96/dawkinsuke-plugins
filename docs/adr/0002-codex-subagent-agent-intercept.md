@@ -8,4 +8,4 @@ mod は起動時に `model/list` のモデルごとに subagent の種類（`cod
 
 - subagent の `turn.step` を横取りして頭脳だけを codex に差し替え、tool は Claude Code が実行する: Claude Code は subagent の 1 手ごとに Anthropic の API を呼ぶ前提で、auto mode の判定と自動圧縮をその API に載せている。応答を自前で作ると判定が出ずに Write・Bash・Agent が拒まれ（subagent の定義で `permissionMode` を変えても親の auto mode が勝つ）、自動圧縮は gpt のモデル名で API を呼んで subagent ごと落ちるので採らない。
 - 専用の tool（`$.tool.register`）を足し、引数で model・effort・cwd を受け取る: モデル ID をそのまま渡せるが、Agent tool・`SendMessage`・TaskStop と別の口になり、Claude の subagent と仕様が揃わないので採らない。
-- OpenAI の API を直接呼ぶ: 使えるモデルの一覧・アカウントごとの公開状況・ログインを自前で抱えることになる（opencodex の `native-models.ts` が抱えている事情）ので採らない。
+- OpenAI の API を直接呼ぶ: 使えるモデルの一覧・アカウントごとの公開状況・ログインを自前で抱えることになるので採らない。

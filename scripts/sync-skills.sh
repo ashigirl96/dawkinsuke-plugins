@@ -19,6 +19,15 @@ owns() {
 	}
 }
 
+# 未取得の submodule では向き先がすべて消えて見え、symlink を全部消してしまう。
+echo "$sources" | while read -r parent dest; do
+	if [ ! -d "$parent" ]; then
+		sub=${parent#upstream/}
+		echo "upstream/${sub%%/*} is empty; run git submodule update --init" >&2
+		exit 1
+	fi
+done
+
 for d in $link_dirs; do
 	for link in "$d"/*; do
 		[ -L "$link" ] || continue

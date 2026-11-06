@@ -1,0 +1,46 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/why/SKILL.md pstack/skills/why/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/why/SKILL.md
++++ pstack/skills/why/SKILL.md
+@@ -6,13 +6,11 @@
+ 
+ # Why
+ 
+-Claude Code では、このスキルに従う前に、[Claude Code の adapter](../../docs/harness/claude-code.md) を session ごとに 1 度読む。pstack のスキルの Cursor の名前を Claude Code の名前に対応させている。
+-
+ コードの裏にある動機と意図を調べる。対になる `how` スキルは、コードが何をし、どう動くかに答える。`why` は、どんな力がその形に導いたかに答える。
+ 
+-以下の各 spawn は、`pstack-models.mdc` のルールの役割の行と既定値を挙げる。`model` にはその行の値を、ルールか行が無ければ既定値を入れる。値が `auto` か `inherit-parent` なら `model` を設定しない。Task tool が slug を拒んだら、既定値を使い、そう伝える。既定値を拒んだら、エラーメッセージにある同じ系統の最も近い有効な slug を使う。各 subagent の推論の度合いと fast か standard の速さは、**poteto-mode** スキルの Subagents の節に従って仕事に合わせて選ぶ。
++以下の各 spawn は、モデル表の役割の行と既定値を挙げる。モデル表は `<repo>-models.md` で、repo-local の `<repo>.md` が import するので、その行はすでに文脈にある。無ければ、その repo には表が無い。各 spawn は役割の行から、表か行が無ければ既定値から設定する。値のモデルを `model` に、`@<level>` の接尾辞を `effort` に渡す。接尾辞の無い値は表の `default effort` の行に従い、その行が `session` か無ければ `effort` を省く。値が `auto` か `inherit-parent` なら `model` を設定しない。`gpt-*` の値では、そのモデルに委ねると説明に書いた `Agent` の subagent type を `subagent_type` に渡し、`model` を設定しない。それを名指す subagent type が無ければ、`model` を省き、そう伝える。`Agent` tool が値を拒んだら、既定値を使い、そう伝える。
+ 
+-spawn はすべて `generalPurpose` で `readonly: false`（agent mode）にする。**readonly/Ask mode は使わない。** MCP へのアクセスが外れ、MCP を使う調査役と synthesizer の引用の抜き取り確認が使えなくなる。調査役はそれでも何も書かない。
++spawn はすべて `general-purpose` か、その値が名指す `gpt-*` の subagent type にする。**`Explore` は使わない。** `general-purpose` は session の MCP server を保ち、MCP を使う調査役と synthesizer の引用の抜き取り確認がそれを要する。`gpt-*` の subagent はこの session の MCP server を持たないので、MCP を受け持つ調査役は `model` を設定しない `general-purpose` で走らせ、そう伝える。調査役はそれでも何も書かない。
+ 
+ ## 動き方の構え
+ 
+@@ -34,7 +32,7 @@
+ 
+ ### 発見
+ 
+-調査役を spawn する前に、Cursor の環境から使える MCP を挙げる。available-tools の対応表があればそれを使う。無ければ、Cursor が公開する `mcps/` ディレクトリで有効な MCP server を調べる。
++調査役を spawn する前に、この session にある MCP server を、`mcp__<server>__*` の tool 名と system prompt の server の指示から挙げる。
+ 
+ 使える MCP を 1 つずつ、証拠の分類 1 つに対応させる:
+ 
+@@ -48,7 +46,7 @@
+ 
+ ソース管理は git と `gh` でいつも使える。ほかの 6 つは、MCP の名前、server の指示、tool 名、resource の記述子で分類する。MCP が複数の分類に当てはまりうるなら、主な証拠に合うものを選ぶ。曖昧なものは網羅の表に記録する。
+ 
+-対応する MCP のある分類ごとに調査役を 1 つ、同時に走るようすべて 1 つのメッセージで spawn し、それぞれにちょうど 1 つの tool か MCP を受け持たせる。1 つの agent に複数の MCP を任せない。`model`: `why investigators` の行、既定値は `grok-4.7-xhigh-fast`。
++対応する MCP のある分類ごとに調査役を 1 つ、同時に走るようすべて 1 つのメッセージで spawn し、それぞれにちょうど 1 つの tool か MCP を受け持たせる。1 つの agent に複数の MCP を任せない。役割の行: `why investigators`、既定値は `gpt-6.1-sol`。
+ 
+ 各調査役のプロンプトは、`references/investigator-prompt.md` を埋めたものに次を足す:
+ - 選んだ MCP の分類のプレイブック `references/sources/<source>.md`。`references/source-playbook.md` の例から作る
+@@ -78,7 +76,7 @@
+ 
+ ## Step 4. 統合する
+ 
+-synthesizer を 1 つ spawn する。`model`: `why synthesizer` の行、既定値は `claude-opus-5-5-xhigh`。渡すもの:
++synthesizer を 1 つ spawn する。役割の行: `why synthesizer`、既定値は `opus @xhigh`。渡すもの:
+ 1. 調査役の結果。空振りの結果と、理由を付けて飛ばした分類も含める
+ 2. コードの錨
+ 3. ユーザーの元の質問

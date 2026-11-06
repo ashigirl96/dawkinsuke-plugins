@@ -1,0 +1,34 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/swarm/SKILL.md pstack/skills/swarm/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/swarm/SKILL.md
++++ pstack/skills/swarm/SKILL.md
+@@ -6,11 +6,9 @@
+ 
+ # Swarm
+ 
+-Claude Code では、このスキルに従う前に、session ごとに 1 度 [Claude Code の adapter](../../docs/harness/claude-code.md) を読む。adapter は pstack のスキルにある Cursor の名前を Claude Code の名前に対応づける。
+-
+ ## 始める
+ 
+-何かを起動する前に、phase ごとに 1 項目の todo リストを開く。
++何かを起動する前に、`TodoWrite` で、session に `TodoWrite` が無ければ返答の中で、phase ごとに 1 項目の todo リストを開く。
+ 
+ 1. 枠を決める
+ 2. 広げる
+@@ -21,14 +19,14 @@
+ 
+ 1. 完了の条件と、swarm が返す成果物か報告を述べる。
+ 2. 形を選ぶ。slice に分けるか、同じ brief で N 人の worker を競わせるか、両方を混ぜる。競争か混合の形なら、起動する前に `first pass`、`rank all`、`best-of` のどれかを宣言する。
+-3. worker のモデルは `~/.cursor/rules/pstack-models.mdc` の `swarm workers` の行から選ぶ。rule かその行が無ければ `grok-4.7-xhigh-fast` を使う。`auto` か `inherit-parent` なら `model` を省き、worker を親のモデルで動かす。Task tool が slug を拒んだら、既定を使ってそのことを言う。既定も拒まれたら、エラーメッセージにある同じ系統の最も近い有効な slug を使う。モデルの競争では、各 arm のモデルを先に名指す。各 subagent の推論の強さと、fast か standard の速度は、**poteto-mode** スキルの Subagents の節に従って仕事に合わせて選ぶ。
++3. worker のモデルは、モデル表の `swarm workers` の行から選ぶ。表かその行が無ければ `gpt-6.1-sol` を使う。モデル表は `<repo>-models.md` で、repo-local の `<repo>.md` が import するので、その行はすでに context にある。無ければ、その repo に表は無い。値のモデルを `model` に、`@<level>` の接尾辞を `effort` に渡す。接尾辞の無い値は表の `default effort` の行を使い、その行が `session` か無ければ `effort` を省く。値が `auto` か `inherit-parent` なら `model` を設定しない。`gpt-*` の値では、そのモデルに任せると説明に書いた `Agent` の subagent type を `subagent_type` に渡し、`model` は設定しない。それを名指す subagent type が無ければ、`model` を省いてそのことを言う。`Agent` tool が値を拒んだら、既定を使ってそのことを言う。モデルの競争では、各 arm のモデルを先に名指す。
+ 4. 書き込む worker には、それぞれ専用の書き込み先を与える。worker が commit を検証・計測するときは、各 brief に正確な SHA を書く。計測の brief には方法（標本の数、1 標本が何か、順序）も書く。worker は両方を結果に記録する。
+ 
+ ## Phase B: 広げる
+ 
+-N 人の worker すべてを 1 つのメッセージで、`subagent_type: generalPurpose`、`environment: "cloud"`、`run_in_background: true` と、手順 3 のモデル（`auto` か `inherit-parent` なら設定しない）で起動する。`environment: "local"` は、worker がユーザーのコンピュータ上の何かに触れる必要があるときだけ使う。
++N 人の worker すべてを 1 つのメッセージで、`subagent_type: "general-purpose"` か手順 3 の `gpt-*` の subagent type、`isolation: "worktree"`、手順 3 のモデルと effort で起動する。各 brief には worker が checkout する branch か commit を書く。`isolation` を省くのは、worker がこの checkout そのもの（commit していないファイルや、動かしている process など）を必要とするときだけにする。
+ 
+-worker が既定でない push 済みの branch から始める必要があるときは、`cloud_base_branch` を渡す。
++worker が既定でない push 済みの branch から始める必要があるときは、まずその branch を checkout するよう伝える。
+ 
+ どの brief も単独で読めるようにする。目的、範囲、正確な slice か競争の arm、検証の仕方、報告する内容を入れる。報告は `PASS`、`ISSUES`、`BLOCKED` のどれかを証拠とともに使う。欠陥を証明できる worker は `ISSUES` を報告し、最初の 1 つだけでなく証明できる問題をすべて挙げる。
+ 

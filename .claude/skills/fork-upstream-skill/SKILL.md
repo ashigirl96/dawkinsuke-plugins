@@ -32,7 +32,7 @@ disable-model-invocation: true
 
 ## 3. ファイルに当てる
 
-`writing-for-agents` スキルを使い、手順 2 の決定を `SKILL.md` などのファイルに当てる。
+`writing-for-agents` スキルを使い、手順 2 の決定を `SKILL.md` などのファイルに当てる。pstack のスキルが adapter を読ませていれば、`docs/fork.md` の「adapter を読ませるスキルの fork」に従う。
 
 - ファイルを足したら、`own` に加える。
 - 決定を消した場合は、その決定が生んだ違いを upstream の文面に戻す。
@@ -40,6 +40,8 @@ disable-model-invocation: true
 ## 4. 確かめる
 
 `docs/fork.md` の「確かめ方」を行い、`sh scripts/check-refs.sh` を流す。`missing-*` が出たら、参照を消す決定を手順 2 に足すか、依存先を `/add-upstream-skill <依存先の submodule>/<name>` で入れるかをユーザーに選んでもらう。除外中から fork したスキルは、この検査で初めて依存の抜けが見える。
+
+adapter（`pstack/docs/harness`）を変えたときは、`docs/fork.md` の「adapter の節が変わったとき」も行う。
 
 完了条件: 「確かめ方」の完了条件を満たし、`sh scripts/check-refs.sh` が exit 0 で終わる。
 

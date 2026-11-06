@@ -1,0 +1,27 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/create-formal-verification-skill/SKILL.md pstack/skills/create-formal-verification-skill/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/create-formal-verification-skill/SKILL.md
++++ pstack/skills/create-formal-verification-skill/SKILL.md
+@@ -6,8 +6,6 @@
+ 
+ # 形式検証スキルを作る
+ 
+-Claude Code では、このスキルに従う前に、セッションごとに一度 [Claude Code adapter](../../docs/harness/claude-code.md) を読む。pstack のスキルにある Cursor の名前を Claude Code に読み替える表である。
+-
+ テストが確かめるのは、誰かが書こうと思いついたケースだけである。形式検証は、定めた範囲のすべてのケースを確かめる。モデルの中のすべての手順の順序、上限までのすべての入力、あるいはすべての入力である。このスキルは、repo の中でそれが最も効く部分を見つけ、その 1 つの性質を検証し、次の agent が変更をその性質に照らして確かめられる project-local のスキルを残す。そのスキルは、あなたの作業を見たことがなく、変更の途中で冷えた状態で読む agent に向けて書く。ユーザーは、検証の言語を学ばなくても、結果を信頼して動けなければならない。
+ 
+ ## コードから対象を選ぶ
+@@ -34,7 +32,7 @@
+ 
+ 領域の名前を示し、いつ使うかを書いた frontmatter を持つ project-local のスキルを書く。frontmatter がないと、そのスキルは登録されない。次の agent が、そのスキルだけから、変更が検証済みのコードに触れるかを判断し、検査を流し、本物のバグとモデルの誤りを見分け、意図した変更のときに検証を更新できなければならない。カバー範囲の記録と同期した commit をスキルに入れ、検証が新しい commit のコードを表していると確かめたあとにだけ、同期した commit を進めるよう次の agent に伝える。この repo の実際のコマンド、path、名詞を使い、placeholder を残さない。
+ 
+-検査が TLA+ のモデルなら、すべての結果を pstack の [`/statechart`](../statechart/SKILL.md) スキルで読むよう次の agent に伝える。検査器が見つけた不変条件の違反を、それぞれ最短の経路として平易な言葉で示す。検査が通ったときは、`/statechart` がシステムの状態遷移の図を描く。`/statechart` は名前で指す。コマンド、オプション、file path はリリースやマシンによって変わるので、生成するスキルにもその script にもコピーしない。
++検査が TLA+ のモデルなら、すべての結果を `statechart` を指定して Skill tool を呼んで読むよう次の agent に伝える。検査器が見つけた不変条件の違反を、それぞれ最短の経路として平易な言葉で示す。検査が通ったときは、`statechart` がシステムの状態遷移の図を描く。`statechart` は名前で指す。コマンド、オプション、file path はリリースやマシンによって変わるので、生成するスキルにもその script にもコピーしない。
+ 
+ ## 引き渡しの前に証明する
+ 
+@@ -42,4 +40,4 @@
+ 
+ ## 引き渡し
+ 
+-ユーザーに、何を検証したか、どのツールをなぜ使ったか、上限、検査が見つけたことを平易な言葉で、流し方、カバーしないことを伝える。近い対象を見つけたときだけ、2 つ目の対象を提案する。検査し直さなかった変更のあとで検証を現状に合わせ直すには、`/maintain-formal-verification-skill` を使うようユーザーに案内する。
++ユーザーに、何を検証したか、どのツールをなぜ使ったか、上限、検査が見つけたことを平易な言葉で、流し方、カバーしないことを伝える。近い対象を見つけたときだけ、2 つ目の対象を提案する。検査し直さなかった変更のあとで検証を現状に合わせ直すには、`/dawkinsuke:maintain-formal-verification-skill` を使うようユーザーに案内する。

@@ -1,6 +1,6 @@
 ---
 upstream: harness/pstack/claude-code/docs/harness
-own: []
+own: [principles.md]
 ---
 
 # harness（adapter）の fork
@@ -20,3 +20,19 @@ upstream は Skill tool が手動専用のスキルを拒むので、SKILL.md �
 ## Cursor にしかない道具を手元の道具に読み替える
 
 upstream の adapter には、`cursor-team-kit` の `deslop`・`control-ui`・`control-cli`、Cursor 組み込みの `create-skill`、Cursor の `/loop` の行が無い。手元で役目がほぼ同じ `simplify`・`agent-browser`・`run`・`writing-for-agents`・Claude Code の `/loop` に読み替える行を足した。行が無いと、それに頼る playbook の手順が飛ばされるか、存在しない道具を探すため。
+
+## 冒頭を、fork を書くときの翻訳の決まりとして説明する
+
+upstream は冒頭で、この file を session ごとに読み、スキルの Cursor の名前を実行中に読み替えるよう書く。表は Cursor の名前を Claude Code の名前に移す決まりで、pstack の fork はこれに従って Claude Code の名前で書き、`ADR.md` に従った節を引く、と書き直した。adapter は実行中に読ませず、fork を書くときの決まりにしたため（`docs/adr/0005-fork-adapter-readers.md`）。
+
+## モデル表を repo ごとのファイルから読み、推論の強さを `@<level>` と `default effort` で書く
+
+upstream は役割の行を `~/.claude/rules/pstack-models.md` から読み、値を `<model> <effort>` と書く。手元ではモデル表を repo ごとの `~/.claude/repo-local/<host>/<owner>/<repo>-models.md` に置き、repo-local の `<repo>.md` が import するので、表が context に無ければその repo には表が無いとみなして既定を使うようにした。値は `<model>` か `<model> @<level>` と書き、suffix の無い値は `default effort` の行に従う。`setup-dawkinsuke` が pstack-claude の setup-pstack と同じ形で表を書くので、それに合わせるため。7 本の fork が読む役割の名前と既定を節に並べ、`setup-dawkinsuke` がこの名前で表を書けるようにした。
+
+## setup-pstack の節を消す
+
+upstream は `setup-pstack` を Claude Code で動かすための節を持つ。`setup-pstack` は除外し、モデル表は `setup-dawkinsuke` が書くので、節を消した（`docs/adr/0005-fork-adapter-readers.md`）。
+
+## poteto-mode の Principles 索引の写しを principles.md に置く
+
+upstream は Principles 索引を `poteto-mode` の中に置き、各スキルがそこから原則を引く。`poteto-mode` は除外したので、索引の節を `principles.md` に写した。1 つの文書になるので見出しを `# Principles` に上げ、冒頭の「leaf のスキルを読む」を「Skill tool で leaf のスキルを呼ぶ」に、太字の `**principle-<title>** skill` をコード表記の `principle-<title>` に書き換えた。`setup-dawkinsuke` が `/play` の原則集をこの写しから作るため（`docs/adr/0004-repo-grown-playbooks.md`）。upstream の節が変わったら、`/update-upstream-skill pstack` が差分を見せて反映するか聞く。

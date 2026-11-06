@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 ## 2. 版を上げる
 
-版の扱いのファイルの「版を上げる」を行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
+版の扱いのファイルの「版を上げる」を行う。pstack では、続けて「写した文書」も行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
 
 ## 3. 置き場を upstream に合わせる
 
@@ -50,7 +50,7 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 
 ## 5. fork を 1 つずつ作り直す
 
-`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。pstack では `pstack/docs/*/ADR.md` の文書の fork も同じに扱う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
+`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。pstack では `pstack/docs/*/ADR.md` の文書の fork も同じに扱い、adapter（`pstack/docs/harness`）を最初に作り直す。そのあと `docs/fork.md` の「adapter の節が変わったとき」で見つかった fork は、手順 1 の差分が空でも飛ばさず、手順 2 から行う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
 
 1. **upstream の差分を読む。** 比べるパスは、fork の `upstream`、fork のファイルが名前で呼んでいるスキルの upstream のパス、fork が相対パスで読んでいる upstream の文書（pstack なら `../../docs/` や `../../README.md`）。名前で呼ぶとは、`Call the Skill tool with "grilling"` や「the `code-review` skill」のような書き方のこと。これらを並べて `git -C upstream/<submodule> diff <旧版> <新版> -- <パス...>` を流す。手順 3 でパスが移っていたら、旧と新の両方を渡す。差分が空なら、この fork は飛ばす。
 2. **衝突を探す。** `ADR.md` の `##` ごとに、upstream の差分が同じ振る舞いに触れているかを見る。決定が書き換えた箇所を upstream も書き換えた場合と、決定と逆の意図を持ち込んだ場合が衝突にあたる。呼んでいるスキルと読んでいる文書の変更も含める。

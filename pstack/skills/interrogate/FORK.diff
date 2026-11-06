@@ -1,0 +1,23 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/interrogate/SKILL.md pstack/skills/interrogate/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/interrogate/SKILL.md
++++ pstack/skills/interrogate/SKILL.md
+@@ -6,17 +6,15 @@
+ 
+ # Interrogate
+ 
+-Claude Code では、このスキルに従う前に、session ごとに 1 度 [Claude Code の adapter](../../docs/harness/claude-code.md) を読む。adapter は pstack のスキルにある Cursor の名前を Claude Code の名前に対応づける。
+-
+ 敵役は変更や設計を壊そうとする。指摘は、実行で証明されたときだけ残る。指摘を報告する。修正は当てない。
+ 
+ ## 範囲を決める
+ 
+-範囲はユーザーが指定したもの。指定がなければ、base branch との merge base から working tree までの branch の差分。意図は **in-your-own-words** スキルで、ユーザーのメッセージ、commit、PR の説明から述べる。意図がはっきりしないときはユーザーに聞く。
++範囲はユーザーが指定したもの。指定がなければ、base branch との merge base から working tree までの branch の差分。意図は Skill tool で `in-your-own-words` を呼び、ユーザーのメッセージ、commit、PR の説明から述べる。意図がはっきりしないときはユーザーに聞く。
+ 
+ ## 並べて走らせる
+ 
+-**arena** スキルの Phase A の手順 3 と 4 と Phase B を、4 つ変えて走らせる。`arena runners` の代わりに `interrogate reviewers` の行を読む。範囲の commit していない変更を各 worktree に写す。各敵役は `generalPurpose` で起こす。arena の課題と根拠の代わりに、各敵役には範囲と意図と次の指示を渡す。
++Skill tool で `arena` を呼び、その Phase A の手順 3 と 4 と Phase B だけを、4 つ変えて走らせる。`arena runners` の代わりに `interrogate reviewers` の行を読む。範囲の commit していない変更を各 worktree に写す。各敵役は `general-purpose` で、または `gpt-*` の項目が指す subagent type で起こす。arena の課題と根拠の代わりに、各敵役には範囲と意図と次の指示を渡す。
+ 
+ > この変更を壊せ。各指摘は、失敗するテスト、再現 script、誤った振る舞いを示すコマンド出力など、本物のコードに対する実行で証明する。設計や計画なら、prototype を走らせるか、今の tree を探る。再現は自分の worktree に置く。各指摘は、題、正確なコマンド、それが出した出力、意図が求める出力を付けて報告する。走らせていないものは外す。style、命名、構造、将来の変更があって初めて問題になる risk も外す。指摘なしも正しい結果である。
+ 

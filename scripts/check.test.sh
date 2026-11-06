@@ -10,11 +10,11 @@ fail() { echo "FAIL: $1"; exit 1; }
 
 sh scripts/check.sh || fail "clean checkout did not pass"
 
-skill=upstream/cursor-plugins/harness/pstack/claude-code/skills/create-verification-skill/SKILL.md
+skill=upstream/cursor-plugins/harness/pstack/claude-code/skills/bro/SKILL.md
 cp "$skill" skill.before
 printf -- '---\nname: [oops\n---\nbody\n' > "$skill"
 sh scripts/check.sh 2> out && fail "broken frontmatter behind a pstack symlink passed"
-grep -q 'create-verification-skill' out || fail "broken skill not named in the output"
+grep -q 'skills/bro' out || fail "broken skill not named in the output"
 cp skill.before "$skill"
 
 echo mattpocock-skills/code-review >> upstream/exclude.txt

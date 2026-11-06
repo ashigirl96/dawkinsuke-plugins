@@ -2,6 +2,7 @@ import type { ApiMessage } from 'claude-code'
 import { expect, test, type TestBody } from 'claude-code/testing'
 
 const SKILLS = '/plugins/p/skills'
+const DAWKINSUKE = import.meta.dir.split('/').slice(0, -'mods/skill-chain/hooks'.split('/').length).join('/')
 const skill = (body: string, isDisabled = false) =>
   `---\nname: x\n${isDisabled ? 'disable-model-invocation: true\n' : ''}---\n${body}\n`
 const FILES = new Map([
@@ -22,7 +23,24 @@ const FILES = new Map([
   ['/plugins/p/undeclared/stray/SKILL.md', skill('Stray.', true)],
   ['/plugins/outside/skills/escaped/SKILL.md', skill('Escaped.', true)],
   ['/plugins/p//plugins/abs/skills/escaped/SKILL.md', skill('Escaped.', true)],
+  ['/repo/.claude/skills/play/SKILL.md', skill('Pick a playbook.', true)],
+  ['/repo/.claude/skills/play/playbooks/design.md', 'Run tackle, then to-spec.'],
+  [`${DAWKINSUKE}/.claude-plugin/plugin.json`, '{ "skills": ["./matt/skills", "./pstack/skills"] }'],
+  [`${DAWKINSUKE}/matt/skills/to-spec/SKILL.md`, skill('To spec.', true)],
+  [`${DAWKINSUKE}/pstack/skills/to-tickets/SKILL.md`, skill('To tickets.', true)],
+  ['/repo/.claude/skills/tackle/SKILL.md', skill('Tackle.', true)],
+  ['/repo/.claude/skills/unnamed/SKILL.md', skill('Unnamed.', true)],
 ])
+
+const listOf = (dir: string) => {
+  const kinds = new Map<string, 'file' | 'dir'>()
+  for (const path of FILES.keys()) {
+    if (!path.startsWith(`${dir}/`)) continue
+    const [name, ...rest] = path.slice(dir.length + 1).split('/')
+    kinds.set(name!, rest.length ? 'dir' : 'file')
+  }
+  return [...kinds].map(([name, kind]) => ({ name, kind, size: 0, mtimeMs: 0, isLink: false }))
+}
 
 const expanded = (name: string, rest = '') => `Base directory for this skill: ${SKILLS}/${name}\n\n${rest}`
 
@@ -42,6 +60,7 @@ const setup = (on: Parameters<TestBody>[1], ...transcript: Row[]) => {
   on('session.messages', () => ({ value: transcript.flatMap(toMessages) }))
   on('fs.exists', (_, e) => ({ value: FILES.has(e.path) }))
   on('fs.read', (_, e) => ({ value: FILES.get(e.path) ?? '' }))
+  on('fs.list', (_, e) => ({ value: listOf(e.path ?? '') }))
   on('tool.call', { tool: 'Skill' }, () => ({ deny: 'engine refused' }))
 }
 
@@ -114,6 +133,20 @@ test('a disabled skill in another skills folder its plugin declares runs; an und
   expect(out.context?.[0]).toContain('Base directory for this skill: /plugins/p/pstack/skills/sibling')
   expect((await $.tool.call({ tool: 'Skill', skill: 'stray' })).deny).toBe('engine refused')
   expect((await $.tool.call({ tool: 'Skill', skill: 'escaped' })).deny).toBe('engine refused')
+})
+
+test('a disabled skill of the same repo named only in a playbook of a repo skill runs; an unnamed one is refused by the engine', async ($, on) => {
+  setup(on, 'Base directory for this skill: /repo/.claude/skills/play\n\n')
+
+  expect((await $.tool.call({ tool: 'Skill', skill: 'tackle' })).context?.[0]).toContain('Tackle.')
+  expect((await $.tool.call({ tool: 'Skill', skill: 'unnamed' })).deny).toBe('engine refused')
+})
+
+test('a disabled dawkinsuke skill named only in a playbook of a repo skill runs; an unnamed one is refused by the engine', async ($, on) => {
+  setup(on, 'Base directory for this skill: /repo/.claude/skills/play\n\n')
+
+  expect((await $.tool.call({ tool: 'Skill', skill: 'dawkinsuke:to-spec' })).context?.[0]).toContain(`Base directory for this skill: ${DAWKINSUKE}/matt/skills/to-spec`)
+  expect((await $.tool.call({ tool: 'Skill', skill: 'to-tickets' })).deny).toBe('engine refused')
 })
 
 test('the Skill tool description tells the model a named skill missing from the listing is callable', async ($, on) => {

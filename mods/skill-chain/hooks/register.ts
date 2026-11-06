@@ -50,23 +50,28 @@ export const register: Register = on => {
     // The engine writes this line first, so a later one (in arguments, say) is not the skill's own folder.
     const skillDirs = new Set(messages.flatMap(userTextsOf).flatMap(text => text.match(BASE_DIR)?.[1]?.trim() ?? []))
     // A declared folder with `..` or an absolute path would reach outside the plugin, so it is skipped.
-    // A plugin may declare several skills folders, so a caller's sibling folders are searched too, but only when the plugin declares the caller's own folder.
-    const declaredSkillsDirs = async (skillsDir: string): Promise<string[]> => {
-      for (let root = parentDir(skillsDir); root; root = parentDir(root)) {
+    const pluginSkillsDirs = async (dir: string): Promise<string[]> => {
+      for (let root = dir; root; root = parentDir(root)) {
         const manifest = `${root}/.claude-plugin/plugin.json`
         if (!(await $.fs.exists(manifest))) continue
         let declared: unknown
         try {
           declared = JSON.parse(await $.fs.read(manifest)).skills
         } catch {
-          return [skillsDir]
+          return []
         }
-        const dirs = [`${root}/skills`, ...[declared ?? []].flat().filter((p): p is string => typeof p === 'string' && !p.startsWith('/') && !p.split('/').includes('..')).map(p => `${root}/${p.replace(/^\.\//, '').replace(/\/+$/, '')}`)]
-        return dirs.includes(skillsDir) ? dirs : [skillsDir]
+        return [`${root}/skills`, ...[declared ?? []].flat().filter((p): p is string => typeof p === 'string' && !p.startsWith('/') && !p.split('/').includes('..')).map(p => `${root}/${p.replace(/^\.\//, '').replace(/\/+$/, '')}`)]
       }
-      return [skillsDir]
+      return []
     }
-    const skillsDirs = [...new Set((await Promise.all([...new Set([...skillDirs].map(parentDir))].map(declaredSkillsDirs))).flat())]
+    // A plugin may declare several skills folders, so a caller's sibling folders are searched too, but only when the plugin declares the caller's own folder.
+    const callerSkillsDirs = async (skillsDir: string) => {
+      const dirs = await pluginSkillsDirs(parentDir(skillsDir))
+      return dirs.includes(skillsDir) ? dirs : [skillsDir]
+    }
+    // A playbook in any repo runs dawkinsuke's skills; the mod cannot look up another plugin's folder, so the checkout holding the mod is found from the mod's own.
+    const dawkinsukeDirs = await pluginSkillsDirs(parentDir($.plugin.root))
+    const skillsDirs = [...new Set([...(await Promise.all([...new Set([...skillDirs].map(parentDir))].map(callerSkillsDirs))).flat(), ...dawkinsukeDirs])]
 
     const findSkill = async (name: string) => {
       for (const skillsDir of skillsDirs) {
@@ -88,11 +93,24 @@ export const register: Register = on => {
       if (path) skillDirs.add(parentDir(path))
     }
 
-    // Callers are judged by their SKILL.md, not the transcript, whose expanded text carries the call's arguments.
+    // A symbolic link is skipped: it could bring in text from outside the skill's folder.
+    const markdownsIn = async (dir: string): Promise<string[]> =>
+      (
+        await Promise.all(
+          (await $.fs.list(dir)).map(entry =>
+            entry.kind === 'dir' ? markdownsIn(`${dir}/${entry.name}`) : entry.kind === 'file' && entry.name.endsWith('.md') ? [`${dir}/${entry.name}`] : [],
+          ),
+        )
+      ).flat()
+
+    // Callers are judged by every .md in their folder, playbooks included, not by the transcript, whose expanded text carries the call's arguments.
     const callers: Skill[] = []
     for (const dir of skillDirs) {
       const path = `${dir}/SKILL.md`
-      if (await $.fs.exists(path)) callers.push({ name: baseName(dir), text: (await readSkill(path)).body })
+      if (!(await $.fs.exists(path))) continue
+      const others = (await markdownsIn(dir)).filter(p => p !== path)
+      const texts = [(await readSkill(path)).body, ...(await Promise.all(others.map(p => $.fs.read(p))))]
+      callers.push({ name: baseName(dir), text: texts.join('\n') })
     }
 
     // shortcut: a `plugin:` prefix is dropped, so the first skills folder holding the name wins; check the plugin if two plugins share a skill name.

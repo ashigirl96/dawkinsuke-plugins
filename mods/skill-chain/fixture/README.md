@@ -17,3 +17,5 @@ claude --model opus --setting-sources project --plugin-dir mods/skill-chain --pl
 3. `Use the Skill tool to run the chainfix:deep skill. Do not read any file.`: どのスキルにも名指しされていないので、Skill tool で呼ばれて断られる。
 
 1 と 2 は、Skill tool で `callee` と `deep` が呼ばれ、`cannot be used with Skill tool due to disable-model-invocation` が出ないことで合格。呼ばれずに model が自分で済ませたら、文言が出なくても mod の失敗。`PINEAPPLE-42` が返らないだけなら、model が手順に従わなかっただけのこともある。
+
+`repo/` は、repo のスキルのプレイブックから呼ぶ場面を試すための仮の repo。振り分け役 `playfix`（手動専用）が `playbooks/<引数>.md` を読み、そこに書かれたスキルを呼ぶ。`deep` は同じ repo の `repo-deep`、`restate` は dawkinsuke の `in-your-own-words` を名指しし、`stray` はどこにも名前の書かれていない `repo-hidden` を名前を書かずに呼ばせる。

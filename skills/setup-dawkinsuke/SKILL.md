@@ -13,7 +13,7 @@ disable-model-invocation: true
 `sh <this>/scripts/repo-local.sh` を `<root>` で流し、`<host>/<owner>/<repo>` を得る。exit 1 なら、origin が無いか読めない形なので、その URL を伝えて止まる。以下、`<local>` は `~/.claude/repo-local/<host>/<owner>/<repo>` を指す。
 
 - `<local>.md` が無ければ、`# <owner>/<repo>` の 1 行で作る。あれば触らない。
-- `<root>/CLAUDE.local.md` が無ければ、`@<local>.md` の 1 行で作る（`~` は展開せずに書く）。あれば触らない。ただしその中身が import の 1 行でなければ、中身を `<local>.md` に移して 1 行に置き換えるよう、ユーザーに頼む。
+- `<root>/CLAUDE.local.md` が無ければ、`@<local>.md` の 1 行で作る（`~` は展開せずに書く）。あれば触らない。ただし中身が `@<local>.md` の 1 行でなければ、`<local>.md` とその import するモデル表がこの repo で読まれないので、中身を `<local>.md` に移して `@<local>.md` の 1 行に置き換えるよう、ユーザーに頼む。別の path を読み込んでいるだけなら、その path と `<local>.md` の違いを示して頼む。
 
 ## 2. matt のスキルの設定
 

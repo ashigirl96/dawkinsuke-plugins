@@ -19,21 +19,22 @@
 Preconditions:
 
 - Doctor が通っている。`$run` を作ってある。
-- repo-local の置き場所を本物の `~/.claude` から外すため、`HOME` を差し替えて流す。`claude` のログイン情報は Keychain にあるので、`HOME` を変えても使える。使えなければ、流せなかった手順として報告する。
+- `~/.claude/repo-local/example.com/` が無い。偽の origin の生成物はそこに書かれ、終わりに丸ごと消すので、先にあれば止まる。`HOME` を差し替えると `claude` がログイン情報を読めず `Not logged in` で止まるので、`HOME` は変えない。
 
 - **script.** `sh skills/setup-dawkinsuke/scripts/repo-local.test.sh` と `sh skills/setup-dawkinsuke/scripts/check-sheet.test.sh` を流す。どちらも `ok` で終わる。
 - **使い捨ての repo を作る.**
 
   ```sh
   dawk=$(pwd)
+  rl=$HOME/.claude/repo-local/example.com/fake-owner/fake-repo
   play=$(mktemp -d)
-  mkdir -p "$play/home" "$play/repo"
-  git -C "$play/repo" init -q
-  git -C "$play/repo" remote add origin git@example.com:fake-owner/fake-repo.git
-  mkdir -p "$play/repo/docs/agents"
-  printf '## Agent skills\n' > "$play/repo/CLAUDE.md"
-  git -C "$play/repo" add -A
-  git -C "$play/repo" commit -q -m init
+  git -C "$play" init -q
+  git -C "$play" remote add origin git@example.com:fake-owner/fake-repo.git
+  mkdir -p "$play/docs/agents"
+  printf '## Agent skills\n' > "$play/CLAUDE.md"
+  git -C "$play" add -A
+  git -C "$play" commit -q -m init
+  mkdir -p "$(dirname "$rl")"
   ```
 
   matt の設定は済ませた形にしておく。`setup-matt-pocock-skills` は GitHub の issue tracker に届く repo を求めるので、偽の origin では止まり、本物の repo につなぐとラベルを作ってしまう。ここでは段 2 が飛ばされることを見る。
@@ -41,37 +42,38 @@ Preconditions:
 - **1 回目.** 聞かれる問いには、既定どおりに答えるよう prompt で言っておく。
 
   ```sh
-  cd "$play/repo"
-  HOME=$play/home claude -p --model opus --setting-sources project \
-    --plugin-dir "$dawk" --plugin-dir "$dawk/mods/skill-chain" \
-    --permission-mode bypassPermissions --output-format stream-json --verbose \
-    '/setup-dawkinsuke 質問にはすべて推奨の答えか既定を選んだものとして進める。モデル表は既定のまま書く。' > "$run/setup1.jsonl"
-  cd "$dawk"
+  setup() {
+    (cd "$play" && claude -p --model opus --setting-sources project \
+      --plugin-dir "$dawk" --plugin-dir "$dawk/mods/skill-chain" --plugin-dir "$dawk/mods/codex-subagent" \
+      --permission-mode bypassPermissions --output-format stream-json --verbose \
+      '/setup-dawkinsuke 質問にはすべて推奨の答えか既定を選んだものとして進める。モデル表は既定のまま書く。' > "$1")
+  }
+  setup "$run/setup1.jsonl"
   ```
 
   次がそろっている。
 
-  - `$play/repo/CLAUDE.local.md` が `@~/.claude/repo-local/example.com/fake-owner/fake-repo.md` の 1 行。
-  - `$play/home/.claude/repo-local/example.com/fake-owner/fake-repo.md` に `@~/.claude/repo-local/example.com/fake-owner/fake-repo-models.md` の行がある。
-  - `sh skills/setup-dawkinsuke/scripts/check-sheet.sh $play/home/.claude/repo-local/example.com/fake-owner/fake-repo-models.md` が `sheet ok`。
-  - `diff -r templates/play "$play/repo/.claude/skills/play"` が `Only in ...: principles.md` だけを出し、`cmp pstack/docs/harness/principles.md "$play/repo/.claude/skills/play/principles.md"` が通る。
-  - `$play/repo/CLAUDE.md` が `## Agent skills` の 1 行のまま（段 2 を飛ばした）。
+  - `$play/CLAUDE.local.md` が `@~/.claude/repo-local/example.com/fake-owner/fake-repo.md` の 1 行。
+  - `$rl.md` に `@~/.claude/repo-local/example.com/fake-owner/fake-repo-models.md` の行がある。
+  - `sh skills/setup-dawkinsuke/scripts/check-sheet.sh "$rl-models.md"` が `sheet ok`。
+  - `diff -r templates/play "$play/.claude/skills/play"` が `Only in ...: principles.md` だけを出し、`cmp pstack/docs/harness/principles.md "$play/.claude/skills/play/principles.md"` が通る。
+  - `$play/CLAUDE.md` が `## Agent skills` の 1 行のまま（段 2 を飛ばした）。
 
-- **2 回目.** 生成物の写しを取ってから同じコマンドを `setup2.jsonl` に流し、比べる。
+- **2 回目.** 生成物の写しを取ってから流し直し、比べる。
 
   ```sh
-  cp -R "$play/repo" "$play/repo1"; cp -R "$play/home" "$play/home1"
-  # 1 回目と同じ claude -p を、出力先だけ "$run/setup2.jsonl" にして流す
-  diff -r -x .git "$play/repo1" "$play/repo" > "$run/repo2.diff"
-  diff -r "$play/home1" "$play/home" > "$run/home2.diff"
+  cp -R "$play" "$run/repo1"; cp -R "$(dirname "$rl")" "$run/local1"
+  setup "$run/setup2.jsonl"
+  diff -r -x .git "$run/repo1" "$play" > "$run/repo2.diff"
+  diff -r "$run/local1" "$(dirname "$rl")" > "$run/local2.diff"
   ```
 
-  `repo2.diff` が空。`home2.diff` は空か、`.claude/repo-local/` の外（Claude Code 自身の session の記録など）だけ。
+  `repo2.diff` と `local2.diff` が空。
 
 - **/play.** skill-chain の実機の script で、`grilling` と `in-your-own-words` が呼ばれて通るかを見る。
 
   ```sh
-  sh mods/skill-chain/fixture/live.sh -n 1 -C "$play/repo" -p . -o "$run/play" \
+  sh mods/skill-chain/fixture/live.sh -n 1 -C "$play" -p . -o "$run/play" \
     grilling,in-your-own-words '/play 設定ファイルを YAML から TOML に移したい'
   ```
 
@@ -80,5 +82,7 @@ Preconditions:
 ## Gotchas
 
 - `--setting-sources project` を付けないと、利用者の設定で入れた dawkinsuke と skill-chain も読み込まれ、checkout を確かめたことにならない。
+- `claude -p` では、`acceptEdits` に `--add-dir` と `--allowedTools` を足しても、`~/.claude/` と repo の `.claude/` への書き込みと、そこへの `mkdir`・`cp` が断られる。保護されたディレクトリのため。だから 1 回目と 2 回目は `bypassPermissions` で流す。agent の session でこれが止められたら、ユーザーに手元で流してもらう。
+- `--setting-sources project` では、利用者の設定で入れた codex-subagent も外れる。`--plugin-dir` で足さないと `gpt-6.1-sol` が検出されず、既定の表を書けない。
 - `live.sh` は Write・Edit・Bash を外して流すので、`/play` は聞き取りの最初で止まる。見るのは Skill tool の呼び出しまで。
-- 終わったら `rm -rf "$play"` で使い捨ての repo と `HOME` を消す。`$run` は消さない。
+- 終わったら `rm -rf "$play" "$HOME/.claude/repo-local/example.com"` で使い捨ての repo と生成物を消す。`$run` は消さない。

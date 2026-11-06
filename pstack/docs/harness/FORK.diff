@@ -1,47 +1,55 @@
 diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/claude-code.md pstack/docs/harness/claude-code.md
 --- upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/claude-code.md
 +++ pstack/docs/harness/claude-code.md
+@@ -1,6 +1,6 @@
+ # pstack in Claude Code
+ 
+-pstack skills use Cursor names. In Claude Code, read this file once per session, then map each Cursor name in a skill with the tables below. `<pstack>` means the folder that holds `skills/` and `docs/`. If a Cursor field has no row, drop it and say so. Never pass a field or value the tool schema rejects.
++pstack のスキルは Cursor の名前を使う。下の表が、Cursor の名前それぞれを Claude Code の名前に対応づける。pstack の fork は、その対応を済ませた Claude Code の名前で書かれ、従う節（たとえば `Tools` の節）は `ADR.md` に書いてある。`<pstack>` は `skills/` と `docs/` を持つフォルダを指す。Cursor の項目に対応する行がなければ、その項目を落とし、落としたと伝える。ツールのスキーマが拒む項目や値は渡さない。
+ 
+ ## Tools
+ 
 @@ -9,15 +9,20 @@
  | `Task` | `Agent` |
- | `AskQuestion` | `AskUserQuestion`。`-p` モードでは無いので、普通の文章で尋ねる。 |
- | todolist を開く | session が `TodoWrite` を備えていれば使う。無ければ返答の中にリストを持ち、各段階で更新する。 |
--| 別の pstack スキルを動かす（`/name` や「**name** スキル」） | `<pstack>/skills/<name>/SKILL.md` を `Read` して従う。`Skill` tool はほとんどの pstack スキルを拒む。ユーザーに打つよう伝えるときは `/pstack:<name>` と書く。 |
-+| 別の pstack スキルを動かす（`/name` や「**name** スキル」） | `Skill` tool を `dawkinsuke:<name>` で呼ぶ。ユーザーに打つよう伝えるときは `/dawkinsuke:<name>` と書く。 |
- | `Grep`, `Glob` | session に `Grep` も `Glob` も無いときは、`Bash` で `rg` を使う。 |
+ | `AskQuestion` | `AskUserQuestion`. In `-p` mode it is absent, so ask in plain text. |
+ | Open a todolist | Use `TodoWrite` if the session offers it. Otherwise keep the list in your reply and update it at each phase. |
+-| Run another pstack skill (`/name` or "the **name** skill") | `Read` `<pstack>/skills/<name>/SKILL.md` and follow it. The `Skill` tool refuses most pstack skills. When you tell the user to type it, write `/pstack:<name>`. |
++| 別の pstack スキルを実行する（`/name` または "the **name** skill"） | `Skill` ツールを `dawkinsuke:<name>` で呼ぶ。ユーザーに打たせるときは `/dawkinsuke:<name>` と書く。 |
+ | `Grep`, `Glob` | `Bash` with `rg` when the session has no `Grep` or `Glob`. |
 +| `cursor-team-kit` の `deslop` | `simplify` スキル。 |
 +| `cursor-team-kit` の `control-ui` | `agent-browser` スキル。 |
 +| `cursor-team-kit` の `control-cli` | `run` スキル。 |
 +| Cursor 組み込みの `create-skill` | `writing-for-agents` スキル。 |
 +| Cursor の `/loop` | Claude Code の `/loop`。 |
  
- ## subagent のフィールド
+ ## Subagent fields
  
  | Cursor | Claude Code |
  | --- | --- |
  | `subagent_type: generalPurpose` | `subagent_type: "general-purpose"` |
 -| `poteto-agent`, `comment-sicko` | `pstack:poteto-agent`, `pstack:comment-sicko` |
 +| `poteto-agent`, `comment-sicko` | `dawkinsuke:poteto-agent`, `dawkinsuke:comment-sicko` |
- | `readonly: true` | `subagent_type: "Explore"`。`Bash` は残るので、指示にも「ファイルを編集しない」と書き、あとで `git status` を確かめる。 |
- | `readonly: false` | `general-purpose`。session の MCP server を引き継ぐ。 |
- | `environment: "cloud"` | `isolation: "worktree"`。worker が checkout する branch か commit を名指しする。 |
+ | `readonly: true` | `subagent_type: "Explore"`. It keeps `Bash`, so the brief also says "do not edit files", and you check `git status` afterward. |
+ | `readonly: false` | `general-purpose`. It keeps the session's MCP servers. |
+ | `environment: "cloud"` | `isolation: "worktree"`. Name the branch or commit the worker checks out. |
 @@ -32,7 +37,8 @@
  | Cursor | Claude Code |
  | --- | --- |
- | `claude-<family>-<version>-<effort>[-fast]`（例 `claude-opus-5-5-xhigh`） | `model: "opus"` と `effort: "xhigh"`。`model` が取るのは `opus`、`sonnet`、`haiku`、`fable` だけ。`-fast` は落とす。 |
--| `grok-*`、`gpt-*`、その他 Claude 以外の slug | `model` を省いて agent を session のモデルで動かし、そのことを伝える。 |
-+| `grok-*`、`cursor-grok-*`、`composer-*` の slug | `gpt-6.1-sol` にし、次の行で対応させる。系統の判定より先に対応させるので、系統は `gpt-*` になる。 |
-+| `gpt-*` やその他 Claude 以外のモデル（例 `gpt-6.1-sol`） | `general-purpose` や `Explore` の代わりに、説明にそのモデルへ委ねると書いた `Agent` の subagent type を `subagent_type` に渡す。その subagent は `model` を無視するので省く。`readonly: true` なら、指示に「ファイルを編集しない」と書く。そのモデルを名指しする subagent type が無ければ、`model` を省いて agent を session のモデルで動かし、そのことを伝える。モデルの系統は名前の頭の部分なので、`gpt-*` は `claude-*` とは別の系統になる。 |
- | `auto` か `inherit-parent` | `model` を省く。 |
- | `pstack-models.mdc` のルール、`~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`。Claude Code は新しい session のたびにこれを読み込むので、役割の行はすでに文脈にある。無ければファイルを読む。ファイルかその役割の行が無ければ、スキルの既定の slug を使う。 |
- | 役割の値 `<model> <effort>`（例 `opus high`） | `model: "opus"` と `effort: "high"`。 |
+ | `claude-<family>-<version>-<effort>[-fast]`, such as `claude-opus-5-5-xhigh` | `model: "opus"` and `effort: "xhigh"`. `model` takes only `opus`, `sonnet`, `haiku`, `fable`. Drop `-fast`. |
+-| A `grok-*`, `gpt-*`, or other non-Claude slug | Omit `model` so the agent runs on the session model, and say so. |
++| `grok-*`、`cursor-grok-*`、`composer-*` のスラッグ | `gpt-6.1-sol`。そのうえで次の行で対応づける。ファミリーを調べる前に対応づけるので、そのファミリーは `gpt-*` になる。 |
++| `gpt-*` などの Claude 以外のモデル（たとえば `gpt-6.1-sol`） | `general-purpose` や `Explore` の代わりに、説明にそのモデルへ委ねると書いてある `Agent` の subagent type を `subagent_type` に渡す。`model` は省く（その subagent は無視する）。`readonly: true` なら、brief に "do not edit files" と書く。そのモデルを挙げる subagent type がなければ、`model` を省いてセッションのモデルで走らせ、そう伝える。モデルのファミリーは名前の接頭辞で決まり、`gpt-*` は `claude-*` とは別のファミリーである。 |
+ | `auto` or `inherit-parent` | Omit `model`. |
+ | The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`. Claude Code loads it into every new session, so its role lines are already in context. If they are not, read the file. If the file or the role's line is missing, use the skill's default slug. |
+ | A role value `<model> <effort>`, such as `opus high` | `model: "opus"` and `effort: "high"`. |
 @@ -41,8 +47,8 @@
  
- Claude Code は `~/.claude/rules/` のすべての `.md` ファイルを新しい session のたびに読み込むので、`setup-pstack` はそこにルールを書く。その手順に次の変更を加えて従う。
+ Claude Code loads every `.md` file in `~/.claude/rules/` into each new session, so `setup-pstack` writes its rule there. Follow its steps with these changes:
  
--- 検出。検出するモデルは、`Agent` tool の schema が並べる `model` の値で、それぞれに `effort` の値から effort を付ける。実在のモデルは `<model> <effort>` と書く（例 `opus xhigh`）。effort は最後の語なので、予算の手順は書かれたとおりに動く。
--- 既定。既定の slug をそれぞれ上の行で対応させる。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `inherit-parent` になる。
-+- 検出。検出するモデルは、`Agent` tool の schema が並べる `model` の値で、それぞれに `effort` の値から effort を付ける。実在のモデルは `<model> <effort>` と書く（例 `opus xhigh`）。effort は最後の語なので、予算の手順は書かれたとおりに動く。`Agent` の subagent type の説明がそのモデルへ委ねると書いているモデルもそれぞれ検出し、effort を付けずに名前だけで書く（例 `gpt-6.1-sol`）。予算の手順はそれをそのまま残す。
-+- 既定。既定の slug をそれぞれ上の行で対応させる。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `gpt-6.1-sol` になる。
- - 書き込み。`~/.claude/rules/pstack-models.md` を frontmatter なしで書き、続けてコメント行、`# budget` 行、手順 5 の役割ごとに 1 行を書く。ファイル全体を上書きする。役割の行は決して `CLAUDE.md` や `AGENTS.md` に入れない。
+-- Detect. The detected models are the `model` values that the `Agent` tool schema lists, each with an effort from its `effort` values. Write a real model as `<model> <effort>`, such as `opus xhigh`. The effort is the last token, so the budget step works as written.
+-- Defaults. Map each default slug with the rows above: `claude-opus-5-5-xhigh` is `opus xhigh`, and `grok-4.7-xhigh-fast` is `inherit-parent`.
++- 検出。検出するモデルは、`Agent` ツールのスキーマが挙げる `model` の値で、それぞれに `effort` の値から努力量を付ける。実在のモデルは `<model> <effort>`（たとえば `opus xhigh`）と書く。努力量は最後のトークンなので、予算の手順はそのまま動く。さらに、`Agent` の subagent type の説明が委ねると書いているモデルも検出し、努力量なしの素の名前（たとえば `gpt-6.1-sol`）で書く。予算の手順はそれをそのままにする。
++- 既定値。既定のスラッグは上の行で対応づける。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `gpt-6.1-sol` になる。
+ - Write. Write `~/.claude/rules/pstack-models.md` with no frontmatter, then the comment lines, the `# budget` line, and one line per role from step 5. Overwrite the whole file. Never put the role lines in `CLAUDE.md` or `AGENTS.md`.
  
- ## パス
+ ## Paths

@@ -20,3 +20,7 @@ upstream は Skill tool が手動専用のスキルを拒むので、SKILL.md �
 ## Cursor にしかない道具を手元の道具に読み替える
 
 upstream の adapter には、`cursor-team-kit` の `deslop`・`control-ui`・`control-cli`、Cursor 組み込みの `create-skill`、Cursor の `/loop` の行が無い。手元で役目がほぼ同じ `simplify`・`agent-browser`・`run`・`writing-for-agents`・Claude Code の `/loop` に読み替える行を足した。行が無いと、それに頼る playbook の手順が飛ばされるか、存在しない道具を探すため。
+
+## 冒頭を、fork を書くときの翻訳の決まりとして説明する
+
+upstream は冒頭で、この file を session ごとに読み、スキルの Cursor の名前を実行中に読み替えるよう書く。表は Cursor の名前を Claude Code の名前に移す決まりで、pstack の fork はこれに従って Claude Code の名前で書き、`ADR.md` に従った節を引く、と書き直した。adapter は実行中に読ませず、fork を書くときの決まりにしたため（`docs/adr/0005-fork-adapter-readers.md`）。

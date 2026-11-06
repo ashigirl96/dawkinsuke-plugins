@@ -1,0 +1,21 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/technical-writing/SKILL.md pstack/skills/technical-writing/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/technical-writing/SKILL.md
++++ pstack/skills/technical-writing/SKILL.md
+@@ -6,8 +6,6 @@
+ 
+ # Technical writing
+ 
+-Claude Code では、このスキルに従う前に、セッションごとに一度 [Claude Code の adapter](../../docs/harness/claude-code.md) を読む。pstack のスキルにある Cursor の名前を Claude Code に読み替える表である。
+-
+ 疲れたエンジニアが一度読んだだけで分かるように書く。4 つの層をすべて適用する。
+ 
+ 3 つの決まりが層の上に立つ:
+@@ -92,7 +90,7 @@
+ 
+ ## Voice and repo specifics
+ 
+-- このスキルが触れるすべての文書に **unslop** スキルを適用する。そのスキルが slop の型の一覧（AI 特有の語彙、水増し、ぼかし、書式の癖）を持つ。
++- Skill tool で `unslop` を呼び、このスキルが触れるすべての文書に適用する。そのスキルが slop の型の一覧（AI 特有の語彙、水増し、ぼかし、書式の癖）を持つ。
+ - PR の説明と commit メッセージも文章である。Diátaxis を除くすべての層が当てはまる。PR 本文は、レビュアーが 1 分以内に読める説明にする。swarm のログ、SHA の一覧、指標の表は貼らず、リンクにする。
+ - プロダクトの UI 文言は文書ではない。それには自分のプロダクトの文言指針を使う。
+ - コード片はタブでインデントする。実在する path を書く。数や木構造の主張は、入れる commit で真にし、再生成するコマンドを添える。

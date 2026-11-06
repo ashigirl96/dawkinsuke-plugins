@@ -1,0 +1,39 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/create-verification-skill/SKILL.md pstack/skills/create-verification-skill/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/create-verification-skill/SKILL.md
++++ pstack/skills/create-verification-skill/SKILL.md
+@@ -6,10 +6,8 @@
+ 
+ # 検証スキルを作る
+ 
+-Claude Code では、このスキルに従う前にセッションごとに一度 [the Claude Code adapter](../../docs/harness/claude-code.md) を読む。pstack のスキルにある Cursor の名前を Claude Code に対応づける。
++本格的なプロジェクトには、実際のアプリを動かして振る舞いを証明する、スクリプト化された手段が要る。アプリを起動し、ユーザーと同じやり方で機能を試し、証拠を残す。このスキルはそれを、repo に合わせたプロジェクト固有のスキル（`.claude/skills/verify-<app>/`）として生成する。生成物は人間ではなく次のエージェントのために書く。アプリを見たことのないエージェントが、作業の途中でいきなり読むことになる。
+ 
+-本格的なプロジェクトには、実際のアプリを動かして振る舞いを証明する、スクリプト化された手段が要る。アプリを起動し、ユーザーと同じやり方で機能を試し、証拠を残す。このスキルはそれを、repo に合わせたプロジェクト固有のスキル（`.cursor/skills/verify-<app>/`）として生成する。生成物は人間ではなく次のエージェントのために書く。アプリを見たことのないエージェントが、作業の途中でいきなり読むことになる。
+-
+ ## 1. repo に聞く。ユーザーには聞かない
+ 
+ 次のことはコードベースから答え、コードベースから観察できないことだけをユーザーに聞く。
+@@ -24,7 +22,7 @@
+ 
+ ## 2. スキルを生成する
+ 
+-`.cursor/skills/verify-<app>/SKILL.md` に YAML frontmatter（`name: verify-<app>` と、アプリ・対象の面・使う場面を挙げた `description`。frontmatter がないとスキルは登録されない）と次の節を書く。各節は、聞き取りで実際に分かったことに基づけ、プレースホルダーを残さない。
++`.claude/skills/verify-<app>/SKILL.md` に YAML frontmatter（`name: verify-<app>` と、アプリ・対象の面・使う場面を挙げた `description`。frontmatter がないとスキルは登録されない）と次の節を書く。各節は、聞き取りで実際に分かったことに基づけ、プレースホルダーを残さない。
+ 
+ - **Launch:** 検証のためにアプリを起動する正確なコマンドと、準備ができたことの見分け方（ログの行、プロンプト）。Launch は、空のデータディレクトリから、migration と seed データを含めて、使える状態まで届かなければならない。準備ができたとは、プロセスが応答するだけでなく、使えることを言う。データベースのヘルスチェックが通っても、初期化スクリプトがまだ動いていることがある。teardown も含める。短命な CLI や TUI には保ち続ける server がない。Launch は、binary を一度 build する（または依存を入れる）ことを指し、そのあと drive ごとに分離した PTY か tmux セッションで始める。
+ - **Doctor:** 「この instance は操作する価値があるか」に答える、読み取り専用の確認を 1 つ。プロセスが上がっている、版や build が正しい、port を自分たちが握っている、認証が有効、など。何かおかしく見えたら、エージェントはまずこれを流す。
+@@ -35,7 +33,7 @@
+ 
+ ## 3. feature map の種を作る
+ 
+-`.cursor/skills/verify-<app>/features/README.md` と、見つけられるユーザー向け機能ごとに 1 ファイルを作る（最初は上位 3〜5 個を目安に、route・コマンド・メニュー・文書から選ぶ）。形は [`references/feature-map-example/`](references/feature-map-example/) に倣い、README の索引と機能ごとの 1 ファイルにする。各ファイルは、ユーザーの視点から、機能が何か、どう辿り着くか、harness でどう操作するか、動いている証拠になる観察可能な終了状態は何か、に答える。H2 は `Sub-features`、`How to get to it (user POV)`、`Driving it with <harness>`、`Gotchas` の 4 つ。seed データに journey が要る前提条件がなければ、journey は失敗を報告し、その理由をその機能の `Gotchas` に書く。通すために journey を弱めてはならない。map は repo が保守する検証の源である。map が他の入口を挙げているのに、都合のよい入口を 1 つだけ操作した証明は不完全である。
++`.claude/skills/verify-<app>/features/README.md` と、見つけられるユーザー向け機能ごとに 1 ファイルを作る（最初は上位 3〜5 個を目安に、route・コマンド・メニュー・文書から選ぶ）。形は [`references/feature-map-example/`](references/feature-map-example/) に倣い、README の索引と機能ごとの 1 ファイルにする。各ファイルは、ユーザーの視点から、機能が何か、どう辿り着くか、harness でどう操作するか、動いている証拠になる観察可能な終了状態は何か、に答える。H2 は `Sub-features`、`How to get to it (user POV)`、`Driving it with <harness>`、`Gotchas` の 4 つ。seed データに journey が要る前提条件がなければ、journey は失敗を報告し、その理由をその機能の `Gotchas` に書く。通すために journey を弱めてはならない。map は repo が保守する検証の源である。map が他の入口を挙げているのに、都合のよい入口を 1 つだけ操作した証明は不完全である。
+ 
+ ## 4. 生成したスキルを、渡す前に証明する
+ 
+@@ -43,4 +41,4 @@
+ 
+ ## 5. 保守の循環を勧める
+ 
+-ユーザーに `/maintain-verification-skill` を案内する。app が変わっても map を正直に保つためである。頻度の提案は、聞かれたときだけにする。
++ユーザーに `/dawkinsuke:maintain-verification-skill` を案内する。app が変わっても map を正直に保つためである。頻度の提案は、聞かれたときだけにする。

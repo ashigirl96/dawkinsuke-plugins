@@ -12,6 +12,19 @@ fork は matt と pstack のどちらのスキルにも作れる。このファ�
 
 `pstack/docs` は、pstack のスキルが `../../docs/` で読む文書の置き場。`pstack/docs/<name>` は upstream の `harness/pstack/claude-code/docs/<name>` への symlink か、その fork で、スキルと同じ手順で fork する。今の fork は adapter の `harness`（`docs/adr/0001-pstack-adapter-fork.md`）。
 
+## adapter を読ませるスキルの fork
+
+pstack のスキルの多くは、冒頭で adapter（`pstack/docs/harness/claude-code.md`）を読ませる。こうしたスキルを fork するときは、adapter を読ませる行を消し、本文を adapter の表に従って Claude Code の名前で書き換える（`docs/adr/0005-fork-adapter-readers.md`）。`ADR.md` の決定には、従った節を「adapter の `Tools` 節」のように、節の見出しを backtick で囲んで引く。別の pstack スキルを呼ぶ箇所は「Call the Skill tool with `<name>`」と書く。
+
+### adapter の節が変わったとき
+
+fork は adapter の節を実行中に読まないので、節が変わっても本文は古いままになる。adapter の fork を作り直した、または変えたあとは、次を行う。
+
+1. `git diff HEAD -- pstack/docs/harness/claude-code.md` で、変わった行が属する `##` の節を拾う。最初の `##` より前の行が変わったら、すべての節が変わったとみなす。
+2. 節ごとに ``grep -l '`<節>` 節' pstack/skills/*/ADR.md`` で、その節を引く fork を探す。
+3. 見つかった fork ごとに、upstream の差分が無くても、`rsync -a --delete --exclude ADR.md --exclude FORK.diff --exclude <own のファイル>... upstream/cursor-plugins/<upstream のパス>/ pstack/skills/<name>/` で upstream の中身に戻し、`ADR.md` の決定を上から順に当て直す。変わった節に関わらない決定は、前回の fork（`git show HEAD:pstack/skills/<name>/<ファイル>`）と同じ文面で当てる。
+4. 「確かめ方」と「日本語の差分を作る」を行う。
+
 ## ADR.md が元データ
 
 fork は、`ADR.md` を持つ `<置き場>/<name>` の実ディレクトリ。upstream のスキルとの違いは、すべて `ADR.md` の決定として書く。fork の中身は「最新の upstream に `ADR.md` の決定を当てたもの」で、upstream を上げるたびに作り直す。`ADR.md` に書いていない違いは、作り直したときに消える。

@@ -6,3 +6,9 @@ mattpocock-skills/ask-matt
 cursor-plugins/poteto-help
 cursor-plugins/tdd
 cursor-plugins/teach
+cursor-plugins/poteto-mode
+cursor-plugins/automate-me
+cursor-plugins/figure-it-out
+cursor-plugins/recall
+cursor-plugins/setup-pstack
+cursor-plugins/make-bot-ui

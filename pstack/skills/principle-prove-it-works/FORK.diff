@@ -1,0 +1,18 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/skills/principle-prove-it-works/SKILL.md pstack/skills/principle-prove-it-works/SKILL.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/skills/principle-prove-it-works/SKILL.md
++++ pstack/skills/principle-prove-it-works/SKILL.md
+@@ -6,8 +6,6 @@
+ 
+ # 動くことを証明する
+ 
+-Claude Code では、この skill に従う前に、セッションごとに 1 度 [Claude Code adapter](../../docs/harness/claude-code.md) を読む。pstack の skill にある Cursor の名前を Claude Code に読み替える。
+-
+ すべてのタスクの出力を、実物を直接確かめて検証する。代用物や自己申告、「コンパイルは通った」から推測しない。
+ 
+ **理由:** 検証していない作業は、正しいかどうかが分からない。間接的な検証 (ファイルの更新時刻、出力の新しさ、agent の自己申告、キャッシュされたスクリーンショット) は、直接観察するより安上がりに感じる。誤った推測に基づいて動くと、元を確かめるよりはるかに高くつく。
+@@ -21,4 +19,4 @@
+ 
+ 最も強い証明は、同じ比較を再実行する決定的なスクリプトであり、一度きりの目視ではない。スクリプトを書いて走らせ、その出力を、レビュアーが言葉を信じる代わりに再実行できる成果物として残す。
+ 
+-人間に見える形で成果物を残す。commit するのは、大きな port や migration のように、後から経緯を監査できなければならない大きく複雑な作業に限る (**show-me-your-work** skill)。
++人間に見える形で成果物を残す。commit するのは、大きな port や migration のように、後から経緯を監査できなければならない大きく複雑な作業に限る。その経緯には、Skill tool で `show-me-your-work` を呼ぶ。

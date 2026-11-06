@@ -11,4 +11,4 @@ ADR 0001 は Cursor の名前の読み替えを adapter 1 枚に置き、各ス�
 ## Consequences
 
 - adapter の節が変わったら、その節を引く fork を作り直す。upstream の差分だけを見ると古い fork が残るので、`/update-upstream-skill` と `/fork-upstream-skill` がこれを扱う。
-- 読み替えが重いのに使わないスキル（`poteto-mode`・`automate-me`・`figure-it-out`・`recall`・`setup-pstack`）は fork せず除外する。モデル表は `setup-dawkinsuke` が書く。
+- 読み替えが重いのに使わないスキル（`poteto-mode`・`automate-me`・`figure-it-out`・`recall`・`setup-pstack`・`make-bot-ui`）は fork せず除外する。`make-bot-ui` は手順の大半が Cursor Automations に頼り、Claude Code では飛ばすしかない。モデル表は `setup-dawkinsuke` が書く。

@@ -19,7 +19,8 @@ file_refs() {
 }
 
 skill_refs() {
-	prose "$1" | grep -oE '(^|[^A-Za-z0-9_./-])/[a-z0-9][a-z0-9-]*' | sed 's|.*/||' || true
+	# ユーザーに打たせる名前は `/dawkinsuke:<name>` と plugin 名が付く。
+	prose "$1" | sed 's|/dawkinsuke:|/|g' | grep -oE '(^|[^A-Za-z0-9_./-])/[a-z0-9][a-z0-9-]*' | sed 's|.*/||' || true
 	# ハイフンの無い 1 語の太字は強調（**how**）と区別できないので、後ろに skill があるときだけ数える。
 	prose "$1" | grep -oE '(`[a-z0-9-]+`|\*\*[a-z0-9-]+\*\*)( skill)?' | grep -vE '^\*\*[a-z0-9]+\*\*$' | sed 's/[`*]//g; s/ skill$//' || true
 }

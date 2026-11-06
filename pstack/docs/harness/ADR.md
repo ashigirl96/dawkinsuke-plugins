@@ -1,6 +1,6 @@
 ---
 upstream: harness/pstack/claude-code/docs/harness
-own: []
+own: [principles.md]
 ---
 
 # harness（adapter）の fork
@@ -32,3 +32,7 @@ upstream は役割の行を `~/.claude/rules/pstack-models.md` から読み、�
 ## setup-pstack の節を消す
 
 upstream は `setup-pstack` を Claude Code で動かすための節を持つ。`setup-pstack` は除外し、モデル表は `setup-dawkinsuke` が書くので、節を消した（`docs/adr/0005-fork-adapter-readers.md`）。
+
+## poteto-mode の Principles 索引の写しを principles.md に置く
+
+upstream は Principles 索引を `poteto-mode` の中に置き、各スキルがそこから原則を引く。`poteto-mode` は除外したので、索引の節を `principles.md` に写した。1 つの文書になるので見出しを `# Principles` に上げ、冒頭の「leaf のスキルを読む」を「Skill tool で leaf のスキルを呼ぶ」に、太字の `**principle-<title>** skill` をコード表記の `principle-<title>` に書き換えた。`setup-dawkinsuke` が `/play` の原則集をこの写しから作るため（`docs/adr/0004-repo-grown-playbooks.md`）。upstream の節が変わったら、`/update-upstream-skill pstack` が差分を見せて反映するか聞く。

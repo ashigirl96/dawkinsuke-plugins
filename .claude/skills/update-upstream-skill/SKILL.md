@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 ## 2. 版を上げる
 
-版の扱いのファイルの「版を上げる」を行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
+版の扱いのファイルの「版を上げる」を行う。pstack では、続けて「写した文書」も行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
 
 ## 3. 置き場を upstream に合わせる
 

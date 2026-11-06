@@ -4,63 +4,63 @@ diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-c
 @@ -1,6 +1,6 @@
  # Claude Code での pstack
  
--pstack のスキルは Cursor の名前を使う。Claude Code では、この file を session ごとに 1 度読み、スキル中の Cursor の名前を下の表で読み替える。`<pstack>` は `skills/` と `docs/` を持つ folder を指す。Cursor の項目に行が無ければ、それを落として、落としたことを伝える。tool の schema が受け付けない項目や値は決して渡さない。
-+pstack のスキルは Cursor の名前を使う。下の表は Cursor の名前を Claude Code の名前に対応づける。pstack の fork は、この表に従って Claude Code の名前で書き、その `ADR.md` は、`Tools` の節のように、従う節を 1 つずつ挙げる。`<pstack>` は `skills/` と `docs/` を持つ folder を指す。Cursor の項目に行が無ければ、それを落として、落としたことを伝える。tool の schema が受け付けない項目や値は決して渡さない。
+-pstack のスキルは Cursor の名前を使う。Claude Code では、このファイルを session ごとに 1 度読み、スキル中の Cursor の名前を下の表で読み替える。`<pstack>` は `skills/` と `docs/` を持つフォルダを指す。Cursor のフィールドに対応する行がなければ、そのフィールドを落とし、落としたと伝える。tool の schema が拒むフィールドや値は決して渡さない。
++pstack のスキルは Cursor の名前を使う。下の表は、Cursor の名前を Claude Code の名前に対応づける。pstack の fork は、この表に従って Claude Code の名前で書かれ、その `ADR.md` は従う節（`Tools` の節など）をそれぞれ名指しする。`<pstack>` は `skills/` と `docs/` を持つフォルダを指す。Cursor のフィールドに対応する行がなければ、そのフィールドを落とし、落としたと伝える。tool の schema が拒むフィールドや値は決して渡さない。
  
  ## Tools
  
 @@ -9,15 +9,20 @@
  | `Task` | `Agent` |
- | `AskQuestion` | `AskUserQuestion`。`-p` mode では無いので、地の文で尋ねる。 |
- | todolist を開く | session が `TodoWrite` を持つならそれを使う。無ければ返答の中に一覧を置き、段階ごとに更新する。 |
--| 別の pstack スキルを走らせる（`/name` や「**name** スキル」） | `<pstack>/skills/<name>/SKILL.md` を `Read` で読み、それに従う。`Skill` tool はほとんどの pstack スキルを拒む。ユーザーに打たせるときは `/pstack:<name>` と書く。 |
+ | `AskQuestion` | `AskUserQuestion`。`-p` モードでは無いので、地の文で尋ねる。 |
+ | todolist を開く | session が `TodoWrite` を提供していれば使う。なければ返答の中にリストを持ち、各段階で更新する。 |
+-| 別の pstack スキルを走らせる（`/name` や「**name** スキル」） | `<pstack>/skills/<name>/SKILL.md` を `Read` して従う。`Skill` tool はほとんどの pstack スキルを拒む。ユーザーに打たせるときは `/pstack:<name>` と書く。 |
 +| 別の pstack スキルを走らせる（`/name` や「**name** スキル」） | `Skill` tool を `dawkinsuke:<name>` で呼ぶ。ユーザーに打たせるときは `/dawkinsuke:<name>` と書く。 |
- | `Grep`、`Glob` | session に `Grep` や `Glob` が無いときは、`Bash` で `rg` を使う。 |
+ | `Grep`、`Glob` | session に `Grep` や `Glob` がなければ、`Bash` で `rg` を使う。 |
 +| `cursor-team-kit` の `deslop` | `simplify` スキル。 |
 +| `cursor-team-kit` の `control-ui` | `agent-browser` スキル。 |
 +| `cursor-team-kit` の `control-cli` | `run` スキル。 |
 +| Cursor 組み込みの `create-skill` | `writing-for-agents` スキル。 |
 +| Cursor の `/loop` | Claude Code の `/loop`。 |
  
- ## Subagent の項目
+ ## Subagent fields
  
  | Cursor | Claude Code |
  | --- | --- |
  | `subagent_type: generalPurpose` | `subagent_type: "general-purpose"` |
 -| `poteto-agent`、`comment-sicko` | `pstack:poteto-agent`、`pstack:comment-sicko` |
 +| `poteto-agent`、`comment-sicko` | `dawkinsuke:poteto-agent`、`dawkinsuke:comment-sicko` |
- | `readonly: true` | `subagent_type: "Explore"`。`Bash` は残るので、指示書にも「file を編集しない」と書き、あとで `git status` を確かめる。 |
+ | `readonly: true` | `subagent_type: "Explore"`。`Bash` は残るので、指示書にも「ファイルを編集しない」と書き、あとで `git status` を確かめる。 |
  | `readonly: false` | `general-purpose`。session の MCP server を引き継ぐ。 |
- | `environment: "cloud"` | `isolation: "worktree"`。worker が checkout する branch か commit を名指しする。 |
+ | `environment: "cloud"` | `isolation: "worktree"`。作業者が checkout する branch か commit を名指しする。 |
 @@ -31,19 +36,28 @@
  
  | Cursor | Claude Code |
  | --- | --- |
--| `claude-<family>-<version>-<effort>[-fast]`（`claude-opus-5-5-xhigh` など） | `model: "opus"` と `effort: "xhigh"`。`model` は `opus`、`sonnet`、`haiku`、`fable` しか取らない。`-fast` は落とす。 |
--| `grok-*`、`gpt-*`、そのほか Claude 以外の slug | `model` を省いて agent を session の model で走らせ、そのことを伝える。 |
-+| `claude-<family>-<version>-<effort>[-fast]`（`claude-opus-5-5-xhigh` など） | `opus @xhigh`。`model: "opus"` と `effort: "xhigh"` を渡す。`model` は `opus`、`sonnet`、`haiku`、`fable` しか取らない。`-fast` は落とす。 |
-+| `grok-*`、`cursor-grok-*`、`composer-*` の slug | `gpt-6.1-sol` にし、次の行で読み替える。family を調べる前に読み替えるので、その family は `gpt-*` になる。 |
-+| `gpt-*` やそのほか Claude 以外の model（`gpt-6.1-sol` など） | `general-purpose` や `Explore` の代わりに、その model に任せると説明に書いてある `Agent` の subagent type を `subagent_type` に渡す。その subagent は `model` を無視するので省く。`readonly: true` なら、指示書に「file を編集しない」と書く。その model を名指しする subagent type が無ければ、`model` を省いて agent を session の model で走らせ、そのことを伝える。model の family は名前の頭の部分なので、`gpt-*` は `claude-*` とは別の family になる。 |
+-| `claude-<family>-<version>-<effort>[-fast]`（例: `claude-opus-5-5-xhigh`） | `model: "opus"` と `effort: "xhigh"`。`model` は `opus`、`sonnet`、`haiku`、`fable` しか取らない。`-fast` は落とす。 |
+-| `grok-*`、`gpt-*`、その他の Claude 以外の slug | `model` を省いて agent を session のモデルで走らせ、そう伝える。 |
++| `claude-<family>-<version>-<effort>[-fast]`（例: `claude-opus-5-5-xhigh`） | `opus @xhigh`: `model: "opus"` と `effort: "xhigh"` を渡す。`model` は `opus`、`sonnet`、`haiku`、`fable` しか取らない。`-fast` は落とす。 |
++| `grok-*`、`cursor-grok-*`、`composer-*` の slug | `gpt-6.1-sol` にし、次の行で読み替える。系統を確かめる前に読み替えるので、その系統は `gpt-*` になる。 |
++| `gpt-*` やその他の Claude 以外のモデル（例: `gpt-6.1-sol`） | `general-purpose` や `Explore` の代わりに、説明にそのモデルへ委ねると書いてある `Agent` の subagent type を `subagent_type` に渡す。`model` は省く。その subagent は `model` を無視する。`readonly: true` なら、指示書に「ファイルを編集しない」と書く。そのモデルを名指しする subagent type がなければ、`model` を省いて agent を session のモデルで走らせ、そう伝える。モデルの系統は名前の接頭辞なので、`gpt-*` は `claude-*` とは別の系統になる。 |
  | `auto` か `inherit-parent` | `model` を省く。 |
--| `pstack-models.mdc` の rule、`~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`。Claude Code は新しい session ごとにこれを読み込むので、その役割の行はすでに文脈にある。無ければ file を読む。file か役割の行が無ければ、スキルの既定の slug を使う。 |
--| 役割の値 `<model> <effort>`（`opus high` など） | `model: "opus"` と `effort: "high"`。 |
-+| `pstack-models.mdc` の rule、`~/.cursor/rules/pstack-models.mdc` | model の表、`~/.claude/repo-local/<host>/<owner>/<repo>-models.md`。repo-local の `<repo>.md` がこれを import するので、その行は文脈にある。無ければ、その repo に表は無いので、スキルの既定を使う。役割の行が無いときも既定を取る。 |
-+| 役割の値（`opus` や `opus @high` など） | `model: "opus"` と、`@<level>` の接尾辞から `effort: "high"`。level は `low`、`medium`、`high`、`xhigh`、`max`。接尾辞の無い値は、表の `default effort` の行を取る。その行が `session` か無いときは、`effort` を省く。panel の一覧では、`opus @xhigh, sonnet` のように、項目ごとに自分の接尾辞を取る。 |
+-| `pstack-models.mdc` の rule、`~/.cursor/rules/pstack-models.mdc` | `~/.claude/rules/pstack-models.md`。Claude Code はこれを新しい session ごとに読み込むので、役割の行はすでに context にある。なければファイルを読む。ファイルか役割の行がなければ、スキルの既定の slug を使う。 |
+-| 役割の値 `<model> <effort>`（例: `opus high`） | `model: "opus"` と `effort: "high"`。 |
++| `pstack-models.mdc` の rule、`~/.cursor/rules/pstack-models.mdc` | モデル表 `~/.claude/repo-local/<host>/<owner>/<repo>-models.md`。repo-local の `<repo>.md` がこれを import するので、その行は context にある。ないときは repo にモデル表がないので、スキルの既定を使う。役割の行が抜けているときも既定を取る。 |
++| 役割の値（例: `opus` や `opus @high`） | `model: "opus"`、そして `@<level>` の接尾辞から `effort: "high"`。level は `low`、`medium`、`high`、`xhigh`、`max`。接尾辞のない値は、表の `default effort` の行を取る。その行が `session` か無いときは、`effort` を省く。panel のリストでは、各項目がそれぞれの接尾辞を取る（例: `opus @xhigh, sonnet`）。 |
  
 -## setup-pstack
-+pstack の fork はこれらの役割の行を読む。一覧の値は panel で、項目ごとに subagent を 1 つ走らせる。
++pstack の fork はこれらの役割の行を読む。リストの値は panel で、項目ごとに subagent を 1 つ走らせる。
  
--Claude Code は `~/.claude/rules/` の `.md` file をすべて新しい session ごとに読み込むので、`setup-pstack` はその rule をそこに書く。手順には次の変更を加えて従う。
+-Claude Code は `~/.claude/rules/` の `.md` ファイルをすべて新しい session ごとに読み込むので、`setup-pstack` はその rule をそこに書く。手順は次の変更を加えて従う:
 -
--- 検出。検出する model は、`Agent` tool の schema が並べる `model` の値で、それぞれ `effort` の値から effort を 1 つ付ける。実在する model は `opus xhigh` のように `<model> <effort>` と書く。effort は最後の語なので、budget の手順は書いてあるとおりに働く。
--- 既定。既定の slug はそれぞれ上の行で読み替える。`claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `inherit-parent` になる。
--- 書き込み。`~/.claude/rules/pstack-models.md` を frontmatter なしで書き、続けて comment の行、`# budget` の行、手順 5 の役割ごとに 1 行を書く。file 全体を上書きする。役割の行は決して `CLAUDE.md` や `AGENTS.md` に置かない。
+-- 検出。検出するモデルは、`Agent` tool の schema が並べる `model` の値で、それぞれ `effort` の値から effort を 1 つ付ける。実在のモデルは `<model> <effort>`（例: `opus xhigh`）と書く。effort は最後の語なので、budget の手順は書いてあるとおりに動く。
+-- 既定。既定の slug は上の行で読み替える: `claude-opus-5-5-xhigh` は `opus xhigh`、`grok-4.7-xhigh-fast` は `inherit-parent`。
+-- 書き込み。`~/.claude/rules/pstack-models.md` を frontmatter なしで書き、続けてコメントの行、`# budget` の行、手順 5 の役割ごとに 1 行を書く。ファイル全体を上書きする。役割の行を `CLAUDE.md` や `AGENTS.md` に決して書かない。
 +| 役割の行 | fork | 既定 |
 +| --- | --- | --- |
-+| `arena runners` | `arena` | `opus @xhigh, gpt-6.1-sol`（一覧） |
-+| `arena cross-judge pool` | `arena` | `opus @xhigh, gpt-6.1-sol`（一覧） |
-+| `architect runners` | `architect` | `opus @xhigh, gpt-6.1-sol`（一覧） |
-+| `interrogate reviewers` | `interrogate` | `arena runners` の既定（一覧） |
++| `arena runners` | `arena` | `opus @xhigh, gpt-6.1-sol`（リスト） |
++| `arena cross-judge pool` | `arena` | `opus @xhigh, gpt-6.1-sol`（リスト） |
++| `architect runners` | `architect` | `opus @xhigh, gpt-6.1-sol`（リスト） |
++| `interrogate reviewers` | `interrogate` | `arena runners` の既定（リスト） |
 +| `swarm workers` | `swarm` | `gpt-6.1-sol` |
 +| `how explorer` | `how` | `gpt-6.1-sol` |
 +| `how explainer` | `how` | `opus @xhigh` |
@@ -71,3 +71,49 @@ diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-c
  
  ## Paths
  
+diff -ruN -x ADR.md -x FORK.diff upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/principles.md pstack/docs/harness/principles.md
+--- upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/principles.md
++++ pstack/docs/harness/principles.md
+@@ -0,0 +1,42 @@
++# 原則
++
++原則を当てはめるときは、その葉のスキルを Skill tool で呼び、最後まで従う。各項目には、いつ当てはまるかが書いてある。葉の名前は `principle-<title>` で、title は kebab case にし、ハイフンは残して他の記号は落とす。項目が名前を示していればそれを使う。
++
++**中核**
++
++- **Laziness Protocol（怠惰の規約）。** リファクタリング、diff の大きさを決めるとき、抽象・層・信号の引き回しを足したくなったとき。削除に寄せ、問題を解く最小の変更を選ぶ。
++- **Foundational Thinking（土台から考える）。** ロジックを書く前に: 中核の型とデータ構造、足場と機能の順序、並行に動くものが何を共有するか。
++- **Redesign from First Principles（第一原理から設計し直す）。** 新しい要件を既存の設計に組み込むとき。初日から土台にあったかのように設計し直す。
++- **Attack the Premise（前提を攻める）。** 1 つの前提を共有する 2 つ以上の修正は、同じ関門で失敗している。その前提を前提にした修正を次に書く前に、前提を書き出して直接試す。
++- **Subtract Before You Add（足す前に引く）。** 追加・リファクタリング・書き直しの順序を決めるとき。まず無駄を取り除き、単純になった土台の上に作る。
++- **Minimize Reader Load（読み手の負担を減らす）。** 追いにくいコードをレビューする、または形を整えるとき。層と隠れた状態を数え、呼び出し元が 1 つの wrapper を畳み、変更可能な範囲を縮める。
++- **Outcome-Oriented Execution（結果に向けて進める）。** 段階の境目がはっきりした、計画された書き直しや移行。目標の設計に収束させ、捨てる互換の状態を保たない。
++- **Experience First（体験を先に）。** 製品・UX・機能の範囲のトレードオフ。実装の都合よりユーザーの喜びを選ぶ。
++- **Exhaust the Design Space（設計の選択肢を尽くす）。** 前例のない新しい操作や設計の判断。決める前に、競う試作を 2〜3 個作って比べる。
++- **Build the Lever（てこを作る）。** 自明でないすべての作業。手でやらず、それを行う・証明する道具（codemod、script、generator）を作る。道具は、レビューする人が流し直せる成果物になる。
++
++**設計**
++
++- **Model the Domain（ドメインをモデルにする）。** 状態を持つロジックや、分岐が多いか同じ形の前提をファイルをまたいで繰り返すコードを書くとき。散らばった条件分岐の代わりに、ドメインを構造（状態機械、型付きのモデル、表や registry、reducer、境界、適切なコレクション）に埋め込む。
++- **Boundary Discipline（境界の規律）。** 検証、エラー処理、framework の adapter をつなぐとき。システムの境界に守りを置き、内部の型を信じ、業務ロジックを純粋に保つ。
++- **Type System Discipline（型システムの規律）。** 型のある言語で型やシグネチャを設計するとき。不正な状態を表せなくし、プリミティブに brand を付け、外部のデータは境界で parse する。
++- **Make Operations Idempotent（操作を冪等にする）。** クラッシュや再試行の中で走るコマンド・ライフサイクルの手順・ループを設計するとき。同じ終わりの状態に収束させる。
++- **Migrate Callers Then Delete Legacy APIs（呼び出し元を移してから古い API を消す）。** 古い呼び出し元があるうちに新しい内部 API を入れるとき。移行と削除を 1 回の波で行う。
++- **Separate Before Serializing Shared State（共有状態を直列化する前に分ける）。** 並行に動くものが同じファイル・branch・key・オブジェクトに書くかもしれないとき。まず共有をなくす。
++
++**検証**
++
++- **Prove It Works（動くと証明する）。** 作業のあと、完了と言う前。代わりのものや「コンパイルが通る」ではなく、本物の成果物で確かめる。
++- **Fix Root Causes（根本原因を直す）。** デバッグ。症状をそれぞれ、システムが最初に誤った場所までさかのぼり、そこで直す。守りが修正になるのは、それが扱う状態が正当なときだけ。
++- **Sequence Work into Verifiable Units（作業を確かめられる単位に並べる）**（**principle-sequence-verifiable-units**）。複数の手順の作業（一括の変更、移行、似た編集の連続）と、commit と PR の積み方。作業を、それぞれ確認で終わる小さな単位に分け、次の前にそれぞれを確かめ、並びそのものが正しさを示すように届ける順を決める。
++- **Test Behavior, Not Implementation（実装でなく振る舞いを試す）。** テストを書く・変える・残すとき。コードの使い手が観察できることを assert し、その振る舞いが壊れたらテストが落ち、内部だけが変わったときは通り続けるようにする。
++- **Explain the Number（数字を説明する）。** 測る前に、また測った数字（速度の向上、退行、スループット、レイテンシ、eval の結果）を信じる・報告する・それに基づいて動く前に当てはめる。何がその数字を制限しているかを見つけ、思っている作業とは別のものを測っていないかを確かめる。
++
++**委任**
++
++- **Guard the Context Window（context window を守る）。** context が埋まっていくとき: 大きな出力、長いファイル、繰り返しの読み込み、fan-out の計画。大量のものは subagent に回し、要約を main thread に残す。
++- **Never Block on the Human（人を待って止まらない）。** 元に戻せる作業で「X をしてよいか」と聞きたくなったとき。進めて結果を示し、人に軌道を直させる。
++
++**メタ**
++
++- **Encode Lessons in Structure（教訓を構造に埋め込む）。** 同じ指示を 2 度目に書いていると気づいたとき。文を足す代わりに、lint、metadata の flag、実行時の検査、script として埋め込む。

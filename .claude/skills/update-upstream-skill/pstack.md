@@ -21,6 +21,19 @@ pstack のスキルは大半を除外しているので、`added <name>` ごと�
 
 `harness/pstack`。skill・agent・playbook・`docs/`・`README.md` のすべてで、除外中のスキルも含める。思想の文書は、使っているスキルだけでなく集全体から作者の考えを読んでいるため。
 
+## 写した文書
+
+`pstack/docs/harness/principles.md` は、`poteto-mode` の Principles 節の写し。`poteto-mode` は除外していて fork でもないので、作り直しでは更新されない。旧版と新版の節を比べる。
+
+```sh
+f=harness/pstack/claude-code/skills/poteto-mode/SKILL.md
+d=$(mktemp -d)
+for v in <旧版> <新版>; do git -C upstream/cursor-plugins show "$v:$f" | awk '/^## /{p = $0 == "## Principles"} p' > "$d/$v"; done
+diff "$d/<旧版>" "$d/<新版>"
+```
+
+差分が空なら何もしない。あれば差分を示し、写しに反映するかを `AskUserQuestion` でユーザーに聞く。反映するなら、`pstack/docs/harness/ADR.md` の「poteto-mode の Principles 索引の写しを principles.md に置く」の決定に従って、新版の節を写し直す。
+
 ## 報告に足すもの
 
-旧 version と新 version。
+旧 version と新 version。「写した文書」で反映したかどうか。

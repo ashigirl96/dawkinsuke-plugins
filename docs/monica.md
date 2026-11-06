@@ -13,7 +13,7 @@ monica の機能の正本は次の 3 つ。ここには写さない。
 ## 組み合わせの見方
 
 - Task は GitHub Issue と 1 対 1 で、Issue の無い Task は作れない。Bench（Task の worktree と Tab の束）を開くには、issue が 1 本要る。
-- `monica task run <ref> [prompt]` は Bench を開いて claude を起こし、最初の prompt を渡す。スキルから次の session を起こす入口はここ。
+- `monica task run <ref> [prompt]` は Bench を開いて claude を起こし、最初の prompt を渡す。スキルから次の session を起こす入口はここで、プレイブックからは部品スキル `fork-to-bench` を通して呼ぶ。
 - Agent Session の同一性は claude の session_id。resume は同じ Agent Session、fork は別の Agent Session になる。
 - スキルが自分のいる Tab を知る手掛かりは、環境変数 `MONICA_TERMINAL_SESSION_ID`。
 

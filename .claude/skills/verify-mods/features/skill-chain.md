@@ -10,7 +10,7 @@
 
 ## How to get to it (user POV)
 
-- fork したスキルが「Skill tool で `<name>` を呼ぶ」と書いていて、その先が手動専用のとき。たとえば `grill-with-docs` から `to-spec` を呼ぶ。
+- fork したスキルやプレイブックが「Skill tool で `<name>` を呼ぶ」と書いていて、その先が手動専用のとき。たとえば `/play` の「設計→実装」のプレイブックから `to-spec` を呼ぶ。
 
 ## Driving it with tui.sh
 

@@ -2,6 +2,7 @@
 # スキル台帳。dawkinsuke が知っているスキルを 1 つ 1 行、タブ区切りで出す。
 # 列: 名前 種類(symlink|fork|own|-) 置き場 key upstream 状態(use|excluded|outside|conflict|gone|no-adr) 呼ばれる名前(,区切り)
 # 引数に名前か key を渡すと、その行だけを出す。先頭の引数が - なら、作り直さずに標準入力の表から引く。
+# --places は、行の有無によらず置き場を 1 行ずつ出す。
 # 表はあるべき姿で、置き場の symlink は読まない（docs/adr/0006-skill-ledger-desired-state.md）。
 set -eu
 cd "$(dirname "$0")/.."
@@ -27,6 +28,11 @@ find_rows() {
 			for (r = 1; r <= NR; r++) if (pick[r]) print row[r]
 		}'
 }
+
+if [ "${1:-}" = --places ]; then
+	echo "$places" | tr ' ' '\n'
+	exit
+fi
 
 if [ "${1:-}" = - ]; then
 	shift
@@ -103,8 +109,8 @@ table() {
 				if (!src) { add(part[n], "-", "-", key, d, "outside", -1); continue }
 				name = (key in renamed) ? renamed[key] : part[n]
 				if (key in excluded) { add(name, "-", dest[src], key, d, "excluded", -1); continue }
-				# 改名で名前を取りに行った側は、その名前を元から持つ側に負ける。
-				add(name, "symlink", dest[src], key, d, "use", 2 * src - 1 + (key in renamed))
+				# 改名で名前を取りに行った側は、取り込み元の順によらず、その名前を元から持つ側に負ける。
+				add(name, "symlink", dest[src], key, d, "use", (key in renamed) * srcs + src)
 			}
 			for (r = 1; r <= rows; r++) if (rank[r] >= 0 && (!(nm[r] in best) || rank[r] < rank[best[nm[r]]])) best[nm[r]] = r
 			for (r = 1; r <= rows; r++) {

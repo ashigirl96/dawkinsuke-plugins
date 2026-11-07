@@ -1,6 +1,6 @@
 # スキル台帳はあるべき姿を計算し、名前の衝突は固定の優先順で決める
 
-スキル 1 つの種類・置き場・key・呼ばれる名前・除外中かは、スキル台帳（`scripts/ledger.sh`）だけが答え、他の script と手順書はそれを引く。台帳は upstream の中身・`exclude.txt`・`rename.txt`・置き場の実ディレクトリ（fork は `ADR.md` の `upstream:` で key を取る）から表を作り、置き場の symlink は読まない。`sync-skills.sh` は台帳に合わせて symlink を張るだけにする。同じ名前がぶつかったら、置き場の実ディレクトリ、matt の symlink、pstack の symlink の順で勝ち、負けた行は衝突として残す。同じ upstream と除外リストからは、checkout の状態によらず同じ表が出る。
+スキル 1 つの種類・置き場・key・呼ばれる名前・除外中かは、スキル台帳（`scripts/ledger.sh`）だけが答え、他の script と手順書はそれを引く。台帳は upstream の中身・`exclude.txt`・`rename.txt`・置き場の実ディレクトリ（fork は `ADR.md` の `upstream:` で key を取る）から表を作り、置き場の symlink は読まない。`sync-skills.sh` は台帳に合わせて symlink を張るだけにする。同じ名前がぶつかったら、置き場の実ディレクトリ、matt の symlink、pstack の symlink の順で勝ち、負けた行は衝突として残す。ただし改名でその名前を取りに行った symlink は、取り込み元の順によらず、その名前を元から持つ symlink に負ける。同じ upstream と除外リストからは、checkout の状態によらず同じ表が出る。
 
 ## Considered Options
 

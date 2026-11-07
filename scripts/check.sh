@@ -8,10 +8,10 @@ run() {
 
 run claude plugin validate .
 
-places=$(sh scripts/ledger.sh | awk -F'\t' '$3 != "-" { print $3 }' | sort -u)
+places=$(sh scripts/ledger.sh --places)
 # Claude Code はルートの skills/ を既定で読むので、plugin.json の skills にはそれ以外の置き場が並ぶ。
 listed=$(jq -r '.skills[]' .claude-plugin/plugin.json | sed 's|^\./||' | sort)
-[ "$listed" = "$(echo "$places" | grep -vx skills)" ] || { echo "FAIL: plugin.json skills do not match the places in scripts/ledger.sh" >&2; echo "$listed" >&2; exit 1; }
+[ "$listed" = "$(echo "$places" | grep -vx skills | sort)" ] || { echo "FAIL: plugin.json skills do not match the places in scripts/ledger.sh" >&2; echo "$listed" >&2; exit 1; }
 
 # validate は symlink を辿らず、ルートからは plugin.json の skills で足したディレクトリも読まないので、実体を写した置き場ごとに見る。
 tmp=$(mktemp -d)

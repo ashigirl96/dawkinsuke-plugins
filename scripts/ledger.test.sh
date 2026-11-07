@@ -11,8 +11,8 @@ fail() { echo "FAIL: $1"; exit 1; }
 m=upstream/mattpocock-skills/skills
 p=upstream/cursor-plugins/harness/pstack/claude-code/skills
 
-mkdir -p $m/engineering/tdd $m/engineering/pr $m/engineering/prototype $m/engineering/wizard \
-	$m/productivity/handoff $m/productivity/teach $m/misc/scaffold \
+mkdir -p $m/engineering/tdd $m/engineering/pr $m/engineering/prototype $m/engineering/wizard $m/engineering/zoom \
+	$m/productivity/handoff $m/productivity/teach $m/productivity/wait $m/misc/scaffold \
 	$p/tdd $p/teach $p/bro $p/principle-bro $p/principle-encode \
 	skills/walkthrough matt/skills/wizard pstack/skills
 touch $m/engineering/README.md
@@ -21,7 +21,7 @@ printf -- '---\nupstream: skills/engineering/pr\nown: []\n---\n' > matt/skills/p
 printf -- '---\nupstream: skills/engineering/removed\nown: []\n---\n' > matt/skills/old/ADR.md
 ln -s ../../$m/engineering/tdd pstack/skills/stale
 printf '%s\n' '# comment' 'cursor-plugins/teach  # inline comment' > upstream/exclude.txt
-printf '%s\n' '# comment' 'mattpocock-skills/handoff prototype' > upstream/rename.txt
+printf '%s\n' '# comment' 'mattpocock-skills/handoff prototype' 'mattpocock-skills/zoom wait' > upstream/rename.txt
 
 sh scripts/ledger.sh > out
 tr '|' '\t' <<EOF | LC_ALL=C sort > want
@@ -37,6 +37,8 @@ tdd|symlink|matt/skills|mattpocock-skills/tdd|$m/engineering/tdd|use|tdd
 tdd|symlink|pstack/skills|cursor-plugins/tdd|$p/tdd|conflict|tdd
 teach|-|pstack/skills|cursor-plugins/teach|$p/teach|excluded|teach
 teach|symlink|matt/skills|mattpocock-skills/teach|$m/productivity/teach|use|teach
+wait|symlink|matt/skills|mattpocock-skills/wait|$m/productivity/wait|use|wait
+wait|symlink|matt/skills|mattpocock-skills/zoom|$m/engineering/zoom|conflict|wait,zoom
 walkthrough|own|skills|-|-|use|walkthrough
 wizard|-|matt/skills|-|-|no-adr|wizard
 wizard|symlink|matt/skills|mattpocock-skills/wizard|$m/engineering/wizard|conflict|wizard
@@ -50,6 +52,11 @@ sh scripts/ledger.sh teach | cut -f4 | tr '\n' ' ' | grep -qx 'cursor-plugins/te
 [ "$(sh scripts/ledger.sh bro | cut -f1)" = bro ] || fail "exact name did not win over a principle short name"
 [ -z "$(sh scripts/ledger.sh no-such-skill)" ] || fail "unknown name gave rows"
 sh scripts/ledger.sh | sh scripts/ledger.sh - teach tdd | cmp -s - "$(sh scripts/ledger.sh teach tdd > piped; echo piped)" || fail "table from stdin gave other rows"
+
+printf '%s\n' skills matt/skills pstack/skills > want
+sh scripts/ledger.sh --places | diff want - > diff.out || fail "places differ: $(cat diff.out)"
+rm -r $p/* skills/walkthrough
+sh scripts/ledger.sh --places | grep -qx pstack/skills || fail "place without rows dropped from places"
 
 rm -r upstream/mattpocock-skills
 status=0

@@ -4,7 +4,7 @@ set -eu
 cd "$(dirname "$0")/.."
 
 ledger=$(sh scripts/ledger.sh)
-places=$(echo "$ledger" | awk -F'\t' '$3 != "-" { print $3 }' | sort -u)
+places=$(sh scripts/ledger.sh --places)
 
 up() {
 	echo "$1" | sed 's|[^/]*|..|g'

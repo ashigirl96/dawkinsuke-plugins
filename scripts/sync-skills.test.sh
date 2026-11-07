@@ -62,4 +62,11 @@ echo nope/missing > upstream/exclude.txt
 sh scripts/sync-skills.sh > out
 grep -qx 'warning nope/missing in upstream/exclude.txt is not an upstream skill' out || fail "unknown exclude entry not warned"
 
+: > upstream/exclude.txt
+rm -rf upstream/mattpocock-skills/*
+if sh scripts/sync-skills.sh > out 2> err; then fail "ran with an uninitialized submodule"; fi
+[ -L matt/skills/code-review ] || fail "symlinks were removed while a submodule was uninitialized"
+grep -qx 'upstream/mattpocock-skills is empty; run git submodule update --init' err || fail "uninitialized submodule not reported"
+[ ! -s out ] || fail "uninitialized submodule printed changes: $(cat out)"
+
 echo ok

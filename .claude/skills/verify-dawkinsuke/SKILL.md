@@ -11,7 +11,7 @@ description: dawkinsuke プラグインを Claude Code に checkout から読ま
 
 常駐する process はない。`claude --plugin-dir . ...` がコマンドごとに checkout を読み込み、終われば抜ける。
 
-1. `git submodule status` の行頭に `-` があれば、`git submodule update --init` で upstream を取ってくる。upstream が無いまま `sh scripts/sync-skills.sh` を流すと、symlink がすべて「gone upstream」として消える。
+1. `git submodule status` の行頭に `-` があれば、`git submodule update --init` で upstream を取ってくる。upstream が無いまま `sh scripts/sync-skills.sh` を流すと、何も消さずに exit 1 で止まる。
 2. 証拠の置き場を作る。
 
 ```sh

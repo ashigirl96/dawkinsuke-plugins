@@ -7,7 +7,7 @@ cursor/plugins にはタグがないので、pstack の `plugin.json` の `versi
 1. `CLAUDE.md` の「使っている版」から、旧 version と旧版の commit を読む。
 2. `git -C upstream/cursor-plugins fetch origin` を流す。
 3. `git -C upstream/cursor-plugins log -1 --format=%h -G'"version"' origin/main -- harness/pstack/claude-code/.claude-plugin/plugin.json` で新版を決め、`git -C upstream/cursor-plugins show <新版>:harness/pstack/claude-code/.claude-plugin/plugin.json | grep '"version"'` で新 version を読む。新 version が旧 version と同じなら、そう報告して終える。
-4. `git -C upstream/cursor-plugins ls-tree -d <新版> harness/pstack/claude-code/skills` が何も返さなければ、bucket が移っている。このまま進むと `sync-skills.sh` が symlink をすべて消すので、止めてユーザーに報告する。
+4. `git -C upstream/cursor-plugins ls-tree -d <新版> harness/pstack/claude-code/skills` が何も返さなければ、bucket が移っている。このまま進むと `scripts/ledger.sh` が exit 2 で止まり、それを使う `sync-skills.sh` と検査がすべて通らなくなるので、止めてユーザーに報告する。
 5. `git -C upstream/cursor-plugins checkout <新版>` を流す。
 6. `CLAUDE.md` の「使っている版」を新 version と新版の commit に書き換える。
 

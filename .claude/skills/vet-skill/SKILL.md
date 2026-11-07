@@ -35,9 +35,9 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
    ```sh
    grep -m1 '^description:' matt/skills/*/SKILL.md pstack/skills/*/SKILL.md skills/*/SKILL.md .claude/skills/*/SKILL.md
    ```
-2. **除外中の upstream スキル**: 次の出力のうち、名前が `upstream/exclude.txt` にあるもの。pstack の principle は、規則の本体が description にある。
+2. **除外中の upstream スキル**: 次の出力。pstack の principle は、規則の本体が description にある。
    ```sh
-   grep -m1 '^description:' upstream/mattpocock-skills/skills/engineering/*/SKILL.md upstream/mattpocock-skills/skills/productivity/*/SKILL.md upstream/cursor-plugins/harness/pstack/claude-code/skills/*/SKILL.md
+   sh scripts/ledger.sh | awk -F'\t' '$6 == "excluded" { print $5 "/SKILL.md" }' | xargs grep -m1 '^description:'
    ```
 3. **fork**: 入っている matt か pstack のスキルを変えれば足りるか。
 4. **スキルにしない**: 保守用なら `scripts/check.sh` のような検査かこの repo の `CLAUDE.md` の 1 行、配るなら `~/.claude/CLAUDE.md` の 1 行か `mods/<name>` の mod で足りるか。

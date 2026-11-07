@@ -13,7 +13,7 @@ if [ -d "$1" ]; then given=$(cd "$1" && pwd); else given=$1; fi
 cd "$(dirname "$0")/.."
 repo=$(pwd)
 given=${given#"$repo"/}
-. scripts/layout.sh
+ledger=$(sh scripts/ledger.sh)
 . scripts/refs.sh
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
@@ -22,28 +22,22 @@ else
 	bold= dim= red= off=
 fi
 
-# 各行: <submodule>/<name> とその upstream のディレクトリ。
-key_dirs=$(echo "$upstream_dirs" | while read -r d; do echo "$(key "$d") $d"; done)
-
 dir_of() {
-	echo "$key_dirs" | awk -v k="$1" '$1 == k { print $2 }'
+	echo "$ledger" | awk -F'\t' -v k="$1" '$4 == k { print $5; exit }'
 }
 
-# 木の節は upstream のスキルなら <submodule>/<name>、checkout のスキルならそのディレクトリ。
+# 木の節は upstream のスキルなら key、checkout のスキルならそのディレクトリ。
 node_dir() {
 	if [ -d "$1" ]; then echo "$1"; else dir_of "$1"; fi
 }
 
-checkout_dir() {
-	for d in $link_dirs; do
-		if [ -e "$d/$1" ]; then echo "$d/$1"; return; fi
-	done
+is_excluded() {
+	echo "$ledger" | awk -F'\t' -v k="$1" '$4 == k && $6 == "excluded" { found = 1 } END { exit !found }'
 }
 
 submodule_of() {
 	if [ -d "$1" ]; then
-		parent=$(echo "$sources" | awk -v d="$(dirname "$1")" '$2 == d { print $1; exit }')
-		set -- "${parent#upstream/}"
+		set -- "$(echo "$ledger" | awk -F'\t' -v d="$1" '$3 "/" $1 == d { print $4; exit }')"
 	fi
 	echo "${1%%/*}"
 }
@@ -54,17 +48,18 @@ location_of() {
 
 # 名前で呼ばれたスキルは、checkout を見るときは checkout から、次に呼んだ側と同じ submodule から探す。
 resolve() {
+	rows=$(echo "$ledger" | sh scripts/ledger.sh - "$2")
+	[ -n "$rows" ] || return 0
 	if [ "$mode" = checkout ]; then
-		for name in "$2" "principle-$2"; do
-			found=$(checkout_dir "$(alias_of "$name")")
-			if [ -n "$found" ]; then echo "$found"; return; fi
-		done
+		found=$(echo "$rows" | awk -F'\t' '$3 != "-" && $6 != "excluded" && $6 != "conflict" { print $3 "/" $1; exit }')
+		if [ -n "$found" ]; then echo "$found"; return; fi
 	fi
-	name=$(upstream_name "$2")
-	[ -n "$name" ] || return 0
-	for sub in "$(submodule_of "$1")" mattpocock-skills cursor-plugins; do
-		if [ -n "$(dir_of "$sub/$name")" ]; then echo "$sub/$name"; return; fi
-	done
+	echo "$rows" | awk -F'\t' -v s="$(submodule_of "$1")" '
+		$4 != "-" {
+			split($4, k, "/"); rank = k[1] == s ? 0 : k[1] == "mattpocock-skills" ? 1 : 2
+			if (found == "" || rank < best) { best = rank; found = $4 }
+		}
+		END { if (found != "") print found }'
 }
 
 relative() {
@@ -100,7 +95,7 @@ children() (
 label() {
 	out="${1##*/}"
 	[ "$(location_of "$1")" = "$root_location" ] || out="$out  ${dim}$(location_of "$1")${off}"
-	if excluded "$1"; then out="$out  ${dim}(excluded)${off}"; fi
+	if is_excluded "$1"; then out="$out  ${dim}(excluded)${off}"; fi
 	echo "$out"
 }
 
@@ -121,7 +116,7 @@ walk() (
 				continue
 			fi
 			echo "$item" >> "$seen"
-			if excluded "$item"; then mark=◇; else mark=◆; fi
+			if is_excluded "$item"; then mark=◇; else mark=◆; fi
 			echo "$2$branch$mark ${bold}$(label "$item")${off}"
 			walk "$item" "$next"
 			;;
@@ -130,9 +125,8 @@ walk() (
 )
 
 mode=upstream
-root=$(echo "$key_dirs" | awk -v d="$given" '$2 == d { print $1 }')
-if [ -z "$root" ] && [ -n "$(dir_of "$given")" ]; then root=$given; fi
-if [ -z "$root" ] && [ -d "$given" ] && [ "$(checkout_dir "${given##*/}")" = "$given" ]; then
+root=$(echo "$ledger" | awk -F'\t' -v g="$given" '$4 != "-" && ($4 == g || $5 == g) { print $4; exit }')
+if [ -z "$root" ] && [ -d "$given" ] && [ -n "$(echo "$ledger" | awk -F'\t' -v g="$given" '$3 "/" $1 == g')" ]; then
 	root=$given mode=checkout
 fi
 [ -n "$root" ] || { echo "error $1 is not a skill in upstream or this checkout" >&2; exit 2; }

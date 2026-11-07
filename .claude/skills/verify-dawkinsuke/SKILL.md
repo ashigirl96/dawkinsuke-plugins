@@ -45,7 +45,7 @@ find -L skills matt pstack -type l 2>/dev/null
 
 - `sh scripts/check-refs.sh`: 読み込まれたスキルの `*.md`（`ADR.md` を除く）から参照を拾い、抜けを 1 行ずつ出す。抜けが無ければ何も出さず exit 0、あれば exit 1、checkout を読めなければ exit 2。
   - `missing-file <file>: <path>`: 相対 path の向き先が無い。
-  - `missing-skill <file>: <name>`: upstream にあるが読み込まれていないスキルを名前で呼んでいる。
+  - `missing-skill <file>: <name>`: スキル台帳（`sh scripts/ledger.sh`）にあるが読み込まれていないスキルを名前で呼んでいる。
 - `sh scripts/try-include.sh <submodule>/<name>...`: 引数のスキルを `upstream/exclude.txt` から外した写しを一時ディレクトリに作り、そこで `check-refs.sh` を流す。checkout は変えない。標準エラーに sync の結果（`added <name>`）、標準出力に抜けが出る。exit code は `check-refs.sh` と同じで、引数が除外リストに無ければ exit 2。スキルを入れるかどうか決める前に使う。
 - `sh scripts/check-refs.test.sh`: repo を一時ディレクトリに写し、依存をわざと抜いて `check-refs.sh` が検出するかを確かめる。`ok` で終われば通過。`check-refs.sh` か `try-include.sh` を直したら流す。
 

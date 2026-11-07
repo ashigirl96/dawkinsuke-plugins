@@ -8,7 +8,7 @@ matt はタグで版を切る。`<旧版>` と `<新版>` はタグ名。
 2. `git -C upstream/mattpocock-skills fetch --tags` を流す。
 3. `git -C upstream/mattpocock-skills tag --sort=-v:refname | head -1` で新版を決める。新版が旧版と同じなら、そう報告して終える。
 4. `git -C upstream/mattpocock-skills ls-tree -d --name-only <旧版> skills/` と、同じコマンドを `<新版>` で流し、bucket の並びを比べる。
-	- `scripts/layout.sh` の `sources` にある bucket が新版で消えていれば、止めてユーザーに報告する。このまま進むと、`sync-skills.sh` がその bucket の symlink をすべて消す。
+	- `scripts/ledger.sh` の `sources` にある bucket が新版で消えていれば、止めてユーザーに報告する。このまま進むと、`ledger.sh` が exit 2 で止まり、それを使う `sync-skills.sh` と検査がすべて通らなくなる。
 	- 新版で増えた bucket があれば、`sources` と `CLAUDE.md` の upstream の節に足すかをユーザーに聞く。`sources` に無い bucket のスキルは、`sync-skills.sh` が何も言わずに飛ばす。
 5. `git -C upstream/mattpocock-skills checkout <新版>` を流す。
 6. `CLAUDE.md` の「使っているタグ」を新版に書き換える。

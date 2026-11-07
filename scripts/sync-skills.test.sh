@@ -36,7 +36,7 @@ sh scripts/sync-skills.sh > out
 [ -L pstack/skills/bro ] || fail "pstack link was removed"
 
 rm matt/skills/tdd
-mkdir matt/skills/tdd && touch matt/skills/tdd/ADR.md
+mkdir matt/skills/tdd && printf -- '---\nupstream: skills/engineering/tdd\nown: []\n---\n' > matt/skills/tdd/ADR.md
 ln -sfn ../../upstream/mattpocock-skills/skills/engineering/nope matt/skills/gone
 ln -sfn ../../upstream/mattpocock-skills/skills/productivity/teach matt/skills/code-review
 sh scripts/sync-skills.sh > out
@@ -70,7 +70,7 @@ sh scripts/sync-skills.sh > out
 echo 'mattpocock-skills/handoff prototype' > upstream/rename.txt
 sh scripts/sync-skills.sh > out
 [ "$(readlink matt/skills/prototype)" = ../../upstream/mattpocock-skills/skills/engineering/prototype ] || fail "rename destination took over another skill's link"
-grep -qx 'conflict prototype (matt/skills/prototype already links mattpocock-skills/prototype)' out || fail "rename collision not reported"
+grep -qx 'conflict prototype (matt/skills/prototype has the same name)' out || fail "rename collision not reported"
 sh scripts/sync-skills.sh > out
 grep -q relinked out && fail "rename collision relinked on every run"
 

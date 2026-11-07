@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 ## 1. 対象を決める
 
-ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` と `pstack/skills/<name>` のうちあるほうを見る。pstack の文書（`pstack/docs/<name>`）を変えたいときは、そこを見る。見つかった側で、`docs/fork.md` の表から `<置き場>` と `<submodule>` を決める。
+ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` と `pstack/skills/<name>` のうちあるほうを見る。pstack の文書（`pstack/docs/<name>`）を変えたいときは、そこを見る。`<置き場>` と `<submodule>` は `docs/fork.md` の冒頭に従って決める。
 
 - symlink なら fork にする。
 	1. `readlink <置き場>/<name>` の `upstream/<submodule>/` より後ろを、upstream のパスとする。
@@ -17,10 +17,10 @@ disable-model-invocation: true
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
 - どちらにも無いなら、上から順に当てはまるものを選ぶ。
 	- `skills/<name>` にある: 自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
-	- `grep -x '[^/]*/<name>' upstream/exclude.txt` が当たる: 除外中のスキルを、入れると同時に fork にする。除外したまま使える依存に参照を書き換えるのが、よくある用途。`<name>` が `upstream/rename.txt` の行の右側（新しい名前）なら、その行の左側の名前で探し、upstream のパスもその名前で探す。写す先は新しい名前の `<置き場>/<name>` のままにする。
-		1. 当たった行の submodule から、`docs/fork.md` の表で `<置き場>` を決める。2 行当たったら、どちらを fork するかユーザーに聞く。
-		2. `scripts/layout.sh` の `sources` で右側が `<置き場>` の行ごとに、左側のディレクトリの下に `<name>` があるかを `ls -d` で探す。見つかったパスから `upstream/<submodule>/` を除いた部分を、upstream のパスとする。
-		3. 当たった行を `upstream/exclude.txt` から消し、`cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
+	- `sh scripts/ledger.sh <name>` に状態（6 列目）が `excluded` の行がある: 除外中のスキルを、入れると同時に fork にする。除外したまま使える依存に参照を書き換えるのが、よくある用途。改名したスキルでも、行の名前（1 列目）は新しい名前になっているので、写す先はその名前の `<置き場>/<name>` にする。
+		1. 行の置き場（3 列目）を `<置き場>`、key（4 列目）の `/` より前を `<submodule>` とする。2 行あれば、どちらを fork するかユーザーに聞く。
+		2. 行の upstream（5 列目）から `upstream/<submodule>/` を除いた部分を、upstream のパスとする。
+		3. key の行を `upstream/exclude.txt` から消し、`cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
 		4. `<置き場>/<name>/ADR.md` を、`ADR-FORMAT.md` のテンプレートの frontmatter と `# <name> の fork` の見出しだけで作る。
 	- どれでもない: upstream に無い名前なので、ユーザーにそう伝えて終える。
 

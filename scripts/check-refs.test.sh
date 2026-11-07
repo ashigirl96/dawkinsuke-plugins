@@ -51,6 +51,7 @@ fio=pstack/skills/figure-it-out/SKILL.md
 grep -qx "missing-skill $fio: principle-encode-lessons-in-structure" out || fail "principle skill named without its prefix not reported"
 grep -qx "missing-skill $fio: poteto-mode" out || fail "skill named in bold not reported"
 
+sed 's|^cursor-plugins/blast-radius$|& # why|' upstream/exclude.txt > exclude.txt && mv exclude.txt upstream/exclude.txt
 sh scripts/try-include.sh cursor-plugins/blast-radius > out 2> /dev/null || true
 grep -qx "missing-skill pstack/skills/blast-radius/SKILL.md: unslop" out || fail "skill named in backticks not reported"
 

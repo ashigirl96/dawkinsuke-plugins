@@ -403,9 +403,10 @@ export const register: Register = on => {
   })
 
   // A message that waits for the handback skips session.receive: Claude Code writes it into the transcript as a hidden prompt row.
-  on('session.append', async ($, e, next) => {
+  // The door matcher keeps the organization's policy plugin, which bypasses this tier on rows of other doors, from skipping this hook.
+  on('session.append', { door: 'prompt' }, async ($, e, next) => {
     const text = e.message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('\n')
-    if (e.agentId && e.door === 'prompt' && e.message.isMeta && !isChildNotice(text) && (await codexAgentOf($, e.agentId))) hold(e.agentId, text)
+    if (e.agentId && e.message.isMeta && !isChildNotice(text) && (await codexAgentOf($, e.agentId))) hold(e.agentId, text)
     return next(e)
   })
 

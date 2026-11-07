@@ -47,7 +47,9 @@ mod を書くときに、型定義（`.claude-plugin/types/`）と plugin-author
 
 ## 組織の管理 plugin
 
-- 組織の管理 plugin（`cc-plugin-sec-default`）が先に走る環境では、`--plugin-dir` で読ませた mod について、起動時や呼び出しのたびに `<mod>: its <event> hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` の 1 行が出る。`session.append` と `tool.check` で出たが、どちらもログでは mod の hook が走って効いていた。どの評価で飛ばされたのかは分かっていない（#33・#36）。
+- 組織の管理 plugin（`cc-plugin-sec-default`）が先に走る環境では、`--plugin-dir` で読ませた mod について、起動時や呼び出しのたびに `<mod>: its <event> hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` の 1 行が出る。`session.append` と `tool.check` で出たが、どちらもログでは mod の hook が走って効いていた（#33・#36）。
+- この 1 行は、管理 plugin が `next.to` でユーザー層を飛ばした行に、その mod の hook が掛かっていたときだけ出る。`session.append` では、管理 plugin は人が打った `door: 'prompt'` の行は飛ばさず、それ以外の入口の行を飛ばす。hook を `{ door: 'prompt' }` の matcher で絞ると出なくなり、`{ door: 'compaction' }` に絞っても出なくなる（Claude Code 2.1.319、最初の 1 行を打った直後に 1 度出ていた）。
+- `claude plugin test` で `tier: 'prepend'` の inline plugin に `next.to` で飛ばさせると、同じ 1 行は落ちたテストに添えられる「the engine reported」にだけ出る。テストからこの報告を読む API は無く、飛ばした側の `next.trace` にも `$.http.fetch` で外へ送った値にも現れなかったので、この飛ばしをテストで赤にできていない。
 
 ## `claude plugin test`
 

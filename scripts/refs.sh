@@ -29,6 +29,7 @@ skill_refs() {
 upstream_name() {
 	if echo "$upstream_names" | grep -qx -e "$1"; then echo "$1"
 	elif echo "$upstream_names" | grep -qx "principle-$1"; then echo "principle-$1"
+	else renames | awk -v n="$1" '$2 == n { sub(/.*\//, "", $1); print $1; exit }'
 	fi
 }
 

@@ -31,6 +31,7 @@ script の出力と fork の状態のうち、次のものは自分で片付け�
 	- `conflict <name> (<dir>/<name> is a directory without ADR.md)`: 括弧の中の `<dir>` に、置き場所を誤った実ディレクトリがある。script は両方の置き場を見るので、`<dir>` は上げていない側のこともある。`git log -1 --format=%H -- <dir>/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:<dir>/<name>/ADR.md > <dir>/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
 - `warning <entry> in upstream/exclude.txt` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直す。
 - `warning <entry> in upstream/rename.txt` の行: 改名リストの名前が upstream にない。upstream で改名されたなら、行の左側を新しい名前に直す。消えたなら、行を消す。
+- `conflict <name> (<link> already links <submodule>/<name>)`: 改名リストの新しい名前が、同じ置き場の別のスキルと重なった。括弧の中のスキルが残った。改名リストの新しい名前を、重ならない名前に直す。
 - `removed <link> (wrong name)`: symlink の名前が、改名リストから決まる名前と違った。script が正しい名前で張り直すので、そのままでよい。
 - fork の `upstream` のパスが upstream にない: `ls upstream/<submodule>/<upstream のパス>` が失敗するものがそれにあたる。移動先に付け替えるか、`ADR.md` を消して `skills/<name>` に移し、自作にするか、fork ごと消すか、ユーザーに選んでもらう。
 

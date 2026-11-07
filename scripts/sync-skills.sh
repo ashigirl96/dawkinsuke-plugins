@@ -59,6 +59,11 @@ echo "$sources" | while read -r parent dest; do
 		link="$dest/$name"
 		if [ -L "$link" ]; then
 			[ "$(readlink "$link")" = "$target" ] && continue
+			owner=$(key "$(readlink "$link")")
+			if [ "$owner" != "$(key "$dir")" ]; then
+				echo "conflict $name ($link already links $owner)"
+				continue
+			fi
 			ln -sfn "$target" "$link"
 			echo "relinked $name"
 		elif [ -e "$link" ]; then

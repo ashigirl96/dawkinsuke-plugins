@@ -15,7 +15,7 @@ out=$(for name in $loaded; do
 		file_refs "$f" | sort -u | while read -r ref; do
 			resolve_ref "$f" "$ref" > /dev/null || echo "missing-file $f: $ref"
 		done
-		skill_refs "$f" | while read -r ref; do upstream_name "$ref"; done | sort -u | while read -r ref; do
+		skill_refs "$f" | while read -r ref; do upstream_name "$ref"; done | while read -r ref; do alias_of "$ref"; done | sort -u | while read -r ref; do
 			echo "$loaded" | grep -qx -e "$ref" || echo "missing-skill $f: $ref"
 		done
 	done

@@ -12,6 +12,8 @@ fork は matt と pstack のどちらのスキルにも作れる。このファ�
 
 `pstack/docs` は、pstack のスキルが `../../docs/` で読む文書の置き場。`pstack/docs/<name>` は upstream の `harness/pstack/claude-code/docs/<name>` への symlink か、その fork で、スキルと同じ手順で fork する。今の fork は adapter の `harness`（`docs/adr/0001-pstack-adapter-fork.md`）。
 
+`<name>` は置き場での名前で、`upstream/rename.txt` で改名したスキルでは upstream の名前と違う。fork の元は、`ADR.md` の `upstream` のパスでたどる。今は `matt/skills/pull-request` の元が `skills/engineering/pr`。
+
 ## adapter を読ませるスキルの fork
 
 pstack のスキルの多くは、冒頭で adapter（`pstack/docs/harness/claude-code.md`）を読ませる。こうしたスキルを fork するときは、adapter を読ませる行を消し、本文を adapter の表に従って Claude Code の名前で書き換える（`docs/adr/0005-fork-adapter-readers.md`）。`ADR.md` の決定には、従った節を「adapter の `Tools` 節」のように、節の見出しを backtick で囲んで引く。別の pstack スキルを呼ぶ箇所は「Call the Skill tool with `<name>`」と書く。

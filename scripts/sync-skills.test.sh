@@ -62,4 +62,20 @@ echo nope/missing > upstream/exclude.txt
 sh scripts/sync-skills.sh > out
 grep -qx 'warning nope/missing in upstream/exclude.txt is not an upstream skill' out || fail "unknown exclude entry not warned"
 
+echo 'mattpocock-skills/handoff hand-off' > upstream/rename.txt
+sh scripts/sync-skills.sh > out
+[ ! -e matt/skills/handoff ] || fail "old name of a renamed skill is still linked"
+[ "$(readlink matt/skills/hand-off)" = ../../upstream/mattpocock-skills/skills/productivity/handoff ] || fail "renamed skill was not linked under its new name"
+
+echo 'mattpocock-skills/handoff prototype' > upstream/rename.txt
+sh scripts/sync-skills.sh > out
+[ "$(readlink matt/skills/prototype)" = ../../upstream/mattpocock-skills/skills/engineering/prototype ] || fail "rename destination took over another skill's link"
+grep -qx 'conflict prototype (matt/skills/prototype already links mattpocock-skills/prototype)' out || fail "rename collision not reported"
+sh scripts/sync-skills.sh > out
+grep -q relinked out && fail "rename collision relinked on every run"
+
+echo 'nope/missing gone' > upstream/rename.txt
+sh scripts/sync-skills.sh > out
+grep -qx 'warning nope/missing in upstream/rename.txt is not an upstream skill' out || fail "unknown rename entry not warned"
+
 echo ok

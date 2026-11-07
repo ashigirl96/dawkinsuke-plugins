@@ -105,7 +105,7 @@ flowchart TD
   E1 --> R["code-review"]
   E2 --> R
   E3 --> R
-  R --> PR["pr"]
+  R --> PR["pr（この repo では pull-request）"]
   PR --> RT["retro: 環境の改善を提案"]
 ```
 

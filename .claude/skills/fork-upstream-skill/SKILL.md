@@ -17,7 +17,7 @@ disable-model-invocation: true
 - `ADR.md` を持つ実ディレクトリなら、すでに fork なので、そのまま次へ進む。
 - どちらにも無いなら、上から順に当てはまるものを選ぶ。
 	- `skills/<name>` にある: 自作のスキルなので、この手順の対象外。ユーザーにそう伝え、普通に編集する。
-	- `grep -x '[^/]*/<name>' upstream/exclude.txt` が当たる: 除外中のスキルを、入れると同時に fork にする。除外したまま使える依存に参照を書き換えるのが、よくある用途。
+	- `grep -x '[^/]*/<name>' upstream/exclude.txt` が当たる: 除外中のスキルを、入れると同時に fork にする。除外したまま使える依存に参照を書き換えるのが、よくある用途。`<name>` が `upstream/rename.txt` の行の右側（新しい名前）なら、その行の左側の名前で探し、upstream のパスもその名前で探す。写す先は新しい名前の `<置き場>/<name>` のままにする。
 		1. 当たった行の submodule から、`docs/fork.md` の表で `<置き場>` を決める。2 行当たったら、どちらを fork するかユーザーに聞く。
 		2. `scripts/layout.sh` の `sources` で右側が `<置き場>` の行ごとに、左側のディレクトリの下に `<name>` があるかを `ls -d` で探す。見つかったパスから `upstream/<submodule>/` を除いた部分を、upstream のパスとする。
 		3. 当たった行を `upstream/exclude.txt` から消し、`cp -R upstream/<submodule>/<upstream のパス> <置き場>/<name>` を流す。
@@ -53,4 +53,4 @@ adapter（`pstack/docs/harness`）を変えたときは、`docs/fork.md` の「a
 
 ## 6. 報告する
 
-足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A <置き場>/<name> upstream/exclude.txt` で、足したファイルも含める。
+足した、書き直した、消した決定をユーザーに伝え、`FORK.diff` の場所を示す。commit するかを聞き、commit するときは `git add -A <置き場>/<name> upstream/exclude.txt upstream/rename.txt` で、足したファイルも含める。

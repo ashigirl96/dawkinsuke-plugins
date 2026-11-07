@@ -15,6 +15,7 @@ grep -q '\.\./implement/SKILL.md' out && fail "reference through a symlinked sib
 grep -q 'src/billing' out && fail "path inside a code fence was reported"
 grep -q 'learning-records' out && fail "working-directory path was reported"
 grep -q ': how$' out && fail "bold emphasis was reported as a skill"
+grep -q ': pr$' out && fail "upstream name of a renamed skill was reported"
 
 echo mattpocock-skills/implement >> upstream/exclude.txt
 sh scripts/sync-skills.sh > /dev/null
@@ -37,6 +38,11 @@ grilling=matt/skills/grilling/SKILL.md
 echo 'Then type /dawkinsuke:unslop.' >> $grilling
 sh scripts/check-refs.sh > out || true
 grep -qx "missing-skill $grilling: unslop" out || fail "skill named with the plugin prefix not reported"
+echo mattpocock-skills/pr >> upstream/exclude.txt
+rm -r matt/skills/pull-request
+echo 'Then type /pull-request.' >> $grilling
+sh scripts/check-refs.sh > out || true
+grep -qx "missing-skill $grilling: pull-request" out || fail "skill named by its new name not reported"
 cp upstream/exclude.txt exclude.before
 sh scripts/try-include.sh cursor-plugins/figure-it-out > out 2> /dev/null || true
 cmp -s upstream/exclude.txt exclude.before || fail "try-include changed the checkout"

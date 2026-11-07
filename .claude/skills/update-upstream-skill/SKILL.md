@@ -29,7 +29,10 @@ script の出力と fork の状態のうち、次のものは自分で片付け�
 	- `conflict <name> (skills/<name> has the same name)`: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。upstream を捨てるなら `upstream/exclude.txt` に `<submodule>/<name>` を足し、自作を捨てるなら `skills/<name>` を消す。
 	- `conflict <name> (matt/skills/<name> has the same name)` と `conflict <name> (pstack/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルがあり、括弧の中の、先に張られていた側が残った。どちらを使うかユーザーに選んでもらい、使わない側を `upstream/exclude.txt` に `mattpocock-skills/<name>` か `cursor-plugins/<name>` で足す。
 	- `conflict <name> (<dir>/<name> is a directory without ADR.md)`: 括弧の中の `<dir>` に、置き場所を誤った実ディレクトリがある。script は両方の置き場を見るので、`<dir>` は上げていない側のこともある。`git log -1 --format=%H -- <dir>/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:<dir>/<name>/ADR.md > <dir>/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
-- `warning` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直す。
+- `warning <entry> in upstream/exclude.txt` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直す。
+- `warning <entry> in upstream/rename.txt` の行: 改名リストの名前が upstream にない。upstream で改名されたなら、行の左側を新しい名前に直す。消えたなら、行を消す。
+- `conflict <name> (<link> already links <submodule>/<name>)`: 改名リストの新しい名前が、同じ置き場の別のスキルと重なった。括弧の中のスキルが残った。改名リストの新しい名前を、重ならない名前に直す。
+- `removed <link> (wrong name)`: symlink の名前が、改名リストから決まる名前と違った。script が正しい名前で張り直すので、そのままでよい。
 - fork の `upstream` のパスが upstream にない: `ls upstream/<submodule>/<upstream のパス>` が失敗するものがそれにあたる。移動先に付け替えるか、`ADR.md` を消して `skills/<name>` に移し、自作にするか、fork ごと消すか、ユーザーに選んでもらう。
 
 除外リストを書き換えたら、もう一度流す。
@@ -81,4 +84,4 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 	- 足した、張り直した、消した symlink と、除外リストに足したスキル
 	- fork ごとの衝突と、grilling で決めたこと、`FORK.diff` の場所
 	- 手順 6 で見つけた抜けと、その対処
-2. commit するかをユーザーに聞く。commit するときは `git add -A matt pstack skills docs/philosophy CLAUDE.md upstream/exclude.txt scripts/layout.sh upstream/<submodule>` で、upstream が足したファイルも含める。
+2. commit するかをユーザーに聞く。commit するときは `git add -A matt pstack skills docs/philosophy CLAUDE.md upstream/exclude.txt upstream/rename.txt scripts/layout.sh upstream/<submodule>` で、upstream が足したファイルも含める。

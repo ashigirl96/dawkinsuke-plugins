@@ -1,0 +1,10 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/pr/SKILL.md matt/skills/pull-request/SKILL.md
+--- upstream/mattpocock-skills/skills/engineering/pr/SKILL.md
++++ matt/skills/pull-request/SKILL.md
+@@ -1,5 +1,5 @@
+ ---
+-name: pr
++name: pull-request
+ description: "PR の本文を書くときに使う。"
+ metadata:
+   credits:

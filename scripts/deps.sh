@@ -56,7 +56,7 @@ location_of() {
 resolve() {
 	if [ "$mode" = checkout ]; then
 		for name in "$2" "principle-$2"; do
-			found=$(checkout_dir "$name")
+			found=$(checkout_dir "$(alias_of "$name")")
 			if [ -n "$found" ]; then echo "$found"; return; fi
 		done
 	fi

@@ -15,6 +15,7 @@ grep -q '\.\./implement/SKILL.md' out && fail "reference through a symlinked sib
 grep -q 'src/billing' out && fail "path inside a code fence was reported"
 grep -q 'learning-records' out && fail "working-directory path was reported"
 grep -q ': how$' out && fail "bold emphasis was reported as a skill"
+grep -q ': pr$' out && fail "upstream name of a renamed skill was reported"
 
 echo mattpocock-skills/implement >> upstream/exclude.txt
 sh scripts/sync-skills.sh > /dev/null

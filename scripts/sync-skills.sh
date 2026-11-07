@@ -33,6 +33,9 @@ for d in $link_dirs; do
 		elif ! owns "$d" "$target"; then
 			rm "$link"
 			echo "removed $link (wrong directory)"
+		elif [ "$name" != "$(link_name "$(key "$target")")" ]; then
+			rm "$link"
+			echo "removed $link (wrong name)"
 		fi
 	done
 done
@@ -40,7 +43,7 @@ done
 echo "$sources" | while read -r parent dest; do
 	for dir in "$parent"/*; do
 		[ -d "$dir" ] || continue
-		name=$(basename "$dir")
+		name=$(link_name "$(key "$dir")")
 		excluded "$(key "$dir")" && continue
 		# 名前空間は 1 つなので、先に張られた方を残し、実行ごとに入れ替わらないようにする。
 		clash=
@@ -75,4 +78,7 @@ all_keys=$(echo "$sources" | while read -r parent dest; do
 done)
 sed 's/#.*//; s/[[:space:]]*$//' "$exclude_file" | grep -v '^$' | while read -r entry; do
 	echo "$all_keys" | grep -qx "$entry" || echo "warning $entry in $exclude_file is not an upstream skill"
+done
+renames | while read -r entry new; do
+	echo "$all_keys" | grep -qx "$entry" || echo "warning $entry in $rename_file is not an upstream skill"
 done

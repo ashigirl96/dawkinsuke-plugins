@@ -55,4 +55,7 @@ status=0
 sh scripts/deps.sh mattpocock-skills/no-such-skill 2> /dev/null || status=$?
 [ "$status" = 2 ] || fail "unknown skill did not exit 2 (got $status)"
 
+sh scripts/deps.sh matt/skills/pull-request > out
+grep -qF '◆ pr' out && fail "renamed skill listed itself under its upstream name"
+
 echo ok

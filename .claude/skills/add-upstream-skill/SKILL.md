@@ -11,7 +11,7 @@ disable-model-invocation: true
 ## 1. 対象を決める
 
 1. `git submodule status` の行頭に `-` があれば、`git submodule update --init` を流す。
-2. `upstream/exclude.txt` から対象の行を探す。`<name>` だけなら `grep -x '[^/]*/<name>' upstream/exclude.txt` で探す。
+2. `upstream/exclude.txt` から対象の行を探す。`<name>` だけなら `grep -x '[^/]*/<name>' upstream/exclude.txt` で探す。`<name>` が `upstream/rename.txt` の行の右側（新しい名前）なら、その行の左側の `<submodule>/<name>` で探す。
    - 1 行: それが対象。
    - 2 行: 2 つの upstream に同じ名前がある。どちらを入れるかユーザーに聞く。
    - 0 行: `matt/skills/<name>` か `pstack/skills/<name>` があれば、もう入っていると伝えて終わる。無ければ upstream に無い名前なので、そう伝えて終わる。

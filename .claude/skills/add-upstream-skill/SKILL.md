@@ -11,17 +11,17 @@ disable-model-invocation: true
 ## 1. 対象を決める
 
 1. `git submodule status` の行頭に `-` があれば、`git submodule update --init` を流す。
-2. `upstream/exclude.txt` から対象の行を探す。`<name>` だけなら `grep -x '[^/]*/<name>' upstream/exclude.txt` で探す。`<name>` が `upstream/rename.txt` の行の右側（新しい名前）なら、その行の左側の `<submodule>/<name>` で探す。
+2. `sh scripts/ledger.sh <name>` で、スキル台帳から対象の行を引く。名前は改名後でも upstream の名前でもよい。状態（6 列目）が `excluded` の行の key（4 列目）を見る。
    - 1 行: それが対象。
    - 2 行: 2 つの upstream に同じ名前がある。どちらを入れるかユーザーに聞く。
-   - 0 行: `matt/skills/<name>` か `pstack/skills/<name>` があれば、もう入っていると伝えて終わる。無ければ upstream に無い名前なので、そう伝えて終わる。
+   - 0 行: 状態が `use` の行があれば、もう入っていると伝えて終わる。行が 1 つも無ければ upstream に無い名前なので、そう伝えて終わる。
 
 ## 2. 依存の閉包を求める
 
 対象から始めて、除外中のスキルへの依存をたどり尽くす。
 
 1. 外す一覧を対象 1 つで始め、`sh scripts/try-include.sh <一覧>` を流す。
-2. 出力の `missing-skill <file>: <name>` の名前ごとに、手順 1 と同じ `grep` で `upstream/exclude.txt` の行を探し、一覧に足す。2 行見つかったら、依存元と同じ submodule の行を選ぶ。
+2. 出力の `missing-skill <file>: <name>` の名前ごとに、手順 1 と同じく台帳から状態が `excluded` の行を引き、その key を一覧に足す。2 行見つかったら、依存元と同じ submodule の行を選ぶ。
 3. 一覧が増えたら 1 に戻る。
 
 一覧が増えなくなったら閉包が求まっている。そのときの `try-include.sh` の出力を **残りの抜け** と呼ぶ。

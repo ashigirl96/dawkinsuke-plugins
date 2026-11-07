@@ -1,89 +1,59 @@
 #!/bin/sh
+# 置き場の symlink をスキル台帳に合わせる。
 set -eu
 cd "$(dirname "$0")/.."
 
-. scripts/layout.sh
+ledger=$(sh scripts/ledger.sh)
+places=$(sh scripts/ledger.sh --places)
 
 up() {
 	echo "$1" | sed 's|[^/]*|..|g'
 }
 
-# $1 に置いた symlink の向き先 $2 が、$1 に張るはずの upstream を指しているか。
-owns() {
-	echo "$sources" | {
-		while read -r parent dest; do
-			[ "$dest" = "$1" ] || continue
-			case "$2" in "$(up "$dest")/$parent/"*) exit 0 ;; esac
-		done
-		exit 1
-	}
+# 置き場の symlink $1 が張られているべき先。張られるべきでなければ空。
+wanted() {
+	echo "$ledger" | awk -F'\t' -v l="$1" '$2 == "symlink" && $6 == "use" && $3 "/" $1 == l { print $5 }'
 }
 
-for d in $link_dirs; do
-	for link in "$d"/*; do
+for place in $places; do
+	for link in "$place"/*; do
 		[ -L "$link" ] || continue
-		name=$(basename "$link")
 		target=$(readlink "$link")
-		if excluded "$(key "$target")"; then
-			rm "$link"
-			echo "removed $name (excluded)"
-		elif [ ! -e "$link" ]; then
-			rm "$link"
-			echo "removed $name (gone upstream)"
-		elif ! owns "$d" "$target"; then
-			rm "$link"
-			echo "removed $link (wrong directory)"
-		elif [ "$name" != "$(link_name "$(key "$target")")" ]; then
-			rm "$link"
-			echo "removed $link (wrong name)"
-		fi
-	done
-done
-
-echo "$sources" | while read -r parent dest; do
-	for dir in "$parent"/*; do
-		[ -d "$dir" ] || continue
-		name=$(link_name "$(key "$dir")")
-		excluded "$(key "$dir")" && continue
-		# 名前空間は 1 つなので、先に張られた方を残し、実行ごとに入れ替わらないようにする。
-		clash=
-		for other in $link_dirs; do
-			[ "$other" = "$dest" ] && continue
-			if [ -e "$other/$name" ] || [ -L "$other/$name" ]; then clash=$other/$name; fi
-		done
-		if [ -n "$clash" ]; then
-			echo "conflict $name ($clash has the same name)"
+		want=$(wanted "$link")
+		if [ -n "$want" ]; then
+			[ "$target" = "$(up "$place")/$want" ] && continue
+			ln -sfn "$(up "$place")/$want" "$link"
+			echo "relinked ${link##*/}"
 			continue
 		fi
-		target="$(up "$dest")/$dir"
-		link="$dest/$name"
-		if [ -L "$link" ]; then
-			[ "$(readlink "$link")" = "$target" ] && continue
-			owner=$(key "$(readlink "$link")")
-			if [ "$owner" != "$(key "$dir")" ]; then
-				echo "conflict $name ($link already links $owner)"
-				continue
-			fi
-			ln -sfn "$target" "$link"
-			echo "relinked $name"
-		elif [ -e "$link" ]; then
-			[ -f "$link/ADR.md" ] || echo "conflict $name ($link is a directory without ADR.md)"
+		key=$(echo "$target" | sed 's|^\(\.\./\)*upstream/||; s|/.*/|/|')
+		if echo "$ledger" | awk -F'\t' -v k="$key" '$4 == k && $6 == "excluded"' | grep -q .; then
+			reason="${link##*/} (excluded)"
+		elif [ ! -e "$link" ]; then
+			reason="${link##*/} (gone upstream)"
 		else
-			ln -s "$target" "$link"
-			echo "added $name"
+			reason="$link (not in the ledger)"
 		fi
+		rm "$link"
+		echo "removed $reason"
 	done
 done
 
-all_keys=$(echo "$sources" | while read -r parent dest; do
-	for dir in "$parent"/*; do
-		[ -d "$dir" ] || continue
-		key "$dir"
-	done
-done)
-sed 's/#.*//; s/[[:space:]]*$//' "$exclude_file" | grep -v '^$' | while read -r entry; do
-	echo "$all_keys" | grep -qx "$entry" || echo "warning $entry in $exclude_file is not an upstream skill"
+echo "$ledger" | awk -F'\t' '$2 == "symlink" && $6 == "use" { print $3 "\t" $1 "\t" $5 }' | while IFS='	' read -r place name upstream; do
+	[ -L "$place/$name" ] && continue
+	ln -s "$(up "$place")/$upstream" "$place/$name"
+	echo "added $name"
 done
-renames | while read -r entry new; do
-	echo "$all_keys" | grep -qx "$entry" || echo "warning $entry in $rename_file is not an upstream skill"
+
+echo "$ledger" | awk -F'\t' '
+	$6 == "use" || $6 == "no-adr" || $6 == "gone" { holder[$1] = $3 "/" $1 }
+	$6 == "conflict" { lost[++n] = $1 }
+	$6 == "no-adr" { print "conflict " $1 " (" $3 "/" $1 " is a directory without ADR.md)" }
+	END { for (i = 1; i <= n; i++) print "conflict " lost[i] " (" holder[lost[i]] " has the same name)" }'
+
+keys=$(echo "$ledger" | awk -F'\t' '$6 != "outside" { print $4 }')
+for list in upstream/exclude.txt upstream/rename.txt; do
+	sed 's/#.*//' "$list" | awk 'NF { print $1 }' | while read -r entry; do
+		echo "$keys" | grep -qx "$entry" || echo "warning $entry in $list is not an upstream skill"
+	done
 done

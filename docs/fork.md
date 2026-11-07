@@ -2,13 +2,7 @@
 
 `/fork-upstream-skill`（fork を作る・変える）と `/update-upstream-skill`（upstream を上げて fork を作り直す）の両方がこのファイルを前提にする。
 
-fork は matt と pstack のどちらのスキルにも作れる。このファイルの `<置き場>` と `<submodule>` は、fork のある側に合わせて次のように読む。
-
-| 置き場 | submodule |
-|---|---|
-| `matt/skills` | `mattpocock-skills` |
-| `pstack/skills` | `cursor-plugins` |
-| `pstack/docs` | `cursor-plugins` |
+fork は matt と pstack のどちらのスキルにも作れる。このファイルの `<置き場>` と `<submodule>` は、スキルなら `sh scripts/ledger.sh <name>`（スキル台帳）の行の置き場（3 列目）と、key（4 列目）の `/` より前で読む。文書の fork は台帳に載らないので、置き場を `pstack/docs`、submodule を `cursor-plugins` と読む。
 
 `pstack/docs` は、pstack のスキルが `../../docs/` で読む文書の置き場。`pstack/docs/<name>` は upstream の `harness/pstack/claude-code/docs/<name>` への symlink か、その fork で、スキルと同じ手順で fork する。今の fork は adapter の `harness`（`docs/adr/0001-pstack-adapter-fork.md`）。
 

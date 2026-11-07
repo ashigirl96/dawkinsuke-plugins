@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 対象は `$ARGUMENTS`。`matt` か `pstack` のどちらかで、それ以外ならどちらを上げるかユーザーに聞く。1 回に上げるのは 1 つだけ。
 
-最初に `docs/fork.md`、`docs/ADR-FORMAT.md`、対象の版の扱い（`matt` なら [matt.md](matt.md)、`pstack` なら [pstack.md](pstack.md)）を読む。`<置き場>` と `<submodule>` は `docs/fork.md` の表で対象の行を使う。`<旧版>` と `<新版>` は、版の扱いのファイルが決める。`scripts/layout.sh` の `sources` で、upstream の中でスキルが並ぶディレクトリ（`skills/engineering` など）を bucket と呼ぶ。
+最初に `docs/fork.md`、`docs/ADR-FORMAT.md`、対象の版の扱い（`matt` なら [matt.md](matt.md)、`pstack` なら [pstack.md](pstack.md)）を読む。`<置き場>` と `<submodule>` は `docs/fork.md` の冒頭に従って決める。`<旧版>` と `<新版>` は、版の扱いのファイルが決める。`scripts/ledger.sh` の `sources` で、upstream の中でスキルが並ぶディレクトリ（`skills/engineering` など）を bucket と呼ぶ。
 
 ## 1. 始める前に
 
@@ -84,4 +84,4 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 	- 足した、張り直した、消した symlink と、除外リストに足したスキル
 	- fork ごとの衝突と、grilling で決めたこと、`FORK.diff` の場所
 	- 手順 6 で見つけた抜けと、その対処
-2. commit するかをユーザーに聞く。commit するときは `git add -A matt pstack skills docs/philosophy CLAUDE.md upstream/exclude.txt upstream/rename.txt scripts/layout.sh upstream/<submodule>` で、upstream が足したファイルも含める。
+2. commit するかをユーザーに聞く。commit するときは `git add -A matt pstack skills docs/philosophy CLAUDE.md upstream/exclude.txt upstream/rename.txt scripts/ledger.sh upstream/<submodule>` で、upstream が足したファイルも含める。

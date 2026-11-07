@@ -17,6 +17,12 @@ sh scripts/check.sh 2> out && fail "broken frontmatter behind a pstack symlink p
 grep -q 'skills/bro' out || fail "broken skill not named in the output"
 cp skill.before "$skill"
 
+cp .claude-plugin/plugin.json plugin.before
+jq '.skills = ["./matt/skills"]' plugin.before > .claude-plugin/plugin.json
+sh scripts/check.sh 2> out && fail "plugin.json missing a place passed"
+grep -q 'plugin.json skills do not match' out || fail "plugin.json mismatch not reported"
+cp plugin.before .claude-plugin/plugin.json
+
 echo mattpocock-skills/code-review >> upstream/exclude.txt
 sh scripts/check.sh 2> out && fail "exclude.txt edited without syncing passed"
 grep -q 'sync-skills.sh changed the checkout' out || fail "drift not reported"

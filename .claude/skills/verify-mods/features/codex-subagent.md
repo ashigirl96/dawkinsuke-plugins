@@ -60,6 +60,6 @@
 - Claude の subagent の画面は `Bash` の行を `Ran 1 shell command` に畳むが、item を表す tool の行は畳まれず、いつも 1 つずつ並ぶ。
 - 一覧の 1 行の文は、Claude Code が要約を描くので古いまま残ることがある（`sleep 25 コマンドを実行中` など）。
 - `SubagentHandback` の区切りで届く SendMessage の文は `session.receive` を通らない。Claude Code が subagent の記録に `The coordinator sent a message while you were working:` で始まる隠れた行（`isMeta`）として書くので、mod は `session.append` でその文を持つ。codex にはその行の文がそのまま渡る。
-- `--plugin-dir` で読ませた session では、最初に `codex-subagent: its session.append hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` の 1 行が出る。組織の管理 plugin が先に走って、その行を mod の hook に回さなかったという知らせで、mod の失敗ではない（subagent の行は mod に届く）。
+- mod の `session.append` の hook は `{ door: 'prompt' }` の matcher で絞ってあるので、`codex-subagent: its session.append hook was skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` の 1 行は出ない。組織の管理 plugin は `door: 'prompt'` 以外の行で mod の層を飛ばすので、この 1 行が出たら matcher が外れている（`docs/research/claude-code-mod-engine.md`）。
 - `/tasks` の一覧を開いたままにすると入力を奪う。`Escape` で閉じてから打つ。
 - Agent tool に `name` の欄は無い。SendMessage の宛先は、起動の行と一覧に出る agentId になる。

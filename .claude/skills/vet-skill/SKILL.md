@@ -25,7 +25,7 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
 - **反する所**: 両者の思想とぶつかる所。たとえば、段から段へ進む判断を agent に渡す、検証の無い成果を増やす、仕組みで止められることを文章で頼む、code で試さない計画を磨く。
 - **接続点**: どのスキルを呼び、どのスキルから呼ばれるか。matt の流れ（`grill-with-docs` から `retro` まで）のどの段に入るか、pstack なら `poteto-mode` のどの層（Non-negotiables・principle・playbook・部品）に当たるか。語彙を扱うなら、語彙の唯一の出典である `domain-modeling`・`codebase-design` との重なり。
 - **起動の型**: 利用者だけが呼ぶか、model も呼べるか。利用者だけが呼ぶスキルから利用者だけが呼ぶ別のスキルを呼ぶ形になっていないか。model も呼べるなら、常に読み込まれる description の負荷に見合うか。配るスキルでは、plugin を入れたすべての repo にその負荷がかかる。
-- **この環境で効くか**: Claude Code の上で成り立つか。配るスキルなら、この repo のファイル（`docs/`・`upstream/`）を読まずに動くか。Cursor の機能を前提にしていないか。別の model family を前提にするなら、`docs/philosophy/pstack.md` の「書いた者と判定する者を分け、別の model に見せる」に従い codex subagent で読み替えられるかを答える。案が作業の場（Bench・Tab）や claude の session を扱うなら、`docs/monica.md` を読み、monica の上で成り立つかも答える。
+- **この環境で効くか**: Claude Code の上で成り立つか。配るスキルなら、この repo のファイル（`docs/`・`upstream/`）を読まずに動くか。Cursor の機能を前提にしていないか。別の model family を前提にするなら、`docs/philosophy/pstack.md` の「書いた者と判定する者を分け、別の model に見せる」に従い `gpt-*` の subagent で読み替えられるかを答える。案が作業の場（Bench・Tab）や claude の session を扱うなら、`docs/monica.md` を読み、monica の上で成り立つかも答える。
 
 ## 3. 代わりを探す
 

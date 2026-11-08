@@ -31,4 +31,3 @@
 - [用語をコマンドで引く](./glossary-command.md): `/glossary 用語` と `/glossary-session 用語` が右の pane に用語を出す。
 - [用語を聞くと pane に出る](./glossary-tool.md): 「〇〇って何?」と聞くと、model が `show_terms` を呼び、pane に出す。
 - [手動専用のスキルを連鎖で呼ぶ](./skill-chain.md): 呼び出し元のスキルが名指しした手動専用のスキルだけが、Skill tool で呼べる。
-- [codex subagent に任せると結果が届く](./codex-subagent.md): `codex-subagent:<モデル>` の Agent が本物の subagent として一覧に出て、その中で codex が走ってコマンドと編集が subagent の画面に 1 つずつ並び、最後の答えが Claude の subagent と同じ形で親に届く。TaskStop で止まる。

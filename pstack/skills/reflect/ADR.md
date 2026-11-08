@@ -19,7 +19,7 @@ upstream の reviewer の手引き（`references/` の 3 本）は、`SKILL.md` 
 
 ## gpt の reviewer は transcript だけで見させ、synthesizer は gpt に任せない
 
-upstream の reviewer と synthesizer は、どの model でも同じ MCP を使える。手元の `gpt-*` は codex subagent で走り、この session の MCP server を持たない。reviewer は transcript だけでも指摘を出せるので、gpt のまま走らせてそう言わせる。synthesizer は MCP で引用を確かめるのが役目なので、役割の行が `gpt-*` なら `general-purpose` で走らせるようにした。
+upstream の reviewer と synthesizer は、どの model でも同じ MCP を使える。手元の `gpt-*` の subagent は、この session の MCP server を持たない。reviewer は transcript だけでも指摘を出せるので、gpt のまま走らせてそう言わせる。synthesizer は MCP で引用を確かめるのが役目なので、役割の行が `gpt-*` なら `general-purpose` で走らせるようにした。
 
 ## transcript の slug の例を、home の外の path にする
 

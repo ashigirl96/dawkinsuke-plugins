@@ -15,4 +15,4 @@ upstream は subagent の推論の強さと速さを poteto-mode の Subagents �
 
 ## model 系統を Claude と gpt の 2 つにし、judge は gpt から選ぶ
 
-upstream は `claude-*`・`grok-*`・`composer-*` の系統と、slug を誤ったときに error から近い slug を選ぶ手順を持つ。手元の `model` は `opus`・`sonnet`・`haiku`・`fable` しか受けず、Claude 以外は codex subagent の `gpt-*` だけなので、系統を Claude と `gpt-*` の 2 つにし、近い slug を探す手順を、系統の既定に戻す手順にした。Claude Code の親は Claude で動くので、cross-judge は pool の `gpt-*` からだけ選ぶ。
+upstream は `claude-*`・`grok-*`・`composer-*` の系統と、slug を誤ったときに error から近い slug を選ぶ手順を持つ。手元の `model` は `opus`・`sonnet`・`haiku`・`fable` しか受けず、Claude 以外は `gpt-*` だけなので、系統を Claude と `gpt-*` の 2 つにし、近い slug を探す手順を、系統の既定に戻す手順にした。Claude Code の親は Claude で動くので、cross-judge は pool の `gpt-*` からだけ選ぶ。

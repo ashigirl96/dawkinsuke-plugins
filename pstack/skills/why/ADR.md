@@ -15,7 +15,7 @@ upstream は subagent の推論の強さと速さを poteto-mode の Subagents �
 
 ## MCP を持つ investigator は gpt に任せない
 
-upstream の investigators の既定は grok で、Cursor ではどの model も同じ MCP を使える。手元の既定の `gpt-6.1-sol` は codex subagent で走り、この session の MCP server を持たないので、MCP を受け持つ investigator は `general-purpose` で走らせて、そう言うようにした。
+upstream の investigators の既定は grok で、Cursor ではどの model も同じ MCP を使える。手元の既定の `gpt-6.1-sol` の subagent は、この session の MCP server を持たないので、MCP を受け持つ investigator は `general-purpose` で走らせて、そう言うようにした。
 
 ## MCP の一覧を、session の tool 名から取る
 

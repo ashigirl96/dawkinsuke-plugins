@@ -1,6 +1,6 @@
 ---
 name: verify-mods
-description: mods/ の mod（glossary・mermaid-render・skill-chain・codex-subagent）を本物の Claude Code の画面に checkout から読ませ、tmux で打って振る舞いを確かめる。mod の hooks を直したあと、Claude Code を上げたあと、mod が効いていないように見えるとき、`claude plugin test` は通るのに実機で崩れるかを見たいときに使う。
+description: mods/ の mod（glossary・mermaid-render・skill-chain）を本物の Claude Code の画面に checkout から読ませ、tmux で打って振る舞いを確かめる。mod の hooks を直したあと、Claude Code を上げたあと、mod が効いていないように見えるとき、`claude plugin test` は通るのに実機で崩れるかを見たいときに使う。
 ---
 
 確かめる対象は、`claude --setting-sources project --plugin-dir mods/<name>` で checkout から読み込んだ mod が、Claude Code の端末の画面と会話の記録に出す結果。`claude plugin test` の単体テストは engine の代わりの `$` で流すので、組織の管理 plugin や描画の幅による崩れは、ここでしか見えない。
@@ -54,7 +54,7 @@ $T stop <名前>                       # その session を消す
 何かおかしいと思ったら、最初にこれを流す。どれも何も書き換えない。
 
 ```sh
-for m in glossary mermaid-render skill-chain codex-subagent; do
+for m in glossary mermaid-render skill-chain; do
   claude plugin validate mods/$m | tail -1
   claude --setting-sources project --plugin-dir mods/$m plugin details $m | sed -n 3p
 done
@@ -80,13 +80,12 @@ ls node_modules/beautiful-mermaid/package.json
 3. `$T wait` で、mod が出すはずの印（罫線の箱、pane の `┃`、禁止の文言）を待つ。model の返答を待つときは、続けて `$T turn <名前> <その session での返答の回数>` で返答の終わりも待つ。
 4. `$T shot` で画面を `$run` に書く。
 
-Claude Code の本物の振る舞いに似せる mod（codex-subagent が Claude の subagent に似せるなど）は、同じ頼みを本物の側（`general-purpose` の subagent など）でも同じ session で流し、同じ場所を `$T shot` で `$run/<機能>-<経路>-native.txt` に撮って**見本**にする。合否は mod の印に加えて、見本と行の並び・記号・畳み方・出る場所が揃っているかで決め、違いはすべて報告に書く。mod の出力だけを見ると、一覧に出ない、行が 1 つにまとまる、といった似せ方の食い違いを見落とす。
+Claude Code の本物の振る舞いに似せる mod は、同じ頼みを本物の側でも同じ session で流し、同じ場所を `$T shot` で `$run/<機能>-<経路>-native.txt` に撮って**見本**にする。合否は mod の印に加えて、見本と行の並び・記号・畳み方・出る場所が揃っているかで決め、違いはすべて報告に書く。mod の出力だけを見ると、一覧に出ない、行が 1 つにまとまる、といった似せ方の食い違いを見落とす。
 
 mod の印の例:
 
 - mermaid-render: `┌` `▼` などの罫線。描けなければ `mermaid-render: <理由>` の 1 行。
 - glossary: 右の pane の `┃ <用語>`。pane の枠の外に出る `✕` は pane を閉じる印。
-- codex-subagent: Agent の行の `Backgrounded agent`、状態行の下の一覧の `◯ codex-subagent:<モデル>`、終わって届く `› Message from @codex-subagent-<モデル>` と `Agent "<説明>" finished`。
 - skill-chain: 画面ではなく会話の記録。期待したスキルの Skill tool の呼び出しと、`cannot be used with Skill tool due to disable-model-invocation` の有無。
 
 ## Evidence

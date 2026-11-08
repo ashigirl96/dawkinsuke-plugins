@@ -20,10 +20,6 @@
     {
       "name": "skill-chain",
       "source": "./mods/skill-chain"
-    },
-    {
-      "name": "codex-subagent",
-      "source": "./mods/codex-subagent"
     }
   ]
 }

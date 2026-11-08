@@ -25,12 +25,8 @@ pstack のスキルを fork するときに、Cursor の名前を Claude Code �
 _Avoid_: harness doc、対応表
 
 **model 系統**:
-同じ作り手の model の群で、model 名の接頭辞で区切る。`claude-*` と `gpt-*` は別の系統で、間に入る仕組み（codex subagent など）の名前では区切らない。
+同じ作り手の model の群で、model 名の接頭辞で区切る。`claude-*` と `gpt-*` は別の系統で、間に入る仕組みの名前では区切らない。
 _Avoid_: family、provider
-
-**codex subagent**:
-`gpt-*` の model 系統を頭脳に持ち、親から Claude の subagent と同じ形で任されて、codex が自分の tool で最後まで走らせる agent。
-_Avoid_: GPT subagent、GPT の subagent
 
 **モデル表**:
 repo ごとに、pstack のスキルの役割（`arena runners`・`swarm workers` など）ごとに使う model と推論の強さを書いた表。

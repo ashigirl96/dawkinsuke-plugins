@@ -63,6 +63,10 @@ pid=$(cat "$dest/pid")
 kill -0 "$pid" 2> /dev/null || fail "browser not running after launch"
 sh "$script" launch Personal s1 2> /dev/null && fail "second launch of the same session accepted"
 
+sh "$script" launch Personal s3 --gpu-launcher=x 2> "$tmp/err" && fail "option-like url accepted"
+grep -qF "unsupported url: --gpu-launcher=x" "$tmp/err" || fail "option-like url not named in the error"
+[ ! -e "$TMPDIR/browser-profile-s3" ] || fail "copy made for a rejected url"
+
 sh "$script" launch Nobody s2 2> "$tmp/err" && fail "unknown profile accepted"
 grep -qF "profile not found: Nobody" "$tmp/err" || fail "unknown profile not named in the error"
 

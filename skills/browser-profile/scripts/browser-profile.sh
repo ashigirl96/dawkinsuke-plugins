@@ -29,6 +29,8 @@ browser_exe() {
 
 launch() {
 	name=$1 session=$2 url=${3:-about:blank}
+	# 先頭が - の文字列はブラウザに起動 option として読まれるので、開く URL の形に絞る。
+	case $url in http://*|https://*|about:blank) ;; *) echo "unsupported url: $url" >&2; exit 2 ;; esac
 	root=$(resolve_root)
 	[ -n "$root" ] || { echo "agent-browser profiles printed no profile root" >&2; exit 1; }
 	dir=$(resolve_dir "$name") || { echo "profile not found: $name" >&2; exit 1; }

@@ -1,7 +1,6 @@
 ---
 name: browser-profile
 description: agent-browser でサイトを、普段のブラウザのプロファイル（`Work`・`Personal` のような表示名）のログイン状態で開く。agent-browser の作業でプロファイルを指定されたときに使う。
-argument-hint: "<プロファイル> [url]"
 ---
 
 プロファイルの写しを、ウィンドウを出さないブラウザで起動し、agent-browser をそこへつなぐ。写しには cookie と保存済みのログインが入り、普段のタブとウィンドウは入らない。起動と片付けは [`scripts/browser-profile.sh`](scripts/browser-profile.sh) がする。

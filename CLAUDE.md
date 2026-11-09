@@ -2,7 +2,7 @@
 
 自分専用の Claude Code プラグイン `dawkinsuke` と、それを配る marketplace を兼ねた repo。repo のルートがそのままプラグインのルートになる（`.claude-plugin/marketplace.json` の `source` が `"./"`）。
 
-検査は `sh scripts/check.sh` にまとめてあり、`.githooks/pre-commit` が commit のたびに流す。`scripts/` を変えた commit では `scripts/*.test.sh` も流す。clone したら `git config core.hooksPath .githooks` で hook を有効にする。
+検査は `sh scripts/check.sh` にまとめてあり、`.githooks/pre-commit` が commit のたびに流す。`scripts/` か `skills/<name>/scripts/` を変えた commit では `scripts/*.test.sh` も流す。clone したら `git config core.hooksPath .githooks` で hook を有効にする。
 
 ## upstream
 

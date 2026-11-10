@@ -3,12 +3,12 @@ name: browser-profile
 description: agent-browser でサイトを、普段のブラウザのプロファイル（`Work`・`Personal` のような表示名）のログイン状態で開く。agent-browser の作業でプロファイルを指定されたときに使う。
 ---
 
-プロファイルの写しを、ウィンドウを出さないブラウザで起動し、agent-browser をそこへつなぐ。写しには cookie と保存済みのログインが入り、普段のタブとウィンドウは入らない。起動と片付けは [`scripts/browser-profile.sh`](scripts/browser-profile.sh) がする。
+プロファイルの写しでブラウザを起動し、agent-browser をそこへつなぐ。写しには cookie と保存済みのログインが入り、普段のタブとウィンドウは入らない。起動と片付けは [`scripts/browser-profile.sh`](scripts/browser-profile.sh) がする。
 
-1. **起動する。** この作業に固有の session 名を決め、次を流す。プロファイルは表示名でもディレクトリ名（`Profile 3`）でもよい。
+1. **起動する。** この作業に固有の session 名を決め、ウィンドウを出すかを決める。ユーザーと一手ずつ画面を確かめながら進める作業なら `--headed` を付けてウィンドウを出し、任された作業を最後まで進めるならウィンドウを出さない。次を流す。プロファイルは表示名でもディレクトリ名（`Profile 3`）でもよい。
 
    ```sh
-   sh <この skill のディレクトリ>/scripts/browser-profile.sh launch <プロファイル> <session> <url>
+   sh <この skill のディレクトリ>/scripts/browser-profile.sh launch [--headed] <プロファイル> <session> <url>
    ```
 
    最後に出た URL が開きたいページなら完了。ログイン画面の URL が出たら、写しの元のプロファイルにその site の cookie が無い。片付けの手順を流してから、ユーザーに普段のブラウザのそのプロファイルでログインしてもらい、起動し直す。写しは起動した時点のもので、後からのログインは入らない。

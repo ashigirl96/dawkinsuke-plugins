@@ -1,6 +1,6 @@
 #!/bin/sh
 # usage:
-#   browser-profile.sh launch <表示名|ディレクトリ名> <session> [url]
+#   browser-profile.sh launch [--headed] <表示名|ディレクトリ名> <session> [url]
 #   browser-profile.sh cleanup <session>
 set -eu
 
@@ -28,6 +28,9 @@ browser_exe() {
 }
 
 launch() {
+	headless=--headless=new
+	[ "${1:-}" != --headed ] || { headless=; shift; }
+	[ $# -ge 2 ] || { echo "usage: $0 launch [--headed] <profile> <session> [url]" >&2; exit 2; }
 	name=$1 session=$2 url=${3:-about:blank}
 	# 先頭が - の文字列はブラウザに起動 option として読まれるので、開く URL の形に絞る。
 	case $url in http://*|https://*|about:blank) ;; *) echo "unsupported url: $url" >&2; exit 2 ;; esac
@@ -51,7 +54,7 @@ launch() {
 	# Preferences の exit_type は Crashed のまま残す。正常終了の扱いだと、閉じると消える cookie（IAP の鍵など）が起動時に消される。
 
 	# agent-browser の --profile <path> は --use-mock-keychain を足し、Keychain の鍵で暗号化された cookie が読めなくなるので、自分で起動して --cdp でつなぐ。
-	"$exe" --user-data-dir="$dest" --profile-directory="$dir" --remote-debugging-port=0 --headless=new \
+	"$exe" --user-data-dir="$dest" --profile-directory="$dir" --remote-debugging-port=0 $headless \
 		--no-first-run --no-default-browser-check "$url" > "$dest/browser.log" 2>&1 &
 	echo $! > "$dest/pid"
 
@@ -81,7 +84,7 @@ cleanup() {
 cmd=${1:-}
 [ $# -gt 0 ] && shift
 case $cmd in
-	launch) [ $# -ge 2 ] || { echo "usage: $0 launch <profile> <session> [url]" >&2; exit 2; }; launch "$@" ;;
+	launch) launch "$@" ;;
 	cleanup) [ $# -eq 1 ] || { echo "usage: $0 cleanup <session>" >&2; exit 2; }; cleanup "$1" ;;
 	*) echo "usage: $0 launch|cleanup ..." >&2; exit 2 ;;
 esac

@@ -70,6 +70,12 @@ grep -qF "unsupported url: --gpu-launcher=x" "$tmp/err" || fail "option-like url
 sh "$script" launch Nobody s2 2> "$tmp/err" && fail "unknown profile accepted"
 grep -qF "profile not found: Nobody" "$tmp/err" || fail "unknown profile not named in the error"
 
+sh "$script" launch --headed Personal s4 > /dev/null
+grep -qxF -- "--user-data-dir=$TMPDIR/browser-profile-s4" "$tmp/browser.args" || fail "headed browser not started on the copy"
+grep -qF -- "--headless" "$tmp/browser.args" && fail "--headed launch still headless"
+sh "$script" cleanup s4
+sh "$script" launch --headed Personal 2> /dev/null && fail "--headed launch without a session accepted"
+
 sh "$script" cleanup s1
 grep -qxF -- "--session s1 close" "$tmp/ab.log" || fail "session not closed"
 sleep 0.2

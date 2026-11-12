@@ -11,4 +11,4 @@ matt は grilling と domain-modeling で止め、spec と to-tickets に進む�
 
 ## 収まる作業は spec を経ずに Bench へ fork する
 
-matt は 1 session に収まる作業を、spec を書かずに同じ context で実装させる。収まる作業は、結論とテストする境目を数行書いた issue を立て、`monica task run <url> --fork "$CLAUDE_CODE_SESSION_ID"` で今の会話を Bench の Tab へ fork して止まるように変えた。最初の prompt の `/tackle` には、issue を取りに行かず会話の決定から始めることと、会話の path が元の checkout を指すこと、grill で書いた ADR と用語集の変更をまず元の checkout から worktree へ移すことを添える。commit されていないそれらの変更は、fork しても worktree に届かないため。この plugin は monica の Tab の中（issue tracker は GitHub）でしか使わないので、monica の外の分岐は持たない。会話という一次情報のまま worktree で実装を始め、Bench に要る issue と決定の記録を spec より安く残し、会話を写しただけの issue を読み直して context を使わないため。
+matt は 1 session に収まる作業を、spec を書かずに同じ context で実装させる。収まる作業は Skill tool で自作の `fork-to-bench` を呼び、結論とテストする境目を数行書いた issue を立て、今の会話を Bench の Tab へ fork して `/tackle` させるように変えた。手順の本体を `fork-to-bench` に置くのは、grilling を通らない `diagnosing-bugs` などの会話からも同じ手順で渡すため。会話という一次情報のまま worktree で実装を始め、Bench に要る issue と決定の記録を spec より安く残し、会話を写しただけの issue を読み直して context を使わないため。

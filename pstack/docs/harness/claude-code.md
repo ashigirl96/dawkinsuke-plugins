@@ -8,7 +8,7 @@ pstack skills use Cursor names. The tables below map each Cursor name to Claude 
 | --- | --- |
 | `Task` | `Agent` |
 | `AskQuestion` | `AskUserQuestion`. In `-p` mode it is absent, so ask in plain text. |
-| Open a todolist | Use `TodoWrite` if the session offers it. Otherwise keep the list in your reply and update it at each phase. |
+| Open a todolist, or copy steps into the todolist tool | Use `TodoWrite` if the session offers it. Otherwise keep the list in your reply and update it at each phase. |
 | Run another pstack skill (`/name` or "the **name** skill") | Call the `Skill` tool with `dawkinsuke:<name>`. When you tell the user to type it, write `/dawkinsuke:<name>`. |
 | `Grep`, `Glob` | `Bash` with `rg` when the session has no `Grep` or `Glob`. |
 | `deslop` from `cursor-team-kit` | The `simplify` skill. |
@@ -23,6 +23,7 @@ pstack skills use Cursor names. The tables below map each Cursor name to Claude 
 | --- | --- |
 | `subagent_type: generalPurpose` | `subagent_type: "general-purpose"` |
 | `poteto-agent`, `comment-sicko` | `dawkinsuke:poteto-agent`, `dawkinsuke:comment-sicko` |
+| The `model:` line in `poteto-agent`'s file | It holds a Cursor slug. Pass `model` and `effort` on every `Agent` call that spawns `dawkinsuke:poteto-agent`, mapped with the Models table, so that slug never reaches the API. |
 | `readonly: true` | `subagent_type: "Explore"`. It keeps `Bash`, so the brief also says "do not edit files", and you check `git status` afterward. |
 | `readonly: false` | `general-purpose`. It keeps the session's MCP servers. |
 | `environment: "cloud"` | `isolation: "worktree"`. Name the branch or commit the worker checks out. |
@@ -37,7 +38,7 @@ pstack skills use Cursor names. The tables below map each Cursor name to Claude 
 | Cursor | Claude Code |
 | --- | --- |
 | `claude-<family>-<version>-<effort>[-fast]`, such as `claude-opus-5-5-xhigh` | `opus @xhigh`: pass `model: "opus"` and `effort: "xhigh"`. `model` takes only `opus`, `sonnet`, `haiku`, `fable`. Drop `-fast`. |
-| A `grok-*`, `cursor-grok-*`, or `composer-*` slug | `gpt-6.1-sol`, then map it with the next row. Map it before any family check, so its family is `gpt-*`. |
+| A `gemini-*` slug | `gpt-6.1-sol`, then map it with the next row. Map it before any family check, so its family is `gpt-*`. |
 | A `gpt-*` or other non-Claude model, such as `gpt-6.1-sol` | Pass as `subagent_type` the `Agent` subagent type whose description says it delegates to that model, in place of `general-purpose` or `Explore`. Omit `model`, which that subagent ignores. For `readonly: true`, the brief says "do not edit files". If no subagent type names the model, omit `model` so the agent runs on the session model, and say so. A model's family is its name prefix, so `gpt-*` is a family apart from `claude-*`. |
 | `auto` or `inherit-parent` | Omit `model`. |
 | The `pstack-models.mdc` rule, `~/.cursor/rules/pstack-models.mdc` | The model table, `~/.claude/repo-local/<host>/<owner>/<repo>-models.md`. The repo-local `<repo>.md` imports it, so its lines are in context. When they are not, the repo has no table, so use the skill's defaults. A missing role line also takes the default. |
@@ -47,17 +48,10 @@ The pstack forks read these role lines. A list value is a panel, and one subagen
 
 | Role line | Fork | Default |
 | --- | --- | --- |
-| `arena runners` | `arena` | `opus @xhigh, gpt-6.1-sol` (list) |
-| `arena cross-judge pool` | `arena` | `opus @xhigh, gpt-6.1-sol` (list) |
-| `architect runners` | `architect` | `opus @xhigh, gpt-6.1-sol` (list) |
+| `arena runners` | `arena` | `fable @high, opus @high, gpt-6.1-sol` (list) |
+| `arena cross-judge pool` | `arena` | `opus @high, gpt-6.1-sol` (list) |
 | `interrogate reviewers` | `interrogate` | the `arena runners` defaults (list) |
-| `swarm workers` | `swarm` | `gpt-6.1-sol` |
-| `how explorer` | `how` | `gpt-6.1-sol` |
-| `how explainer` | `how` | `opus @xhigh` |
-| `why investigators` | `why` | `gpt-6.1-sol` |
-| `why synthesizer` | `why` | `opus @xhigh` |
-| `reflect tooling` | `reflect` | `gpt-6.1-sol` |
-| `reflect judgment, divergent, synthesizer` | `reflect` | `opus @xhigh` |
+| `swarm workers` | `swarm` | `opus @high` |
 
 ## Paths
 

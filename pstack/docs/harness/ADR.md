@@ -7,7 +7,7 @@ own: [principles.md]
 
 ## Claude 以外の model を、その model に振り分ける subagent で走らせる
 
-upstream は `grok-*` や `gpt-*` などの Claude 以外の model 名を省き、session の model で走らせる。手元では Agent tool に `gpt-*` へ任せる subagent があるので、description にその model の名前がある subagent を `subagent_type` に選び、grok の既定は `gpt-6.1-sol` に読み替えるようにした。省くと、`arena` の judge などが Claude しか選べず、書いた者と別の model 系統に判定させる pstack の柱が崩れるため。
+upstream は `gemini-*` などの Claude 以外の model 名を省き、session の model で走らせる。手元では Agent tool に `gpt-*` へ任せる subagent があるので、description にその model の名前がある subagent を `subagent_type` に選び、Gemini の既定は `gpt-6.1-sol` に読み替えるようにした。省くと、panel が Claude だけになり、`arena` の judge は別の vendor が無く飛ばされ、書いた者と別の vendor の model に判定させる pstack の柱が崩れるため。
 
 ## plugin 名を dawkinsuke に読み替える
 
@@ -27,7 +27,7 @@ upstream は冒頭で、この file を session ごとに読み、スキルの C
 
 ## モデル表を repo ごとのファイルから読み、推論の強さを `@<level>` と `default effort` で書く
 
-upstream は役割の行を `~/.claude/rules/pstack-models.md` から読み、値を `<model> <effort>` と書く。手元ではモデル表を repo ごとの `~/.claude/repo-local/<host>/<owner>/<repo>-models.md` に置き、repo-local の `<repo>.md` が import するので、表が context に無ければその repo には表が無いとみなして既定を使うようにした。値は `<model>` か `<model> @<level>` と書き、suffix の無い値は `default effort` の行に従う。`setup-dawkinsuke` が pstack-claude の setup-pstack と同じ形で表を書くので、それに合わせるため。7 本の fork が読む役割の名前と既定を節に並べ、`setup-dawkinsuke` がこの名前で表を書けるようにした。
+upstream は役割の行を `~/.claude/rules/pstack-models.md` から読み、値を `<model> <effort>` と書く。手元ではモデル表を repo ごとの `~/.claude/repo-local/<host>/<owner>/<repo>-models.md` に置き、repo-local の `<repo>.md` が import するので、表が context に無ければその repo には表が無いとみなして既定を使うようにした。値は `<model>` か `<model> @<level>` と書き、suffix の無い値は `default effort` の行に従う。`setup-dawkinsuke` が pstack-claude の setup-pstack と同じ形で表を書くので、それに合わせるため。fork が読む役割の名前と、upstream の既定をこの節で読み替えた既定を節に並べ、`setup-dawkinsuke` がこの名前で表を書けるようにした。
 
 ## setup-pstack の節を消す
 

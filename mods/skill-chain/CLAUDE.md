@@ -26,14 +26,12 @@ L=mods/skill-chain/fixture/live.sh
 sh $L -p mods/skill-chain/fixture callee,deep '/chainfix:caller'
 sh $L -p mods/skill-chain/fixture callee,deep 'Use the Skill tool to run the chainfix:caller skill.'
 sh $L -p mods/skill-chain/fixture '!deep' 'Use the Skill tool to run the chainfix:deep skill. Do not read any file.'
-sh $L -p . in-your-own-words '/dawkinsuke:grilling 社内 wiki に全文検索を足したい'
 sh $L -C mods/skill-chain/fixture/repo repo-deep '/playfix deep'
 sh $L -C mods/skill-chain/fixture/repo in-your-own-words '/playfix restate'
 sh $L -C mods/skill-chain/fixture/repo '!repo-hidden' '/playfix stray'
 ```
 
 - 合否は、期待したスキルの Skill tool の呼び出しに、エラーでない結果が返ったか（`!name` なら断られたか）で決める。opus が Skill を呼ばずに自分で済ませると断りの文言も出ないので、文言が無いだけでは通ったことにしない。`PINEAPPLE-42` が返らないだけなら model の判断の揺れで、mod の失敗ではない。
-- 4 行目は、`fixture/` の 1 つの置き場所では通らない経路（`matt/skills` の `grilling` から `pstack/skills` の `in-your-own-words`）を見る。
 - 後ろの 3 行は、`fixture/repo` を repo として起こし、その repo のスキル `playfix` のプレイブック（`playbooks/*.md`）からの呼び出しを見る。同じ repo の手動専用のスキル、dawkinsuke の手動専用のスキル（`-p` で dawkinsuke を読ませなくても、mod の位置から見つかる）、どこにも名前の書かれていない手動専用のスキルの順。
 - 終わりの手順が後ろのターンにあるスキルは、プロンプトを続けて渡すと同じ session で次のターンを流す。`ends=` に `error_max_turns` が出たら、期待の場面まで届いていないので `-t` を上げる。
 - 判定そのものは `sh mods/skill-chain/fixture/live.test.sh` で、model を呼ばずに確かめられる。

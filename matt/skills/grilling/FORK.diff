@@ -1,12 +1,8 @@
 diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/productivity/grilling/SKILL.md matt/skills/grilling/SKILL.md
 --- upstream/mattpocock-skills/skills/productivity/grilling/SKILL.md
 +++ matt/skills/grilling/SKILL.md
-@@ -3,10 +3,14 @@
- description: 計画・決定・アイデアについてユーザーを容赦なく問い詰める。ユーザーが自分の考えを厳しく試したいとき、または「grill」を含む言い回しを使ったときに使う。
- ---
+@@ -5,8 +5,10 @@
  
-+まず、これから問い詰める計画・決定・アイデアについて、Skill tool で `in-your-own-words` を呼ぶ。そこで止まり、言い直しが合っているかをユーザーに聞く。直されるたびに言い直し、ユーザーが合っていると認めてから最初のラウンドを始める。
-+
  共通の理解に達するまで、ユーザーに容赦なく聞き取りをする。これを**設計の木**として描く: どの決定も、そこにぶら下がる決定へと枝分かれする。
  
 -木は**ラウンド**ごとに進める。**フロンティア**とは、前提がすでに決まっているすべての決定、つまりまだ聞いていない答えを推測せずに_いま_聞ける問いのこと。1 ラウンドでフロンティア全体を聞く: 各問いに番号を振り、自分の推奨する答えを添える。それからユーザーの答えを待って次のラウンドに進む。
@@ -17,7 +13,7 @@ diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/productivity/
  ラウンドは次の形にする:
  
  ```
-@@ -19,12 +23,18 @@
+@@ -19,12 +21,18 @@
  ❓ **Q2** - **<問いの見出し>**: <問いの本文。複数の段落や複数の選択肢を含んでよい>
  
  ➡️ <自分の推奨する答え>

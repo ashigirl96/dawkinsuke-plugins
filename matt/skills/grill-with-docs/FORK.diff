@@ -1,12 +1,11 @@
 diff -ruN -x ADR.md -x FORK.diff upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md matt/skills/grill-with-docs/SKILL.md
 --- upstream/mattpocock-skills/skills/engineering/grill-with-docs/SKILL.md
 +++ matt/skills/grill-with-docs/SKILL.md
-@@ -5,3 +5,8 @@
+@@ -5,3 +5,7 @@
  ---
  
- Skill tool を 2 回呼ぶ。対象は "grilling" と "domain-modeling"。
+ Skill tool を "grilling" と "domain-modeling" の 2 回呼ぶ。
 +
-+ユーザーが共有された理解を確認し、成果が作るべきものになったら、その作業が新しい context window 1 つに収まるかを判断する。先に根拠を示す。触るモジュールと、見込まれる tracer-bullet のスライスである。そのうえで、聞かずに次のとおりにする。
++ユーザーが共通の理解を確かめ、成果が作るものだったら、その作業が新しいコンテキストウィンドウ 1 つに収まるかを判断する。先に根拠を述べる。触るモジュールと、見込んでいる端から端まで通す薄い切り分け（tracer-bullet slices）だ。そのうえで、聞かずに Skill tool で "to-spec" を呼ぶ。収まらないなら、同じコンテキストのまま続けて "to-tickets" を呼ぶ。
 +
-+- **収まる**: Skill tool で "fork-to-bench" を呼ぶ。
-+- **収まらない**: Skill tool で "to-spec" を呼び、続けて "to-tickets" を呼ぶ。
++issue を公開したところで役目は終わる。作るのは後で、新しいセッションで始める。

@@ -9,7 +9,7 @@ dawkinsuke が知っているスキル 1 つにつき 1 行で、その種類・
 _Avoid_: レジストリ、スキル一覧、layout
 
 **置き場**:
-plugin がスキルを読み込むディレクトリ。`skills/` と `matt/skills` の 2 つ。
+plugin がスキルを読み込むディレクトリ。`skills/`・`matt/skills`・`pstack/skills` の 3 つ。
 _Avoid_: バケット、link dir、配置先
 
 **スキルの種類**:

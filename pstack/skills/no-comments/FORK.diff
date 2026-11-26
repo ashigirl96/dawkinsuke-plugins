@@ -1,0 +1,12 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/no-comments/SKILL.md pstack/skills/no-comments/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/no-comments/SKILL.md
++++ pstack/skills/no-comments/SKILL.md
+@@ -23,7 +23,7 @@
+ 
+ ## Steps
+ 
+-1. `Agent` を `subagent_type: "pstack:comment-sicko"` で起動する。対象範囲を渡す。各 subagent の推論レベルは、**poteto-mode** スキルの Subagents 節に従って作業に合わせて選ぶ。その規則を言い直さない。
++1. `Agent` を `subagent_type: "dawkinsuke:comment-sicko"` で起動する。対象範囲を渡す。各 subagent の推論レベルは、**poteto-mode** スキルの Subagents 節に従って作業に合わせて選ぶ。その規則を言い直さない。
+ 
+    `model` には、`pstack-models.md` の `no-comments reviewer` の行を設定する。シートかその行がなければ、[Models](#models) の既定を設定する。値が `auto` か `inherit-parent` のときは `model` を設定しない。`Agent` tool が slug を拒んだら、既定を使い、そのことを伝える。既定も拒まれたら、エラーメッセージにある同じ系統の slug のうち最も近い有効なものを使う。
+ 2. その報告と差分を点検する。アプリケーションコードの編集、対象範囲の逸脱、例外で守られた削除、`MUST KILL` の理由の誤記、意図的に残したコードを有罪扱いする指摘を却下する。自分たちのコードの意外な点についての指摘を作り直したものは、引き続き対応すべきものとする。それらのコメントを復元しない。残す判断は、自分たちには変えられないものについてだという証拠があるときだけ通る。見逃された、範囲内の lint と TypeScript の抑制を監査する。正しさや安全性の抑制は、引き続き対応すべき `MUST KILL` とする。削除の復元は、正確な例外と範囲内の証拠があるときだけ行う。薄い `IMPORTANT` や `do not remove` の削除や残す判断を受け入れる前に、そのシンボルを追うか、それに `/why` を流す。削除が曖昧なら復元しない。残す判断が否定されたか曖昧なままなら、削除する。却下された報告 1 件は、失敗を名指しして差し戻し、再実行する。2 回目も却下したら、それを未解決として報告し、実行全体ではなく、その報告の却下された指摘について `/no-comments` を失敗とする。

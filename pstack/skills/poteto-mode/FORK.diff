@@ -1,0 +1,24 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-mode/SKILL.md pstack/skills/poteto-mode/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-mode/SKILL.md
++++ pstack/skills/poteto-mode/SKILL.md
+@@ -88,7 +88,7 @@
+ 
+ ## サブエージェント
+ 
+-**playbook の手順の中で直接起動するサブエージェントには、必ず `subagent_type: "pstack:poteto-agent"` を使う。** プラグインのエージェントはプラグインの名前空間の下に登録される。素の名前 `poteto-agent` はエラーになる。`/poteto-mode` を受け取ったチャットが playbook を自分で実行する。経路が決まっているワークフローのスキル（`interrogate`、`swarm`）は自分で `subagent_type` を決める。それに従う。
++**playbook の手順の中で直接起動するサブエージェントには、必ず `subagent_type: "dawkinsuke:poteto-agent"` を使う。** プラグインのエージェントはプラグインの名前空間の下に登録される。素の名前 `poteto-agent` はエラーになる。`/poteto-mode` を受け取ったチャットが playbook を自分で実行する。経路が決まっているワークフローのスキル（`interrogate`、`swarm`）は自分で `subagent_type` を決める。それに従う。
+ 
+ **すべての `Agent` 呼び出しの既定値。** `run_in_background: true`、ツールはすべて使える状態にする（MCP を外す subagent_type は選ばない）、文脈は埋め込まずファイルへのポインタで渡す、役割ごとにモデルを明示する（バックグラウンドの worker も含む）。`/setup-pstack` が書く `pstack-models.md` の役割ごとの行は、下の既定値と、経路が決まっているスキル（`arena`、`swarm`、`interrogate`）の役割別モデルを上書きする。行のない役割は既定値のままにする。`inherit-parent` か `auto` の行は、その役割を親のモデルで動かすので、`Agent` 呼び出しでは `model` を省く。`poteto-agent` は自分ではモデルを決めないので、そのときは親のモデルで動く。各コードの playbook は自分の行（`feature, refactoring`、`bug-fix`、`perf-issue`、`hillclimb`）を読み、文章と判断は `judgment and prose` を読み、些細な機械的編集は `swarm workers` を読む。
+ 
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-mode/playbooks/bug-fix.md pstack/skills/poteto-mode/playbooks/bug-fix.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-mode/playbooks/bug-fix.md
++++ pstack/skills/poteto-mode/playbooks/bug-fix.md
+@@ -10,7 +10,7 @@
+ 2. 原因を二分探索する。候補の仮説を立て、残る 1 つになるまで消していく。仮説は、影響を受けるサブシステムのトレースと、回帰の履歴を調べる **why** スキルから立てる。毎回、残りの問題空間を最も削れる分割を選び、実行時の証拠を取り、除外する。プログラムの状態が不明なときは、計装やログを足し、コードが動く間にそれを読む。推測しない。長引く探索や手強い探索は、Claude Code の `loop` スキルで回す。手順 3 の `architect` や `interrogate` の並列展開に進む前に、残った*仕組み*を実行時の証拠で確かめる。
+ 3. 修正を計画する。関数の境界をまたぐなら、先に `architect` を使う。実装は、設定済みのバグ修正用モデル（既定は poteto-mode の Models の節）を使うサブエージェントに、範囲を具体的に決めて任せる。
+ 4. 同じ面で検証する。元の再現手順が通るようになったことを確かめる。「結論が出ない」や別の面での確認は合格ではない。それを明示する。単体テストが示すのは分岐の振る舞いであり、バグがないことではない。
+-5. 失敗する再現が修正より先に git の履歴に入るよう、commit を分ける。バグに安く試せるローカルのテストの道があるなら、失敗するテストを先に書く進め方は **tdd** スキルを見る。テストが高くつく、結合が重い、または不明確なときは省く。
++5. 失敗する再現が修正より先に git の履歴に入るよう、commit を分ける。バグに安く試せるローカルのテストの道があるなら、失敗するテストを先に書く進め方は **pstack-tdd** スキルを見る。テストが高くつく、結合が重い、または不明確なときは省く。
+   これは **sequence-verifiable-units** の原則スキルの正本で、失敗するテストを先に置き、その上に修正を載せる。
+ 6. **Opening a PR** を実行する。
+ 

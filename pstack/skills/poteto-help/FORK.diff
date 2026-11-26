@@ -1,0 +1,71 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-help/SKILL.md pstack/skills/poteto-help/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-help/SKILL.md
++++ pstack/skills/poteto-help/SKILL.md
+@@ -60,7 +60,7 @@
+ | 作ろうとしているものの専門用語を、隣の分野から借りた言葉も含めて学び、引用元をすべて確かめたうえで、その言葉で説明を書き直してもらう | [`/reframe`](../reframe/SKILL.md) |
+ | コードが今どう動くか、新しいコードをどこに置くべきかを知る | [`/how`](../how/SKILL.md) |
+ | コードがなぜこの形なのか、数値がどこから来たのかを知る | [`/why`](../why/SKILL.md) |
+-| 変更やサブシステムを、平易な説明で理解する | [`/teach`](../teach/SKILL.md) |
++| 変更やサブシステムを、平易な説明で理解する | [`/pstack-teach`](../pstack-teach/SKILL.md) |
+ | あるテーマについての自分の最近の作業に追いつく | [`/recall`](../recall/SKILL.md) |
+ | このチャットでユーザーの前回のメッセージ以降に変わったことに、平易な言葉と小さな図で追いつく。ユーザーの返事を待っている項目をすべて挙げ、返信だけで決められるようにする | [`/ketchup`](../ketchup/SKILL.md) |
+ | `/ketchup` と同様に追いつくが、字幕つきの短いスライド動画で行い、待っている判断は動画の下にテキストで添える | [`/ketchup-video`](../ketchup-video/SKILL.md) |
+@@ -69,7 +69,7 @@
+ | 1 つの指示から複数の試行を得て、最良の 1 つにまとめる | [`/arena`](../arena/SKILL.md) |
+ | 分割した範囲に対して並列の検査を走らせる、またはワーカーを競わせる | [`/swarm`](../swarm/SKILL.md) |
+ | 異なるモデルに差分をレビューさせ、壊そうとさせる | [`/interrogate`](../interrogate/SKILL.md) |
+-| 手軽なローカルテストがあるとき、テストを先に書いてバグを直す | [`/tdd`](../tdd/SKILL.md) |
++| 手軽なローカルテストがあるとき、テストを先に書いてバグを直す | [`/pstack-tdd`](../pstack-tdd/SKILL.md) |
+ | `.ts` や `.tsx` の作業に TypeScript の規則を適用する | [`/typescript-best-practices`](../typescript-best-practices/SKILL.md) |
+ | レビューの前に、書いていないレビュアーを使ってコメントを取り除く | [`/no-comments`](../no-comments/SKILL.md) |
+ | 文章から AI らしさを取り除く | [`/unslop`](../unslop/SKILL.md) |
+@@ -93,7 +93,7 @@
+ 
+ 紛らわしい選択:
+ 
+-- `/how` はコードが何をするかを説明する。`/why` は理由を説明する。`/teach` は片方または両方を実行し、結果を平易に説明する。
++- `/how` はコードが何をするかを説明する。`/why` は理由を説明する。`/pstack-teach` は片方または両方を実行し、結果を平易に説明する。
+ - `/arena` は全ワーカーに同じ指示を渡し、最良の部分をまとめる。`/swarm` は作業を範囲や競争に分け、1 つの報告を返す。
+ - `/interrogate` は差分をレビューする。`/blast-radius` は差分の外での壊れを探し、変更を安全にする 1 つの事実を証明する。
+ - `/recall` は最近の複数のチャットにまたがって文脈を作り直す。`/ketchup` はユーザーの前回のメッセージ以降のこのチャットだけを扱う。特定の 1 つのチャットやブランチを再開するのは Session pickup のプレイブックである。
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/prompting.md pstack/skills/poteto-help/references/prompting.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/prompting.md
++++ pstack/skills/poteto-help/references/prompting.md
+@@ -21,7 +21,7 @@
+ - ノイズの多い報告では、エージェントが何かを始める前に、根本の問題を自分の言葉で平易な英語に言い直させる。読み違いはコードが生まれる前に現れる。
+ - 新しいチャットでは、そのテーマの以前の作業を `/recall` する。古いチャットには、新しいエージェントにない文脈がある。
+ - 慣れないコードを変える前に、仕組みを `/how` に、理由を `/why` に尋ねる。たどったモデルを持たないエージェントは、最初にそれらしい場所で症状を直してしまう。
+-- 「症状ではなく原因を直すと納得させて」のように、`/teach` に選択の根拠を述べさせる。根拠は要約より確かめやすい。
++- 「症状ではなく原因を直すと納得させて」のように、`/pstack-teach` に選択の根拠を述べさせる。根拠は要約より確かめやすい。
+ 
+ ## 計画の前に設計する
+ 
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/recipes.md pstack/skills/poteto-help/references/recipes.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/recipes.md
++++ pstack/skills/poteto-help/references/recipes.md
+@@ -10,14 +10,14 @@
+ - `/poteto-mode <symptom> の理由を調べて。分かっていること、使ったデータ、有力な仮説を出して。まだコードは変えないで。`
+ - `/how で <subsystem> を理解して。そのあと /why で、最近なぜ壊れたかを調べて。`
+ - `先週の <topic> についての自分の作業を /recall して、そのあと <issue> を読んで。`
+-- `/teach me なぜ <other way> ではなくこの実装にしたのか教えて。何を引き換えにした？`
++- `/pstack-teach なぜ <other way> ではなくこの実装にしたのか教えて。何を引き換えにした？`
+ - `/poteto-mode このブランチを引き継いで。決定ログを読み、済んだ作業を見つけて続けて。終わった作業はやり直さないで。`
+ 
+ ## 作る
+ 
+ - バグ: `/poteto-mode <symptom>。先に再現し、そのあと直して確かめて。`
+ - アプリのバグ: `/poteto-mode /verify でこれを再現して。main で再現するなら直して、証拠の動画を見せて。`
+-- 手軽なテストがあるバグ: `/poteto-mode まず <bug> を再現して。手軽なテストの道があれば /tdd して。そのあと直して再実行して。`
++- 手軽なテストがあるバグ: `/poteto-mode まず <bug> を再現して。手軽なテストの道があれば /pstack-tdd して。そのあと直して再実行して。`
+ - 機能: `/poteto-mode <behavior> を足して。<current output> はバイト単位で同一のまま。両方を確かめて。`
+ - リファクタリング: `/poteto-mode <code> を 1 つのモジュールに移して。振る舞いは一切変えない。先に今の出力を記録し、あとで変わっていないと証明して。`
+ - 性能: `/poteto-mode <operation> が <fixture> で <time> かかる。追跡し、測った原因を直し、前後を見せて。`
+@@ -26,7 +26,7 @@
+ 
+ - `/poteto-mode <feature> の選択肢をいくつか試作して。比べられるようにスクリーンショットか動画を撮って。`
+ - `/poteto-mode <feature> が要る。まず /architect して、未解決の問いは試作で答えて。進める前にレビューさせて。`
+-- `/poteto-mode まず <new package> をどう使うかのチュートリアルを書いて。そのあと今のものよりなぜ優れるのか /teach して。`
++- `/poteto-mode まず <new package> をどう使うかのチュートリアルを書いて。そのあと今のものよりなぜ優れるのか /pstack-teach して。`
+ - `このスレッドと私たちの進め方について、/arena にセカンドオピニオンを求めて。`
+ - `/poteto-mode この設計を計画にして。確かめられる小さな PR にし、それぞれに確認手順をつけて。`
+ - `/poteto-mode <library> から <target> への移行を計画して。確かめられる小さな PR にして。結果はバグも含めて元と完全に一致させて。`

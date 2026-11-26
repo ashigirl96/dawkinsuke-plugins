@@ -1,6 +1,6 @@
 # pstack の思想
 
-cursor/plugins の `harness/pstack/` の作者 Lauren Tan（poteto）が何を問題と見て、skill の集をどう組んで答えているかをまとめる。dawkinsuke は pstack のスキルを使わず submodule も外したが、スキルを足すときの物差しとしてこの要約を残す。
+cursor/plugins の `harness/pstack/` の作者 Lauren Tan（poteto）が何を問題と見て、skill の集をどう組んで答えているかをまとめる。dawkinsuke は今、Claude Code への移植版 pstack-claude（`upstream/pstack-claude`）のスキルを使う。要約は移植元の Cursor 版から作ったもので、スキルを足すときの物差しにもする。
 
 「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`docs/guide/`・`docs/harness/claude-code.md` と各 skill・agent の本文。pstack は Cursor 向けに書かれ、Claude Code 向けはそこから生成された写し。出典の path は、外す前に止めていた版 `0.15.44` の https://github.com/cursor/plugins/tree/e58dd043600587dbaf58ba315e7f2b38373eeb43/harness/pstack/claude-code から数える。
 

@@ -6,29 +6,30 @@
 
 ## upstream
 
-upstream は submodule の `upstream/mattpocock-skills`（https://github.com/mattpocock/skills ）。使っているタグは `v1.3.2`。`skills/engineering/` と `skills/productivity/` のスキルを使う。
+upstream は 2 つの submodule。
 
-pstack（https://github.com/cursor/plugins の `harness/pstack`）は使わない。submodule も外し、残っているのは思想の要約 `docs/philosophy/pstack.md` だけ。
+- `upstream/mattpocock-skills`: https://github.com/mattpocock/skills 。使っているタグは `v1.3.2`。`skills/engineering/` と `skills/productivity/` のスキルを使う。
+- `upstream/pstack-claude`: https://github.com/michael-denyer/pstack-claude 。Cursor の pstack を Claude Code に移植したもの。使っているタグは `v0.9.157`。`plugins/pstack/skills/` のスキルをすべて使う。hook（`SessionStart` で `poteto-mode` への振り分けとモデル表を差し込む）は取り込まない。モデル表が無いときは、各スキルが本文の既定の model を使う。
 
-matt のスキルは `matt/skills/<name>` から symlink で参照し、`plugin.json` の `skills` で `matt/skills` を足している。使わないスキルは `upstream/exclude.txt` に `<submodule>/<name>` の形で書く。スキルの種類・置き場・key・呼ばれる名前・除外中かは、スキル台帳 `scripts/ledger.sh` だけが答え、他の script と手順書はそれを引く。symlink は `scripts/sync-skills.sh` が台帳に合わせるので、手では張らない。除外リストを書き換えたら、この script を流す。upstream のスキルを別の名前で使うときは、`upstream/rename.txt` に `<submodule>/<name> <新しい名前>` の形で書き、同じく script を流す。スキルの識別名（`dawkinsuke:<name>`）は symlink の名前で、補完に出る名前は `SKILL.md` の `name` で決まるので、改名リストに書いたうえで、`name` を新しい名前にする fork を新しい名前の置き場に作る。今は matt の `pr` を、`/pr` で始まる他のスキルと補完で紛れないよう `pull-request` にしている（`matt/skills/pull-request`）。同期のあとは `/verify-dawkinsuke` で、入れたスキルが依存するスキルや文書が抜けていないかを確かめる。除外中のスキルを使い始めるときは `/add-upstream-skill <name>` を使う。
+matt のスキルは `matt/skills/<name>` から、pstack のスキルは `pstack/skills/<name>` から symlink で参照し、`plugin.json` の `skills` で `matt/skills` と `pstack/skills` を足している。pstack の agent（`poteto-agent`・`comment-sicko` など）は、ルートの `agents` の symlink から読み込む。Claude Code が plugin のルートの `agents/` を既定で読み込むため。`agents` の symlink は `scripts/sync-skills.sh` の管理外なので、upstream で場所が変わったら手で張り直す。dawkinsuke では agent が `dawkinsuke:<name>` で登録されるので、本文で `pstack:<name>` と呼ぶスキルは fork して呼び名を書き換える。2 つの upstream に同じ名前のスキル（`tdd`、`teach`）があるため、pstack 側を `upstream/rename.txt` で `pstack-tdd`・`pstack-teach` に改名している。使わないスキルは `upstream/exclude.txt` に `<submodule>/<name>` の形で書く。スキルの種類・置き場・key・呼ばれる名前・除外中かは、スキル台帳 `scripts/ledger.sh` だけが答え、他の script と手順書はそれを引く。symlink は `scripts/sync-skills.sh` が台帳に合わせるので、手では張らない。除外リストを書き換えたら、この script を流す。upstream のスキルを別の名前で使うときは、`upstream/rename.txt` に `<submodule>/<name> <新しい名前>` の形で書き、同じく script を流す。スキルの識別名（`dawkinsuke:<name>`）は symlink の名前で、補完に出る名前は `SKILL.md` の `name` で決まるので、改名リストに書いたうえで、`name` を新しい名前にする fork を新しい名前の置き場に作る。今は matt の `pr` を、`/pr` で始まる他のスキルと補完で紛れないよう `pull-request` にしている（`matt/skills/pull-request`）。同期のあとは `/verify-dawkinsuke` で、入れたスキルが依存するスキルや文書が抜けていないかを確かめる。除外中のスキルを使い始めるときは `/add-upstream-skill <name>` を使う。
 
-upstream を上げるときは `/update-upstream-skill` を使う。submodule だけを手で checkout し直すと、fork したスキルが古い upstream のまま残る。
+upstream を上げるときは `/update-upstream-skill matt` か `/update-upstream-skill pstack` を使う。submodule だけを手で checkout し直すと、fork したスキルが古い upstream のまま残る。
 
 ## スキルの 3 種類
 
 置き場所で種類が決まる。
 
-- **symlink**: `matt/skills/<name>` の symlink。upstream のスキルをそのまま使う。
-- **fork**: `matt/skills/<name>` の、`ADR.md` を持つ実ディレクトリ。upstream のスキルを自分の意図で変えたもの。
+- **symlink**: `matt/skills/<name>` か `pstack/skills/<name>` の symlink。upstream のスキルをそのまま使う。
+- **fork**: `matt/skills/<name>` か `pstack/skills/<name>` の、`ADR.md` を持つ実ディレクトリ。upstream のスキルを自分の意図で変えたもの。
 - **自作**: `skills/<name>` の実ディレクトリ。upstream と関係がない。
 
 スキルを fork するとき、fork したスキルを変えるときは、`/fork-upstream-skill` を使う。fork の中身を `ADR.md` を通さずに直すと、次に upstream を上げたときにその変更が消える。fork の仕組みは `docs/fork.md` にある。
 
-fork の本文で別のスキルを使わせるときは、「Skill tool で `<name>` を呼ぶ」とだけ書く。呼ぶ先が手動専用（`disable-model-invocation: true`）でスキル一覧に無くても、この plugin の置き場所（`skills/`・`matt/skills`）のどちらかにあれば、mod の `skill-chain` が呼ばせて通す。仕組みは `mods/skill-chain/README.md` にある。
+fork の本文で別のスキルを使わせるときは、「Skill tool で `<name>` を呼ぶ」とだけ書く。呼ぶ先が手動専用（`disable-model-invocation: true`）でスキル一覧に無くても、この plugin の置き場所（`skills/`・`matt/skills`・`pstack/skills`）のどれかにあれば、mod の `skill-chain` が呼ばせて通す。仕組みは `mods/skill-chain/README.md` にある。
 
 新しいスキルを足す前に `/vet-skill` を使う。matt と pstack の思想（`docs/philosophy/`）に合うか、既存のスキル・除外中の upstream スキル・fork で足りないかを評価する。
 
-matt と pstack について聞かれたら、`docs/philosophy/` で当たりを付け、原文を読み、`path:line` で引いて答える。原文の場所は各要約の冒頭にあり、matt は止めている版の submodule、pstack は外す前に止めていた commit の GitHub にある。そのスキルが fork なら `ADR.md` の決定を、除外中ならそのことも添える。
+matt と pstack について聞かれたら、`docs/philosophy/` で当たりを付け、原文を読み、`path:line` で引いて答える。原文の場所は各要約の冒頭にあり、matt は止めている版の submodule にある。pstack の要約は移植元の Cursor 版から作ったので、原文は要約の冒頭の GitHub にあり、今使っている移植版は `upstream/pstack-claude` にある。そのスキルが fork なら `ADR.md` の決定を、除外中ならそのことも添える。
 
 ## mod
 

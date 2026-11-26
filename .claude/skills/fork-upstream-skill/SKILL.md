@@ -1,6 +1,6 @@
 ---
 name: fork-upstream-skill
-description: matt のスキルを fork する、または fork 済みのスキルを変える。変更は必ず ADR.md の決定として残す。
+description: matt か pstack のスキルを fork する、または fork 済みのスキルを変える。変更は必ず ADR.md の決定として残す。
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 ## 1. 対象を決める
 
-ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` を見る。`<置き場>` と `<submodule>` は `docs/fork.md` の冒頭に従って決める。
+ユーザーが変えたいスキルを `<name>` とし、`matt/skills/<name>` と `pstack/skills/<name>` のうちあるほうを見る。`<置き場>` と `<submodule>` は `docs/fork.md` の冒頭に従って決める。
 
 - symlink なら fork にする。
 	1. `readlink <置き場>/<name>` の `upstream/<submodule>/` より後ろを、upstream のパスとする。

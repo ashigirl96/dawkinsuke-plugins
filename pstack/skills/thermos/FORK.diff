@@ -1,0 +1,14 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/thermos/SKILL.md pstack/skills/thermos/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/thermos/SKILL.md
++++ pstack/skills/thermos/SKILL.md
+@@ -20,8 +20,8 @@
+ 1. ユーザーの依頼、PR、現在のブランチ、または関係する変更ファイルから、レビューの範囲を決める。
+ 2. レビュアーが推測せずに変更を評価できるよう、差分と、必要なファイルや文脈の抜粋を集める。
+ 3. 両方の subagent を同じメッセージで `run_in_background: true` を付けて起動する:
+-   - `subagent_type: "pstack:thermo-nuclear-review-subagent"` はバグ、破損、セキュリティ、devex の退行、feature flag の漏れ、その他ブランチ監査で見るべきリスクを担当する。
+-   - `subagent_type: "pstack:thermo-nuclear-code-quality-review-subagent"` は保守性、構造、ファイルサイズの増加、スパゲッティ化、抽象化、コードベースの健全性のリスクを担当する。
++   - `subagent_type: "dawkinsuke:thermo-nuclear-review-subagent"` はバグ、破損、セキュリティ、devex の退行、feature flag の漏れ、その他ブランチ監査で見るべきリスクを担当する。
++   - `subagent_type: "dawkinsuke:thermo-nuclear-code-quality-review-subagent"` は保守性、構造、ファイルサイズの増加、スパゲッティ化、抽象化、コードベースの健全性のリスクを担当する。
+ 
+    両方の `model` に、`pstack-models.md` の `thermos reviewers` の行の値を設定する。シートやその行が無ければ [Models](#models) の既定値を使う。値が `auto` か `inherit-parent` のときは `model` を設定しない。`Agent` tool がスラッグを拒んだら既定値を使い、そのことを伝える。既定値も拒まれたら、エラーメッセージにある同じ系統の有効なスラッグのうち最も近いものを使う。各 subagent の推論レベルは、**poteto-mode** スキルの Subagents 節に従って、仕事に合わせて選ぶ。
+ 4. 各 subagent に同じ範囲の差分とファイルの文脈を渡し、ファイルへの参照と根拠を付けた、優先度順の指摘を返すよう頼む。

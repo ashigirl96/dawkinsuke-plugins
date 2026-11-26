@@ -9,10 +9,11 @@ cd "$(dirname "$0")/.."
 
 # 各行: upstream でスキルが並ぶディレクトリと、その置き場。上の行ほど名前の衝突で勝つ。
 sources="upstream/mattpocock-skills/skills/engineering matt/skills
-upstream/mattpocock-skills/skills/productivity matt/skills"
+upstream/mattpocock-skills/skills/productivity matt/skills
+upstream/pstack-claude/plugins/pstack/skills pstack/skills"
 # 取り込み元の外でも、本文が名前で呼びうる upstream のスキル。
-known="upstream/mattpocock-skills/skills/*/*/"
-places="skills matt/skills"
+known="upstream/mattpocock-skills/skills/*/*/ upstream/pstack-claude/plugins/pstack/skills/*/"
+places="skills matt/skills pstack/skills"
 
 find_rows() {
 	awk -F'\t' -v args="$*" '
@@ -117,6 +118,7 @@ table() {
 				names = nm[r]
 				orig = ks[r]; sub(/.*\//, "", orig)
 				if (ks[r] != "-" && orig != nm[r]) names = names "," orig
+				if (nm[r] ~ /^principle-/) names = names "," substr(nm[r], 11)
 				print nm[r] "\t" kd[r] "\t" plc[r] "\t" ks[r] "\t" ups[r] "\t" stt[r] "\t" names
 			}
 		}' | LC_ALL=C sort

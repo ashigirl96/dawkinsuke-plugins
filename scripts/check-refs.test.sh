@@ -13,6 +13,7 @@ sh scripts/check-refs.sh > out || true
 grep -q '\.\./implement/SKILL.md' out && fail "reference through a symlinked sibling was reported"
 grep -q 'src/billing' out && fail "path inside a code fence was reported"
 grep -q 'learning-records' out && fail "working-directory path was reported"
+grep -q '\.\./\.claude' out && fail "hidden directory of another tool was reported"
 grep -q ': pr$' out && fail "upstream name of a renamed skill was reported"
 
 echo mattpocock-skills/implement >> upstream/exclude.txt

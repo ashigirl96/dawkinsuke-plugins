@@ -1,8 +1,8 @@
 # pstack の思想
 
-`upstream/cursor-plugins` の `harness/pstack/` の作者 Lauren Tan（poteto）が何を問題と見て、skill の集をどう組んで答えているかをまとめる。pstack のスキルを使い始めるか、どう読み替えるかを決めるときの物差しにする。
+cursor/plugins の `harness/pstack/` の作者 Lauren Tan（poteto）が何を問題と見て、skill の集をどう組んで答えているかをまとめる。dawkinsuke は pstack のスキルを使わず submodule も外したが、スキルを足すときの物差しとしてこの要約を残す。
 
-「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`docs/guide/`・`docs/harness/claude-code.md` と各 skill・agent の本文。pstack は Cursor 向けに書かれ、Claude Code 向けはそこから生成された写し。出典の path は `upstream/cursor-plugins/harness/pstack/claude-code` から数える。
+「作者が書いたこと」と「解釈」を分け、解釈には「解釈:」と付ける。作者の言葉の出典は、`README.md`・`docs/guide/`・`docs/harness/claude-code.md` と各 skill・agent の本文。pstack は Cursor 向けに書かれ、Claude Code 向けはそこから生成された写し。出典の path は、外す前に止めていた版 `0.15.44` の https://github.com/cursor/plugins/tree/e58dd043600587dbaf58ba315e7f2b38373eeb43/harness/pstack/claude-code から数える。
 
 ## 一番の問題: agent の出力を人が信じられない
 
@@ -50,7 +50,7 @@
 
 解釈: `arena`・`interrogate`・`swarm`・Comment Sicko・Shipping の verifier に共通する設計の根っこ。panel の席を分ける family は model 名の接頭辞の最長一致で、`claude-fable-*`・`claude-*`・`gemini-*` は別の family。judge を分ける単位はそれより粗い vendor で、Fable と Opus は同じ Claude。
 
-この柱は Claude Code でも Cursor と同じように効く。panel の既定は Fable・Opus・Gemini の 3 席（`setup-pstack`）で、Claude 以外の vendor は Gemini の席だけ。upstream の adapter（`docs/harness/claude-code.md`）は Gemini の席を session の model で走らせるので、panel は Claude だけになり、judge は別の vendor が無く飛ばされる。この repo の adapter の fork（`pstack/docs/harness/`）は Claude 以外の席を、description にその model の名前がある subagent で走らせる。Agent ツールに `gpt-*` へ任せる `subagent_type` があれば、それが別の vendor の席になり、judge・panel・二つ目の意見に使える。そうした subagent が一覧に無い session では、judge が飛ばされ panel が同じ vendor の重複になる。
+この柱は Claude Code でも Cursor と同じように効く。panel の既定は Fable・Opus・Gemini の 3 席（`setup-pstack`）で、Claude 以外の vendor は Gemini の席だけ。upstream の adapter（`docs/harness/claude-code.md`）は Gemini の席を session の model で走らせるので、panel は Claude だけになり、judge は別の vendor が無く飛ばされる。外す前のこの repo は adapter を fork し、Claude 以外の席を、description にその model の名前がある subagent で走らせていた。Agent ツールに `gpt-*` へ任せる `subagent_type` があれば、それが別の vendor の席になり、judge・panel・二つ目の意見に使える。そうした subagent が一覧に無い session では、judge が飛ばされ panel が同じ vendor の重複になる。
 
 ### 人を待たないが、人の判断の領域は守る
 

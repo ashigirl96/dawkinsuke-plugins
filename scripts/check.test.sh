@@ -10,15 +10,15 @@ fail() { echo "FAIL: $1"; exit 1; }
 
 sh scripts/check.sh || fail "clean checkout did not pass"
 
-skill=upstream/cursor-plugins/harness/pstack/claude-code/skills/bro/SKILL.md
+skill=upstream/mattpocock-skills/skills/engineering/tdd/SKILL.md
 cp "$skill" skill.before
 printf -- '---\nname: [oops\n---\nbody\n' > "$skill"
-sh scripts/check.sh 2> out && fail "broken frontmatter behind a pstack symlink passed"
-grep -q 'skills/bro' out || fail "broken skill not named in the output"
+sh scripts/check.sh 2> out && fail "broken frontmatter behind a symlink passed"
+grep -q 'skills/tdd' out || fail "broken skill not named in the output"
 cp skill.before "$skill"
 
 cp .claude-plugin/plugin.json plugin.before
-jq '.skills = ["./matt/skills"]' plugin.before > .claude-plugin/plugin.json
+jq '.skills = []' plugin.before > .claude-plugin/plugin.json
 sh scripts/check.sh 2> out && fail "plugin.json missing a place passed"
 grep -q 'plugin.json skills do not match' out || fail "plugin.json mismatch not reported"
 cp plugin.before .claude-plugin/plugin.json

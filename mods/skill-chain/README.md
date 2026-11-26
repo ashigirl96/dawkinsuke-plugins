@@ -24,7 +24,7 @@ pstack は 58 個のスキルのうち `setup-pstack` 以外の 57 個を手動�
 
 - **狙いは context の節約。** 作者は付ける理由を一度も説明していない（最初の [cursor/plugins#300](https://github.com/cursor/plugins/pull/300) はレビューで理由を聞かれても無回答）。理由が書かれたのは `/poteto-help` に付けた #506（upstream の `00b52d9`）だけで、「説明文から読み込まれるスキルは、その説明文が毎 session のスキル一覧に載る」ことを理由にしている。手動専用のスキルは一覧に載らない。
 - **振り分けは `poteto-mode` が持つ。** どのスキルをいつ使うかは `poteto-mode` の本文の索引と規則が決めるので、各スキルの説明文を一覧に並べて model の連想で拾わせる必要がない。「一覧からは隠し、`poteto-mode` と人だけが起こす」構成と読める（作者の言葉ではなく推測）。
-- **Claude Code では Skill tool が断る。** [Cursor](https://cursor.com/docs/context/skills) では手動専用は「打ったときだけ context に入る」という意味で、断りはない。Claude Code では Skill tool が断るので、[cursor/plugins#527](https://github.com/cursor/plugins/issues/527) が「hub が振り分け先を見つけられない」と報告した。pstack はスキルを手動専用のまま、置き場所 `../<name>/SKILL.md` を教える形で手当てした（#577、upstream の `364a77e`）。Claude Code 用の [docs/harness/claude-code.md](../../upstream/cursor-plugins/harness/pstack/claude-code/docs/harness/claude-code.md) も、SKILL.md を Read させている。
+- **Claude Code では Skill tool が断る。** [Cursor](https://cursor.com/docs/context/skills) では手動専用は「打ったときだけ context に入る」という意味で、断りはない。Claude Code では Skill tool が断るので、[cursor/plugins#527](https://github.com/cursor/plugins/issues/527) が「hub が振り分け先を見つけられない」と報告した。pstack はスキルを手動専用のまま、置き場所 `../<name>/SKILL.md` を教える形で手当てした（#577、upstream の `364a77e`）。Claude Code 用の [docs/harness/claude-code.md](https://github.com/cursor/plugins/blob/e58dd043600587dbaf58ba315e7f2b38373eeb43/harness/pstack/claude-code/docs/harness/claude-code.md) も、SKILL.md を Read させている。
 
 skill-chain は手動専用のスキルを一覧に戻さないので、context の節約はそのまま残る。そのうえで、呼び出し元のスキルが名指ししたときだけ Skill tool を通し、Read の手当てを置き換える。
 
@@ -38,7 +38,7 @@ skill-chain は手動専用のスキルを一覧に戻さないので、context 
    - 候補の本文は、会話の文ではなくディスクから読む。展開された文には呼び出しの引数が付くので、引数で名指しを偽れないようにする。本文は SKILL.md の前書きを除いた部分と、`<dir>` の下（`playbooks/` のような下のディレクトリも含む）にある `.md` すべての中身。symlink はたどらない。
 2. **置き場所の候補**は、次の 3 つ。呼ばれたスキルの SKILL.md は、この候補からしか探さない。dawkinsuke の置き場所は最後に探す。
    - 1 の `<dir>` の親ディレクトリ。repo のスキル（`.claude/skills/<name>`）なら、同じ repo の手動専用のスキルを呼べる。
-   - その親ディレクトリを持つ plugin が宣言した残りの置き場所。親ディレクトリから上にたどって最初に見つかった `.claude-plugin/plugin.json` を読み、既定の `skills/` と `skills` の一覧のどれかが親ディレクトリと一致したときだけ、それらを候補に足す。1 つの plugin が `matt/skills` と `pstack/skills` のように置き場所を分けても、同じ plugin のスキルなら呼べる。
+   - その親ディレクトリを持つ plugin が宣言した残りの置き場所。親ディレクトリから上にたどって最初に見つかった `.claude-plugin/plugin.json` を読み、既定の `skills/` と `skills` の一覧のどれかが親ディレクトリと一致したときだけ、それらを候補に足す。1 つの plugin が `skills/` と `matt/skills` のように置き場所を分けても、同じ plugin のスキルなら呼べる。
    - dawkinsuke の置き場所。mod 自身のディレクトリ（`$.plugin.root`）の親から上にたどって最初に見つかった `plugin.json`（mod を持つ dawkinsuke の checkout のもの）の既定の `skills/` と `skills` の一覧を、呼び出し元がどこにあっても足す。repo のスキルのプレイブックから、dawkinsuke の手動専用のスキルを呼べる。user の `~/.claude/skills/` は足さない。
 3. 次のすべてを満たしたときだけ答える。
    - 呼ばれた名前が英数字・`_`・`-` だけでできている（置き場所の外へ出ない）。
@@ -70,7 +70,7 @@ engine の Skill tool を通らないので、返す手動専用のスキルの�
 
 他に、次の制限が残る。
 
-- 呼び出し名の `plugin:` の前置きは見ない。置き場所の候補の 2 か所（別の plugin どうしでも、同じ plugin の `matt/skills` と `pstack/skills` でも）に同じ名前のスキルがあると、先に見つかった置き場所のものを返す（コードの `shortcut:`）。
+- 呼び出し名の `plugin:` の前置きは見ない。置き場所の候補の 2 か所（別の plugin どうしでも、同じ plugin の `skills/` と `matt/skills` でも）に同じ名前のスキルがあると、先に見つかった置き場所のものを返す（コードの `shortcut:`）。
 - 手動専用のスキルの本文は system-reminder（後ろに付くシステムからの補足）として届くので、本物のスキルの展開より model に疑われやすい。haiku は従うのをためらうことがある。
 
 ## 確かめ方

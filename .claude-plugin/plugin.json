@@ -7,7 +7,6 @@
   "repository": "https://github.com/ashigirl96/dawkinsuke-plugins",
   "license": "MIT",
   "skills": [
-    "./matt/skills",
-    "./pstack/skills"
+    "./matt/skills"
   ]
 }

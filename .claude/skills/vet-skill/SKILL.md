@@ -23,7 +23,7 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
 
 - **系譜**: matt・pstack・両方・どちらでもない、のどれに近いか。案が当てはまる柱や言い回しを名指しする。
 - **反する所**: 両者の思想とぶつかる所。たとえば、段から段へ進む判断を agent に渡す、検証の無い成果を増やす、仕組みで止められることを文章で頼む、code で試さない計画を磨く。
-- **接続点**: どのスキルを呼び、どのスキルから呼ばれるか。matt の流れ（`grill-with-docs` から `retro` まで）のどの段に入るか、pstack なら `poteto-mode` のどの層（Non-negotiables・principle・playbook・部品）に当たるか。語彙を扱うなら、語彙の唯一の出典である `domain-modeling`・`codebase-design` との重なり。
+- **接続点**: どのスキルを呼び、どのスキルから呼ばれるか。matt の流れ（`grill-with-docs` から `retro` まで）のどの段に入るか。語彙を扱うなら、語彙の唯一の出典である `domain-modeling`・`codebase-design` との重なり。
 - **起動の型**: 利用者だけが呼ぶか、model も呼べるか。利用者だけが呼ぶスキルから利用者だけが呼ぶ別のスキルを呼ぶ形になっていないか。model も呼べるなら、常に読み込まれる description の負荷に見合うか。配るスキルでは、plugin を入れたすべての repo にその負荷がかかる。
 - **この環境で効くか**: Claude Code の上で成り立つか。配るスキルなら、この repo のファイル（`docs/`・`upstream/`）を読まずに動くか。Cursor の機能を前提にしていないか。別の model family を前提にするなら、`docs/philosophy/pstack.md` の「書いた者と判定する者を分け、別の model に見せる」に従い `gpt-*` の subagent で読み替えられるかを答える。案が作業の場（Bench・Tab）や claude の session を扱うなら、`docs/monica.md` を読み、monica の上で成り立つかも答える。
 
@@ -33,13 +33,13 @@ matt も pstack も、実際に起きた失敗から足すことを条件にし�
 
 1. **入っているスキル**: 配るスキルなら、`.claude/skills/` のものは他の repo に無いので代わりに数えない。
    ```sh
-   grep -m1 '^description:' matt/skills/*/SKILL.md pstack/skills/*/SKILL.md skills/*/SKILL.md .claude/skills/*/SKILL.md
+   grep -m1 '^description:' matt/skills/*/SKILL.md skills/*/SKILL.md .claude/skills/*/SKILL.md
    ```
-2. **除外中の upstream スキル**: 次の出力。pstack の principle は、規則の本体が description にある。
+2. **除外中の upstream スキル**: 次の出力。
    ```sh
    sh scripts/ledger.sh | awk -F'\t' '$6 == "excluded" { print $5 "/SKILL.md" }' | xargs grep -m1 '^description:'
    ```
-3. **fork**: 入っている matt か pstack のスキルを変えれば足りるか。
+3. **fork**: 入っている matt のスキルを変えれば足りるか。
 4. **スキルにしない**: 保守用なら `scripts/check.sh` のような検査かこの repo の `CLAUDE.md` の 1 行、配るなら `~/.claude/CLAUDE.md` の 1 行か `mods/<name>` の mod で足りるか。
 5. **monica**: 手順 2 で `docs/monica.md` を読んだときだけ見る。今の `monica` の CLI で失敗を消せるか。消せなければ、どの入口を足せば消せるか。
 

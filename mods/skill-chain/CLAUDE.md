@@ -27,7 +27,7 @@ sh $L -p mods/skill-chain/fixture callee,deep '/chainfix:caller'
 sh $L -p mods/skill-chain/fixture callee,deep 'Use the Skill tool to run the chainfix:caller skill.'
 sh $L -p mods/skill-chain/fixture '!deep' 'Use the Skill tool to run the chainfix:deep skill. Do not read any file.'
 sh $L -C mods/skill-chain/fixture/repo repo-deep '/playfix deep'
-sh $L -C mods/skill-chain/fixture/repo in-your-own-words '/playfix restate'
+sh $L -C mods/skill-chain/fixture/repo to-questionnaire '/playfix questionnaire'
 sh $L -C mods/skill-chain/fixture/repo '!repo-hidden' '/playfix stray'
 ```
 

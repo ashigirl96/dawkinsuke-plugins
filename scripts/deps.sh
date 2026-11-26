@@ -5,7 +5,7 @@ if [ $# -ne 1 ]; then
 	cat >&2 <<'EOF'
 usage: sh scripts/deps.sh <submodule>/<name> | <skill directory>
   <submodule>/<name> か upstream/ のディレクトリ: upstream の中だけをたどる
-  skills/・matt/skills/・pstack/skills/ のディレクトリ: 呼ばれたスキルも checkout から先に探す（fork の違いが出る）
+  skills/・matt/skills/ のディレクトリ: 呼ばれたスキルも checkout から先に探す（fork の違いが出る）
 EOF
 	exit 2
 fi

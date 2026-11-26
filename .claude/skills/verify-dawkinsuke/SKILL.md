@@ -29,7 +29,7 @@ mkdir -p "$run"
 git submodule status
 claude plugin validate .
 claude --plugin-dir . plugin details dawkinsuke | sed -n '1,6p'
-find -L skills matt pstack -type l 2>/dev/null
+find -L skills matt -type l 2>/dev/null
 ```
 
 駆動してよい状態は次のとおり。

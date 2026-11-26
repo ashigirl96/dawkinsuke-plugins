@@ -2,24 +2,9 @@
 
 `/fork-upstream-skill`（fork を作る・変える）と `/update-upstream-skill`（upstream を上げて fork を作り直す）の両方がこのファイルを前提にする。
 
-fork は matt と pstack のどちらのスキルにも作れる。このファイルの `<置き場>` と `<submodule>` は、スキルなら `sh scripts/ledger.sh <name>`（スキル台帳）の行の置き場（3 列目）と、key（4 列目）の `/` より前で読む。文書の fork は台帳に載らないので、置き場を `pstack/docs`、submodule を `cursor-plugins` と読む。
-
-`pstack/docs` は、pstack のスキルが `../../docs/` で読む文書の置き場。`pstack/docs/<name>` は upstream の `harness/pstack/claude-code/docs/<name>` への symlink か、その fork で、スキルと同じ手順で fork する。今の fork は adapter の `harness`（`docs/adr/0001-pstack-adapter-fork.md`）。
+このファイルの `<置き場>` と `<submodule>` は、`sh scripts/ledger.sh <name>`（スキル台帳）の行の置き場（3 列目）と、key（4 列目）の `/` より前で読む。
 
 `<name>` は置き場での名前で、`upstream/rename.txt` で改名したスキルでは upstream の名前と違う。fork の元は、`ADR.md` の `upstream` のパスでたどる。今は `matt/skills/pull-request` の元が `skills/engineering/pr`。
-
-## adapter を読ませるスキルの fork
-
-pstack のスキルの多くは、冒頭で adapter（`pstack/docs/harness/claude-code.md`）を読ませる。こうしたスキルを fork するときは、adapter を読ませる行を消し、本文を adapter の表に従って Claude Code の名前で書き換える（`docs/adr/0005-fork-adapter-readers.md`）。`ADR.md` の決定には、従った節を「adapter の `Tools` 節」のように、節の見出しを backtick で囲んで引く。別の pstack スキルを呼ぶ箇所は「Call the Skill tool with `<name>`」と書く。
-
-### adapter の節が変わったとき
-
-fork は adapter の節を実行中に読まないので、節が変わっても本文は古いままになる。adapter の fork を作り直した、または変えたあとは、次を行う。
-
-1. `git diff HEAD -- pstack/docs/harness/claude-code.md` で、変わった行が属する `##` の節を拾う。最初の `##` より前の行が変わったら、すべての節が変わったとみなす。
-2. 節ごとに ``grep -l '`<節>` 節' pstack/skills/*/ADR.md`` で、その節を引く fork を探す。
-3. 見つかった fork ごとに、upstream の差分が無くても、`rsync -a --delete --exclude ADR.md --exclude FORK.diff --exclude <own のファイル>... upstream/cursor-plugins/<upstream のパス>/ pstack/skills/<name>/` で upstream の中身に戻し、`ADR.md` の決定を上から順に当て直す。変わった節に関わらない決定は、前回の fork（`git show HEAD:pstack/skills/<name>/<ファイル>`）と同じ文面で当てる。
-4. 「確かめ方」と「日本語の差分を作る」を行う。
 
 ## ADR.md が元データ
 

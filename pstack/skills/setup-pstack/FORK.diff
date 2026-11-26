@@ -1,0 +1,33 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/setup-pstack/SKILL.md pstack/skills/setup-pstack/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/setup-pstack/SKILL.md
++++ pstack/skills/setup-pstack/SKILL.md
+@@ -17,13 +17,13 @@
+ 
+ Claude Code 以外のランタイムでは、まず [Other runtimes](references/runtimes.md) を読む。その表にシートのパス、シートの読み込み方、モデルの一覧の出し方があり、ランタイムごとの節に、どの手順が変わるかが書かれている。このファイルの残りは Claude Code について書く。
+ 
+-Claude Code では、設定ディレクトリは変数 `$CLAUDE_CONFIG_DIR` が設定されていればそれで、なければ `~/.claude` である。このスキルはそれを `<config>` と呼び、ユーザーシートは `<config>/pstack-models.md` である。プロジェクトシートは、リポジトリのルート（`git rev-parse --show-toplevel`。リポジトリの外では Claude Code を起動したディレクトリ）の `.claude/pstack-models.md` で、リポジトリと一緒にコミットされ、そのプロジェクトではユーザーシートの代わりになる。セッションフックは、これがあれば必ず読む。モデルの行は、手順 6 が見出しの下に書く行を通してこれに従うので、手書きのプロジェクトシートにもその行が要る。Claude Code には Cursor の `.mdc` のような自動で適用される「ルール」の仕組みがないので、取り込みは明示的に行う。ユーザーが `<config>/CLAUDE.md` に次のような行を足す。
++Claude Code では、設定ディレクトリは変数 `$CLAUDE_CONFIG_DIR` が設定されていればそれで、なければ `~/.claude` である。このスキルはそれを `<config>` と呼び、ユーザーシートは `<config>/pstack-models.md` である。プロジェクトシートは 1 つのリポジトリでユーザーシートの代わりになり、リポジトリの外に置く。置き場所は `<config>/repo-local/<host>/<owner>/<repo>.pstack-models.md` で、そのリポジトリの非公開の指示ファイル `<config>/repo-local/<host>/<owner>/<repo>.md` の隣である。`<host>/<owner>/<repo>` は `git remote get-url origin` から読む。`git@github.com:acme/app.git` も `https://github.com/acme/app` も `github.com/acme/app` になる。`origin` リモートのないディレクトリではユーザーシートだけを使う。そのことを伝え、ユーザーシートを提案する。モデルの行は、手順 6 が見出しの下に書く行を通してプロジェクトシートに従うので、手書きのプロジェクトシートにもその行が要る。Claude Code には Cursor の `.mdc` のような自動で適用される「ルール」の仕組みがないので、取り込みは明示的に行う。ユーザーが `<config>/CLAUDE.md` に次のような行を足す。
+ 
+ ```text
+ @<config>/pstack-models.md
+ ```
+ 
+-`<config>` を解決済みのパスで書くと、このファイルがすべてのセッションでコンテキストとして読み込まれる。プロジェクトシートは、リポジトリのルートの `CLAUDE.md` にある `@.claude/pstack-models.md` から読み込まれる。
++`<config>` を解決済みのパスで書くと、このファイルがすべてのセッションでコンテキストとして読み込まれる。プロジェクトシートは、手順 7 が書く `@` 行の連鎖で読み込まれる。リポジトリの `CLAUDE.local.md` が非公開の指示ファイルを取り込み、そのファイルがプロジェクトシートを取り込む。
+ 
+ ## Steps
+ 
+@@ -79,7 +79,12 @@
+ 
+ ### 7. Wire it in
+ 
+-Claude Code では、`<config>/CLAUDE.md` が `<config>/pstack-models.md` をまだ含んでいなければ、シートの解決済みのパスを指す `@` 行（たとえば `@~/.claude/pstack-models.md`）を末尾に足し、モデルの行がすべてのセッションで読み込まれるようにする。プロジェクトシートの場合は、代わりにリポジトリのルートの `CLAUDE.md` に、なければ `@.claude/pstack-models.md` を足し、2 つのファイルをコミットするようユーザーに伝える。
++Claude Code では、`<config>/CLAUDE.md` が `<config>/pstack-models.md` をまだ含んでいなければ、シートの解決済みのパスを指す `@` 行（たとえば `@~/.claude/pstack-models.md`）を末尾に足し、モデルの行がすべてのセッションで読み込まれるようにする。プロジェクトシートの場合は、代わりに連鎖をつなぎ、足りない結びだけを足す。`<config>` が `~/.claude` のときは、各 `@` のパスを `~` から書く。
++
++1. **リポジトリのルート（`git rev-parse --show-toplevel`）の `CLAUDE.local.md`** には、`@<config>/repo-local/<host>/<owner>/<repo>.md` の 1 行だけを置く。ファイルがなければこの行で作り、`.worktreeinclude` もなければ、隣に `CLAUDE.local.md` の 1 行だけで作る。`claude --worktree` が取り込みを worktree に写すためである。`CLAUDE.local.md` にそれ以外の中身があるときは、そのままにして、その中身を非公開の指示ファイルに移し、取り込みの行だけを残すようユーザーに伝える。
++2. **非公開の指示ファイル** `<config>/repo-local/<host>/<owner>/<repo>.md` には、`@<config>/repo-local/<host>/<owner>/<repo>.pstack-models.md` の行を入れる。ファイルがなければその行で作り、あれば、その行がないときだけ追記する。
++
++どちらの結びもコミットしない。`git status --porcelain` に `CLAUDE.local.md` か `.worktreeinclude` が出るときは、そのファイルが無視されていないとユーザーに伝える。連鎖のすべての結びがそろったら完了である。
+ 
+ ### 8. Confirm
+ 

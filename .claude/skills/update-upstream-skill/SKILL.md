@@ -27,7 +27,7 @@ script の出力と fork の状態のうち、次のものは自分で片付け�
 - `added <name>`: 版の扱いのファイルの「増えたスキル」に従う。
 - `conflict` の行: 形ごとに対処が違う。
 	- `conflict <name> (skills/<name> has the same name)`: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。upstream を捨てるなら `upstream/exclude.txt` に `<submodule>/<name>` を足し、自作を捨てるなら `skills/<name>` を消す。
-	- `conflict <name> (matt/skills/<name> has the same name)` と `conflict <name> (pstack/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルが増え、括弧の中の側が残った。どちらも使うなら、負けた側を `upstream/rename.txt` で `pstack-<name>` のように改名し、`name` を変える fork を作る（今の `pstack-tdd`・`pstack-teach` と同じ）。片方だけ使うなら、使わない側を `upstream/exclude.txt` に足す。どちらにするかユーザーに選んでもらう。
+	- `conflict <name> (matt/skills/<name> has the same name)` と `conflict <name> (pstack/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルが増え、括弧の中の側が残った。どちらも使うなら、負けた側を `upstream/rename.txt` で `pstack-<name>` のように改名し、`name` を変える fork を作る（今の `pstack-tdd` と同じ）。片方だけ使うなら、使わない側を `upstream/exclude.txt` に足す。どちらにするかユーザーに選んでもらう。
 	- `conflict <name> (<dir>/<name> is a directory without ADR.md)`: 括弧の中の `<dir>` に、置き場所を誤った実ディレクトリがある。script はすべての置き場を見るので、`<dir>` は上げていない側のこともある。`git log -1 --format=%H -- <dir>/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:<dir>/<name>/ADR.md > <dir>/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
 - `warning <entry> in upstream/exclude.txt` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直す。
 - `warning <entry> in upstream/rename.txt` の行: 改名リストの名前が upstream にない。upstream で改名されたなら、行の左側を新しい名前に直す。消えたなら、行を消す。

@@ -3,3 +3,4 @@
 mattpocock-skills/wait-what
 mattpocock-skills/grill-me
 mattpocock-skills/ask-matt
+mattpocock-skills/teach

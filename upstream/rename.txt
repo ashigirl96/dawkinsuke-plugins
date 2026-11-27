@@ -2,4 +2,3 @@
 # 書き換えたら scripts/sync-skills.sh を流す。
 mattpocock-skills/pr pull-request
 pstack-claude/tdd pstack-tdd
-pstack-claude/teach pstack-teach

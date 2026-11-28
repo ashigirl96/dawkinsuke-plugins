@@ -1,0 +1,10 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/tdd/SKILL.md pstack/skills/pstack-tdd/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/tdd/SKILL.md
++++ pstack/skills/pstack-tdd/SKILL.md
+@@ -1,5 +1,5 @@
+ ---
+-name: tdd
++name: pstack-tdd
+ description: "ユーザーが TDD、失敗するテスト、回帰テストを明示的に求めたとき、またはバグに安価でローカルな明らかなテスト対象があるときだけ使う。テストの道筋が不明確、高コスト、結合テスト中心、または求められていないときは使わない。"
+ ---
+ 

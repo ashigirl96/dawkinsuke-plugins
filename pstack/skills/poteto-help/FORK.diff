@@ -1,0 +1,24 @@
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-help/SKILL.md pstack/skills/poteto-help/SKILL.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-help/SKILL.md
++++ pstack/skills/poteto-help/SKILL.md
+@@ -69,7 +69,7 @@
+ | 1 つの指示から複数の試行を得て、最良の 1 つにまとめる | [`/arena`](../arena/SKILL.md) |
+ | 分割した範囲に対して並列の検査を走らせる、またはワーカーを競わせる | [`/swarm`](../swarm/SKILL.md) |
+ | 異なるモデルに差分をレビューさせ、壊そうとさせる | [`/interrogate`](../interrogate/SKILL.md) |
+-| 手軽なローカルテストがあるとき、テストを先に書いてバグを直す | [`/tdd`](../tdd/SKILL.md) |
++| 手軽なローカルテストがあるとき、テストを先に書いてバグを直す | [`/pstack-tdd`](../pstack-tdd/SKILL.md) |
+ | `.ts` や `.tsx` の作業に TypeScript の規則を適用する | [`/typescript-best-practices`](../typescript-best-practices/SKILL.md) |
+ | レビューの前に、書いていないレビュアーを使ってコメントを取り除く | [`/no-comments`](../no-comments/SKILL.md) |
+ | 文章から AI らしさを取り除く | [`/unslop`](../unslop/SKILL.md) |
+diff -ruN -x ADR.md -x FORK.diff upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/recipes.md pstack/skills/poteto-help/references/recipes.md
+--- upstream/pstack-claude/plugins/pstack/skills/poteto-help/references/recipes.md
++++ pstack/skills/poteto-help/references/recipes.md
+@@ -17,7 +17,7 @@
+ 
+ - バグ: `/poteto-mode <symptom>。先に再現し、そのあと直して確かめて。`
+ - アプリのバグ: `/poteto-mode /verify でこれを再現して。main で再現するなら直して、証拠の動画を見せて。`
+-- 手軽なテストがあるバグ: `/poteto-mode まず <bug> を再現して。手軽なテストの道があれば /tdd して。そのあと直して再実行して。`
++- 手軽なテストがあるバグ: `/poteto-mode まず <bug> を再現して。手軽なテストの道があれば /pstack-tdd して。そのあと直して再実行して。`
+ - 機能: `/poteto-mode <behavior> を足して。<current output> はバイト単位で同一のまま。両方を確かめて。`
+ - リファクタリング: `/poteto-mode <code> を 1 つのモジュールに移して。振る舞いは一切変えない。先に今の出力を記録し、あとで変わっていないと証明して。`
+ - 性能: `/poteto-mode <operation> が <fixture> で <time> かかる。追跡し、測った原因を直し、前後を見せて。`

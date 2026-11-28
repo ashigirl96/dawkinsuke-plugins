@@ -3,16 +3,16 @@
 # 列: 名前 種類(symlink|fork|own|-) 置き場 key upstream 状態(use|excluded|outside|conflict|gone|no-adr) 呼ばれる名前(,区切り)
 # 引数に名前か key を渡すと、その行だけを出す。先頭の引数が - なら、作り直さずに標準入力の表から引く。
 # --places は、行の有無によらず置き場を 1 行ずつ出す。
-# 表はあるべき姿で、置き場の symlink は読まない（docs/adr/0006-skill-ledger-desired-state.md）。
+# 表はあるべき姿で、置き場の symlink は読まない。
 set -eu
 cd "$(dirname "$0")/.."
 
 # 各行: upstream でスキルが並ぶディレクトリと、その置き場。上の行ほど名前の衝突で勝つ。
 sources="upstream/mattpocock-skills/skills/engineering matt/skills
 upstream/mattpocock-skills/skills/productivity matt/skills
-upstream/cursor-plugins/harness/pstack/claude-code/skills pstack/skills"
+upstream/pstack-claude/plugins/pstack/skills pstack/skills"
 # 取り込み元の外でも、本文が名前で呼びうる upstream のスキル。
-known="upstream/mattpocock-skills/skills/*/*/ upstream/cursor-plugins/harness/pstack/claude-code/skills/*/"
+known="upstream/mattpocock-skills/skills/*/*/ upstream/pstack-claude/plugins/pstack/skills/*/"
 places="skills matt/skills pstack/skills"
 
 find_rows() {

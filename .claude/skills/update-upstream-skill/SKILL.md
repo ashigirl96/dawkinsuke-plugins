@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 ## 2. 版を上げる
 
-版の扱いのファイルの「版を上げる」を行う。pstack では、続けて「写した文書」も行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
+版の扱いのファイルの「版を上げる」を行う。旧版はこのあとの手順でも使う。`CLAUDE.md` を書き換えたあとは、`git show HEAD:CLAUDE.md` から読み直せる。
 
 ## 3. 置き場を upstream に合わせる
 
@@ -27,8 +27,8 @@ script の出力と fork の状態のうち、次のものは自分で片付け�
 - `added <name>`: 版の扱いのファイルの「増えたスキル」に従う。
 - `conflict` の行: 形ごとに対処が違う。
 	- `conflict <name> (skills/<name> has the same name)`: upstream に増えたスキルの名前が、自作のスキルと重なっている。どちらを残すかユーザーに選んでもらう。upstream を捨てるなら `upstream/exclude.txt` に `<submodule>/<name>` を足し、自作を捨てるなら `skills/<name>` を消す。
-	- `conflict <name> (matt/skills/<name> has the same name)` と `conflict <name> (pstack/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルがあり、括弧の中の、先に張られていた側が残った。どちらを使うかユーザーに選んでもらい、使わない側を `upstream/exclude.txt` に `mattpocock-skills/<name>` か `cursor-plugins/<name>` で足す。
-	- `conflict <name> (<dir>/<name> is a directory without ADR.md)`: 括弧の中の `<dir>` に、置き場所を誤った実ディレクトリがある。script は両方の置き場を見るので、`<dir>` は上げていない側のこともある。`git log -1 --format=%H -- <dir>/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:<dir>/<name>/ADR.md > <dir>/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
+	- `conflict <name> (matt/skills/<name> has the same name)` と `conflict <name> (pstack/skills/<name> has the same name)`: matt と pstack に同じ名前のスキルが増え、括弧の中の側が残った。どちらも使うなら、負けた側を `upstream/rename.txt` で `pstack-<name>` のように改名し、`name` を変える fork を作る（今の `pstack-tdd` と同じ）。片方だけ使うなら、使わない側を `upstream/exclude.txt` に足す。どちらにするかユーザーに選んでもらう。
+	- `conflict <name> (<dir>/<name> is a directory without ADR.md)`: 括弧の中の `<dir>` に、置き場所を誤った実ディレクトリがある。script はすべての置き場を見るので、`<dir>` は上げていない側のこともある。`git log -1 --format=%H -- <dir>/<name>/ADR.md` が commit を返せば、それが `ADR.md` を消した commit で、ディレクトリは fork だったもの。`git show <commit>^:<dir>/<name>/ADR.md > <dir>/<name>/ADR.md` で戻す。履歴が無ければ自作なので、`skills/<name>` に移す。
 - `warning <entry> in upstream/exclude.txt` の行: 除外リストの名前が upstream にない。改名されたなら、除外リストを新しい名前に直す。
 - `warning <entry> in upstream/rename.txt` の行: 改名リストの名前が upstream にない。upstream で改名されたなら、行の左側を新しい名前に直す。消えたなら、行を消す。
 - `conflict <name> (<link> already links <submodule>/<name>)`: 改名リストの新しい名前が、同じ置き場の別のスキルと重なった。括弧の中のスキルが残った。改名リストの新しい名前を、重ならない名前に直す。
@@ -53,9 +53,9 @@ Agent tool で general-purpose の subagent を、`model: "opus"`、`effort: "hi
 
 ## 5. fork を 1 つずつ作り直す
 
-`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。pstack では `pstack/docs/*/ADR.md` の文書の fork も同じに扱い、adapter（`pstack/docs/harness`）を最初に作り直す。そのあと `docs/fork.md` の「adapter の節が変わったとき」で見つかった fork は、手順 1 の差分が空でも飛ばさず、手順 2 から行う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
+`<置き場>/*/ADR.md` を持つディレクトリごとに、次を順に行う。fork が 1 つもなければ「6. 依存を確かめる」へ進む。
 
-1. **upstream の差分を読む。** 比べるパスは、fork の `upstream`、fork のファイルが名前で呼んでいるスキルの upstream のパス、fork が相対パスで読んでいる upstream の文書（pstack なら `../../docs/` や `../../README.md`）。名前で呼ぶとは、`Call the Skill tool with "grilling"` や「the `code-review` skill」のような書き方のこと。これらを並べて `git -C upstream/<submodule> diff <旧版> <新版> -- <パス...>` を流す。手順 3 でパスが移っていたら、旧と新の両方を渡す。差分が空なら、この fork は飛ばす。
+1. **upstream の差分を読む。** 比べるパスは、fork の `upstream`、fork のファイルが名前で呼んでいるスキルの upstream のパス、fork が相対パスで読んでいる upstream の文書。名前で呼ぶとは、`Call the Skill tool with "grilling"` や「the `code-review` skill」のような書き方のこと。これらを並べて `git -C upstream/<submodule> diff <旧版> <新版> -- <パス...>` を流す。手順 3 でパスが移っていたら、旧と新の両方を渡す。差分が空なら、この fork は飛ばす。
 2. **衝突を探す。** `ADR.md` の `##` ごとに、upstream の差分が同じ振る舞いに触れているかを見る。決定が書き換えた箇所を upstream も書き換えた場合と、決定と逆の意図を持ち込んだ場合が衝突にあたる。呼んでいるスキルと読んでいる文書の変更も含める。
 3. **衝突を grilling する。** 衝突が 1 つでもあれば `grilling` スキルを使う。1 問に衝突 1 つを載せ、upstream の変更とその意図、自分の決定とその理由を並べて示す。その変更が手順 4 で「揺らぐ」「覆る」「新しい考え」の根拠になっていれば、その判定も添える。答えに応じて `ADR.md` を直す。
 	- 自分を優先する: `ADR.md` はそのまま。
